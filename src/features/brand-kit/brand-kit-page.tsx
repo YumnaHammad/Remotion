@@ -388,7 +388,7 @@ export function BrandKitFeature() {
               projectId={`brand-preview-${brand.id}`}
               projectName={`${brand.name} preview`}
               compositionId={PREVIEW_COMPOSITION}
-              inputProps={previewProps as Record<string, unknown>}
+              inputProps={previewProps as unknown as Record<string, unknown>}
               trigger={
                 <Button variant="outline" size="sm">
                   <Download className="mr-2 h-4 w-4" /> Export preview MP4
@@ -399,7 +399,7 @@ export function BrandKitFeature() {
           <div className="flex min-h-[280px] items-center justify-center rounded-xl border border-border bg-black/50 p-4 lg:min-h-[360px]">
             <TemplatePreview
               compositionId={PREVIEW_COMPOSITION}
-              inputProps={previewProps as Record<string, unknown>}
+              inputProps={previewProps as unknown as Record<string, unknown>}
               className="w-full max-w-md"
             />
           </div>

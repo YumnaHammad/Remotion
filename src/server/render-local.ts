@@ -1,3 +1,4 @@
+import type { WebpackOverrideFn } from "@remotion/bundler";
 import path from "node:path";
 import os from "node:os";
 import type { ExportFormat, ExportQuality } from "@/types";
@@ -20,17 +21,14 @@ const codecFor: Record<ExportFormat, "h264" | "vp8" | "gif"> = {
 let cachedServeUrl: string | null = null;
 
 /** Remotion bundler runs outside Next.js — wire up the same `@/` alias as tsconfig. */
-function webpackOverride(config: Record<string, unknown>) {
-  const resolve = (config.resolve ?? {}) as {
-    alias?: Record<string, string | false | string[]>;
-  };
-  resolve.alias = {
-    ...resolve.alias,
+const webpackOverride: WebpackOverrideFn = (config) => {
+  config.resolve ??= {};
+  config.resolve.alias = {
+    ...config.resolve.alias,
     "@": path.resolve(process.cwd(), "src"),
   };
-  config.resolve = resolve;
   return config;
-}
+};
 
 export async function getServeUrl(): Promise<string> {
   if (cachedServeUrl) return cachedServeUrl;
