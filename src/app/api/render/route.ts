@@ -34,6 +34,20 @@ export async function POST(req: Request) {
       process.env.NODE_ENV === "development";
 
     if (canRenderLocally && body.mode === "local") {
+      if (body.compositionId === "LongFormVideo") {
+        const scenes = body.inputProps?.scenes;
+        if (!Array.isArray(scenes) || scenes.length === 0) {
+          return NextResponse.json(
+            {
+              ok: false,
+              error:
+                "Long-form export requires at least one scene. Open the editor and save your project first.",
+            },
+            { status: 400 }
+          );
+        }
+      }
+
       jobs.set(jobId, { progress: 10, status: "rendering" });
 
       try {

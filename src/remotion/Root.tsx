@@ -200,12 +200,15 @@ export const RemotionRoot: React.FC = () => {
           height={1080}
           defaultProps={DEFAULT_SCENE_VIDEO_PROPS}
           calculateMetadata={({ props }) => ({
-            durationInFrames: longFormDuration(props.scenes),
+            durationInFrames: Math.max(
+              30,
+              longFormDuration(Array.isArray(props.scenes) ? props.scenes : [])
+            ),
           })}
         />
       </Folder>
 
-      <Folder name="Remotion Official">
+      <Folder name="Remotion-Official">
         {(
           Object.entries(REMOTION_OFFICIAL_COMPONENTS) as [
             keyof typeof REMOTION_OFFICIAL_COMPONENTS,

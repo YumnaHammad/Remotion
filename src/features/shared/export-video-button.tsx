@@ -86,6 +86,21 @@ export function ExportVideoButton({
         status?: string;
       };
 
+      if (!res.ok || data.ok === false) {
+        const msg =
+          data.error ??
+          data.message ??
+          (data.status === "queued"
+            ? "Rendering is not available on this server. Export works locally with npm run dev, or configure Remotion Lambda for production."
+            : "Export failed — no output file was produced.");
+
+        setStatus("error");
+        setErrorMessage(msg);
+        updateRender(jobId, { status: "failed", progress: 0, error: msg });
+        toast.error(msg);
+        return;
+      }
+
       if (data.ok && data.outputUrl) {
         setProgress(100);
         setOutputUrl(data.outputUrl);
@@ -100,11 +115,8 @@ export function ExportVideoButton({
       }
 
       const msg =
-        data.error ??
         data.message ??
-        (data.status === "queued"
-          ? "Rendering is not available on this server. Run locally with REMOTION_RENDER=1."
-          : "Export failed — no output file was produced.");
+        "Export failed — no output file was produced.";
 
       setStatus("error");
       setErrorMessage(msg);

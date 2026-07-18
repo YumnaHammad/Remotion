@@ -14,7 +14,7 @@ import { LazyTemplatePreview } from "@/features/showcase/lazy-template-preview";
 import { useBrandKit } from "@/hooks/use-brand-kit";
 import { useSimpleVideoStore } from "@/stores/simple-video-store";
 import {
-  buildTemplateProps,
+  buildInputPropsForTemplate,
   createProjectFromTemplate,
 } from "@/utils/video-project-factory";
 import { Badge } from "@/components/ui/badge";
@@ -110,8 +110,7 @@ function ShowcaseCard({
   brand: ReturnType<typeof useBrandKit>["brand"];
   onUse: () => void;
 }) {
-  const previewProps = buildTemplateProps(brand, {
-    title: t.name,
+  const inputProps = buildInputPropsForTemplate(t, brand, {
     subtitle: t.description.slice(0, 60),
   });
 
@@ -120,7 +119,8 @@ function ShowcaseCard({
       <Link href={`/showcase/${t.id}`} className="relative block">
         <LazyTemplatePreview
           compositionId={t.compositionId}
-          inputProps={previewProps as unknown as Record<string, unknown>}
+          inputProps={inputProps}
+          durationInFrames={t.longForm ? t.durationInFrames : undefined}
         />
         <div className="absolute left-2 top-2 flex flex-wrap gap-1">
           {t.official && (

@@ -26,6 +26,34 @@ export function buildTemplateProps(
   return applyBrandToProps(base, brand);
 }
 
+/** Build Remotion inputProps for preview/export from a catalog template. */
+export function buildInputPropsForTemplate(
+  template: TemplateCatalogItem,
+  brand: BrandSettings,
+  overrides: Partial<VideoTemplateProps> = {}
+): Record<string, unknown> {
+  if (template.longForm && template.defaultScenes) {
+    const scenes = scenesWithIds(template.defaultScenes);
+    const sceneProps: SceneVideoProps = {
+      title: overrides.title ?? template.name,
+      subtitle: overrides.subtitle ?? template.description.slice(0, 80),
+      accent: overrides.accent ?? brand.colors.accent,
+      brandColor: overrides.brandColor ?? brand.colors.primary,
+      fontFamily: overrides.fontFamily ?? brand.fontFamily,
+      logoUrl: overrides.logoUrl ?? brand.logoUrl,
+      musicUrl: overrides.musicUrl ?? brand.musicUrl,
+      scenes,
+    };
+    return sceneProps as unknown as Record<string, unknown>;
+  }
+
+  return buildTemplateProps(brand, {
+    title: template.name,
+    subtitle: template.description.slice(0, 80),
+    ...overrides,
+  }) as unknown as Record<string, unknown>;
+}
+
 /** Create a simple video project from a template catalog item. */
 export function createProjectFromTemplate(
   template: TemplateCatalogItem,

@@ -9,7 +9,7 @@ import { getTemplateById, type TemplateCatalogItem } from "@/templates/catalog";
 import { useBrandKit } from "@/hooks/use-brand-kit";
 import { useSimpleVideoStore } from "@/stores/simple-video-store";
 import {
-  buildTemplateProps,
+  buildInputPropsForTemplate,
   createProjectFromTemplate,
 } from "@/utils/video-project-factory";
 import { Badge } from "@/components/ui/badge";
@@ -21,12 +21,8 @@ export function ShowcaseDetail({ template }: { template: TemplateCatalogItem }) 
   const { brand } = useBrandKit();
   const addProject = useSimpleVideoStore((s) => s.addProject);
 
-  const previewProps = buildTemplateProps(brand, {
-    title: template.name,
-    subtitle: template.description.slice(0, 80),
-  });
-
-  const inputProps = previewProps as unknown as Record<string, unknown>;
+  const inputProps = buildInputPropsForTemplate(template, brand);
+  const previewDuration = template.longForm ? template.durationInFrames : undefined;
 
   const useTemplate = () => {
     const project = createProjectFromTemplate(template, brand, {
@@ -51,6 +47,7 @@ export function ShowcaseDetail({ template }: { template: TemplateCatalogItem }) 
           <TemplatePreview
             compositionId={template.compositionId}
             inputProps={inputProps}
+            durationInFrames={previewDuration}
             className="mx-auto w-full max-w-3xl"
           />
         </div>

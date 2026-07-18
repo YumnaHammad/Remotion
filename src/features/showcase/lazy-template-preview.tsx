@@ -7,10 +7,12 @@ import { TemplatePreview } from "@/features/shared/template-preview";
 export function LazyTemplatePreview({
   compositionId,
   inputProps,
+  durationInFrames,
   className,
 }: {
   compositionId: string;
   inputProps: Record<string, unknown>;
+  durationInFrames?: number;
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -41,6 +43,7 @@ export function LazyTemplatePreview({
         <TemplatePreview
           compositionId={compositionId}
           inputProps={inputProps}
+          durationInFrames={durationInFrames}
           className="mx-auto w-full max-w-full"
         />
       ) : (
