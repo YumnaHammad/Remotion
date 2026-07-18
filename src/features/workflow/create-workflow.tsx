@@ -22,6 +22,10 @@ import { useBrandKit } from "@/hooks/use-brand-kit";
 import { TEMPLATE_CATALOG, getTemplateById } from "@/templates/catalog";
 import { syncPropsFromBrand } from "@/utils/brand-defaults";
 import type { VideoTemplateProps } from "@/types/video";
+import type { SceneVideoProps } from "@/types/scene-video";
+import { totalSceneDuration } from "@/types/scene-video";
+import { SceneEditorPanel } from "@/features/scene-editor/scene-editor-panel";
+import { MusicPicker } from "@/features/shared/music-picker";
 import { toast } from "sonner";
 
 const FONTS = ["Inter", "Space Grotesk", "Georgia", "Arial"];
@@ -58,9 +62,23 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
   const [brandColor, setBrandColor] = useState(brand.colors.primary);
   const [fontFamily, setFontFamily] = useState(brand.fontFamily);
   const [musicUrl, setMusicUrl] = useState(brand.musicUrl ?? "");
+  const [scenes, setScenes] = useState<SceneVideoProps["scenes"]>([]);
+
+  const isLongForm = project?.compositionId === "LongFormVideo";
 
   useEffect(() => {
     if (!project) return;
+    if (project.compositionId === "LongFormVideo") {
+      const p = project.props as SceneVideoProps;
+      setTitle(p.title ?? "");
+      setSubtitle(p.subtitle ?? "");
+      setAccent(p.accent ?? brand.colors.accent);
+      setBrandColor(p.brandColor ?? brand.colors.primary);
+      setFontFamily(p.fontFamily ?? brand.fontFamily);
+      setMusicUrl(p.musicUrl ?? "");
+      setScenes(p.scenes ?? []);
+      return;
+    }
     const p = project.props as VideoTemplateProps;
     setTitle(p.title ?? "");
     setSubtitle(p.subtitle ?? "");
@@ -71,8 +89,8 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
   }, [project, brand]);
 
   const inputProps = useMemo((): Record<string, unknown> => {
-    const saved = project?.props as VideoTemplateProps | undefined;
-    return {
+    const saved = project?.props as VideoTemplateProps | SceneVideoProps | undefined;
+    const base = {
       ...(project?.props ?? {}),
       title,
       subtitle,
@@ -80,11 +98,32 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
       brandColor,
       fontFamily,
       ...(musicUrl ? { musicUrl } : {}),
-      ...(saved?.logoUrl || brand.logoUrl
-        ? { logoUrl: saved?.logoUrl ?? brand.logoUrl }
-        : {}),
+      ...(saved && "logoUrl" in saved && saved.logoUrl
+        ? { logoUrl: saved.logoUrl }
+        : brand.logoUrl
+          ? { logoUrl: brand.logoUrl }
+          : {}),
     };
-  }, [project, title, subtitle, accent, brandColor, fontFamily, musicUrl, brand.logoUrl]);
+    if (isLongForm) {
+      return { ...base, scenes };
+    }
+    return base;
+  }, [
+    project,
+    title,
+    subtitle,
+    accent,
+    brandColor,
+    fontFamily,
+    musicUrl,
+    brand.logoUrl,
+    isLongForm,
+    scenes,
+  ]);
+
+  const previewDuration = isLongForm
+    ? totalSceneDuration(scenes)
+    : project?.durationInFrames ?? 150;
 
   const applyBrandKit = () => {
     const synced = syncPropsFromBrand(
@@ -138,9 +177,27 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
     updateProject(projectId, {
       name: title.slice(0, 80) || project.name,
       props: inputProps as unknown as VideoTemplateProps,
+      durationInFrames: previewDuration,
       status: "ready",
     });
     toast.success("Project saved");
+  };
+
+  const handleScenesChange = (next: SceneVideoProps["scenes"]) => {
+    setScenes(next);
+    updateProject(projectId, {
+      props: {
+        ...(project.props as SceneVideoProps),
+        title,
+        subtitle,
+        accent,
+        brandColor,
+        fontFamily,
+        ...(musicUrl ? { musicUrl } : {}),
+        scenes: next,
+      },
+      durationInFrames: totalSceneDuration(next),
+    });
   };
 
   const changeTemplate = (templateId: string) => {
@@ -170,7 +227,8 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
           <div>
             <h1 className="text-lg font-semibold">{project.name}</h1>
             <p className="text-xs text-muted-foreground">
-              {templateMeta?.name ?? project.compositionId} · Simple editor
+              {templateMeta?.name ?? project.compositionId} ·{" "}
+              {isLongForm ? "Multi-scene editor" : "Simple editor"}
             </p>
           </div>
         </div>
@@ -272,14 +330,15 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Music URL</Label>
-                <Input
-                  value={musicUrl}
-                  onChange={(e) => setMusicUrl(e.target.value)}
-                  placeholder="Optional MP3 link"
+              <MusicPicker value={musicUrl} onChange={setMusicUrl} />
+
+              {isLongForm && (
+                <SceneEditorPanel
+                  scenes={scenes}
+                  onChange={handleScenesChange}
+                  fps={project.fps}
                 />
-              </div>
+              )}
 
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button variant="outline" onClick={applyBrandKit}>
@@ -333,7 +392,7 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
           <TemplatePreview
             compositionId={project.compositionId}
             inputProps={inputProps}
-            durationInFrames={project.durationInFrames}
+            durationInFrames={previewDuration}
             className="w-full max-w-xl"
           />
         </div>

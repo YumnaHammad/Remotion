@@ -12,9 +12,12 @@ import {
   FolderOpen,
   Globe,
   Home,
+  Image,
   LayoutTemplate,
+  Music,
   Palette,
   Settings,
+  Sparkles,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,6 +40,9 @@ const ICONS = {
   Settings,
   Globe,
   FileSpreadsheet,
+  Sparkles,
+  Image,
+  Music,
 } as const;
 
 export function Sidebar() {

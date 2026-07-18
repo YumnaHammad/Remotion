@@ -28,9 +28,15 @@ import {
 import { AnimationLab } from "./labs/AnimationLab";
 import { DataSlideshow } from "./compositions/DataSlideshow";
 import { dataVideoSchema } from "./compositions/data-slideshow-schema";
+import { LongFormVideo, longFormDuration } from "./compositions/LongFormVideo";
+import {
+  DEFAULT_SCENE_VIDEO_PROPS,
+  sceneVideoSchema,
+} from "./compositions/scene-video-schema";
 import { REMOTION_OFFICIAL_COMPONENTS } from "./compositions/remotion-official-demos";
 import { REMOTION_OFFICIAL_DIMS } from "@/templates/remotion-official-catalog";
 import { MOCK_PROJECTS, SAMPLE_IMAGE } from "@/data/mock";
+import { withBackgroundMusic } from "./with-background-music";
 
 const defaultProject = MOCK_PROJECTS[0];
 const templateDefaults: TemplateProps = {
@@ -39,6 +45,18 @@ const templateDefaults: TemplateProps = {
   accent: "#0b84f3",
   brandColor: "#0b84f3",
 };
+
+const YoutubeShortMusic = withBackgroundMusic(YoutubeShort);
+const InstagramReelMusic = withBackgroundMusic(InstagramReel);
+const TikTokTrendMusic = withBackgroundMusic(TikTokTrend);
+const PodcastOpenerMusic = withBackgroundMusic(PodcastOpener);
+const ProductAdMusic = withBackgroundMusic(ProductAd);
+const StartupPromoMusic = withBackgroundMusic(StartupPromo);
+const NewsVideoMusic = withBackgroundMusic(NewsVideo);
+const MotivationalMusic = withBackgroundMusic(Motivational);
+const ExplainerMusic = withBackgroundMusic(Explainer);
+const SaasDemoMusic = withBackgroundMusic(SaasDemo);
+const DataSlideshowMusic = withBackgroundMusic(DataSlideshow);
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -62,7 +80,7 @@ export const RemotionRoot: React.FC = () => {
       <Folder name="Templates">
         <Composition
           id="YoutubeShort"
-          component={YoutubeShort}
+          component={YoutubeShortMusic}
           schema={templateSchema}
           durationInFrames={150}
           fps={30}
@@ -72,7 +90,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="InstagramReel"
-          component={InstagramReel}
+          component={InstagramReelMusic}
           durationInFrames={180}
           fps={30}
           width={1080}
@@ -81,7 +99,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="TikTokTrend"
-          component={TikTokTrend}
+          component={TikTokTrendMusic}
           durationInFrames={120}
           fps={30}
           width={1080}
@@ -90,7 +108,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="PodcastOpener"
-          component={PodcastOpener}
+          component={PodcastOpenerMusic}
           durationInFrames={150}
           fps={30}
           width={1920}
@@ -99,7 +117,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="ProductAd"
-          component={ProductAd}
+          component={ProductAdMusic}
           durationInFrames={240}
           fps={30}
           width={1920}
@@ -108,7 +126,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="StartupPromo"
-          component={StartupPromo}
+          component={StartupPromoMusic}
           durationInFrames={270}
           fps={30}
           width={1920}
@@ -117,7 +135,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="NewsVideo"
-          component={NewsVideo}
+          component={NewsVideoMusic}
           durationInFrames={180}
           fps={30}
           width={1920}
@@ -126,7 +144,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="Motivational"
-          component={Motivational}
+          component={MotivationalMusic}
           durationInFrames={200}
           fps={30}
           width={1080}
@@ -139,7 +157,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="Explainer"
-          component={Explainer}
+          component={ExplainerMusic}
           durationInFrames={360}
           fps={30}
           width={1920}
@@ -148,7 +166,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="SaasDemo"
-          component={SaasDemo}
+          component={SaasDemoMusic}
           durationInFrames={300}
           fps={30}
           width={1920}
@@ -157,7 +175,7 @@ export const RemotionRoot: React.FC = () => {
         />
         <Composition
           id="DataSlideshow"
-          component={DataSlideshow}
+          component={DataSlideshowMusic}
           schema={dataVideoSchema}
           durationInFrames={300}
           fps={30}
@@ -171,6 +189,19 @@ export const RemotionRoot: React.FC = () => {
             rows: [{ Product: "Widget Pro", Revenue: "$12,400" }],
             columns: ["Product", "Revenue"],
           }}
+        />
+        <Composition
+          id="LongFormVideo"
+          component={LongFormVideo}
+          schema={sceneVideoSchema}
+          durationInFrames={longFormDuration(DEFAULT_SCENE_VIDEO_PROPS.scenes)}
+          fps={30}
+          width={1920}
+          height={1080}
+          defaultProps={DEFAULT_SCENE_VIDEO_PROPS}
+          calculateMetadata={({ props }) => ({
+            durationInFrames: longFormDuration(props.scenes),
+          })}
         />
       </Folder>
 
@@ -186,7 +217,7 @@ export const RemotionRoot: React.FC = () => {
             <Composition
               key={id}
               id={id}
-              component={Component}
+              component={withBackgroundMusic(Component)}
               schema={templateSchema}
               durationInFrames={dims.durationInFrames}
               fps={dims.fps}

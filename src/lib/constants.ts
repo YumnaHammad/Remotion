@@ -26,6 +26,7 @@ export const NAV_SECTIONS = [
   {
     label: "Create",
     items: [
+      { href: "/showcase", label: "Showcase", icon: "Sparkles" },
       { href: "/dashboard", label: "Dashboard", icon: "Home" },
       { href: "/templates", label: "Templates", icon: "LayoutTemplate" },
       { href: "/website-to-video", label: "Website to Video", icon: "Globe" },
@@ -36,13 +37,15 @@ export const NAV_SECTIONS = [
     label: "Brand",
     items: [
       { href: "/brand", label: "Brand Kit", icon: "Palette" },
+      { href: "/assets", label: "Asset Library", icon: "Image" },
+      { href: "/audio", label: "Audio Library", icon: "Music" },
       { href: "/exports", label: "Exports", icon: "Download" },
     ],
   },
   {
     label: "Advanced",
     items: [
-      { href: "/projects", label: "Timeline Projects", icon: "FolderOpen" },
+      { href: "/projects", label: "Projects", icon: "FolderOpen" },
       { href: "/settings", label: "Settings", icon: "Settings" },
     ],
   },

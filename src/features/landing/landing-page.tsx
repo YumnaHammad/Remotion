@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
+  Building2,
   Clapperboard,
   Download,
   FileSpreadsheet,
@@ -14,7 +15,9 @@ import {
   Menu,
   Palette,
   Play,
+  Rocket,
   Sparkles,
+  Users,
   Wand2,
   X,
   Zap,
@@ -22,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
-import { TEMPLATE_CATALOG } from "@/templates/catalog";
+import { TEMPLATE_CATALOG, LONG_FORM_CATEGORIES } from "@/templates/catalog";
 import { cn } from "@/lib/utils";
 
 const fadeUp = {
@@ -36,55 +39,63 @@ const NAV_LINKS = [
   { href: "#features", label: "Features" },
   { href: "#how-it-works", label: "How it works" },
   { href: "#templates", label: "Templates" },
+  { href: "#pricing", label: "Pricing" },
+] as const;
+
+const TRUSTED_BY = [
+  { icon: Building2, label: "Businesses" },
+  { icon: Users, label: "Agencies" },
+  { icon: Sparkles, label: "Creators" },
+  { icon: Rocket, label: "Startups" },
 ] as const;
 
 const FEATURES = [
   {
-    icon: LayoutTemplate,
-    title: `${TEMPLATE_CATALOG.length}+ ready-made templates`,
-    description:
-      "Social clips, product ads, podcast openers, and business slides — pick a layout and customize text and colors in minutes.",
-    href: "/templates",
-    accent: "from-[#0b84f3]/20 to-transparent",
-  },
-  {
-    icon: Globe,
-    title: "Website → video",
-    description:
-      "Paste any URL. Framekit pulls the headline, description, and visuals to pre-fill your video automatically.",
-    href: "/website-to-video",
-    accent: "from-cyan-500/20 to-transparent",
-  },
-  {
     icon: FileSpreadsheet,
-    title: "Data → video",
+    title: "Data to Video",
     description:
-      "Drop in CSV, Excel, or JSON. Each row becomes an animated slide — ideal for reports, dashboards, and updates.",
+      "Upload CSV, Excel, or JSON — each row becomes an animated scene with charts and stats.",
     href: "/data-to-video",
     accent: "from-violet-500/20 to-transparent",
   },
   {
     icon: Palette,
-    title: "Brand kit",
+    title: "Brand Kit",
     description:
-      "Save your logo, colors, and fonts once. Every new video starts on-brand without redoing the setup.",
+      "Logo, colors, fonts, and music saved once — every video starts on-brand automatically.",
     href: "/brand",
     accent: "from-pink-500/20 to-transparent",
   },
   {
-    icon: Play,
-    title: "Live preview",
+    icon: LayoutTemplate,
+    title: "One-click templates",
     description:
-      "Watch changes as you type. Tweak copy and colors with instant feedback — no export-and-wait loop.",
+      "25+ long-form layouts and dozens of short clips — pick, customize, export.",
     href: "/templates",
+    accent: "from-[#0b84f3]/20 to-transparent",
+  },
+  {
+    icon: Layers,
+    title: "Multi-scene videos",
+    description:
+      "Build 10–50 scene videos with intro, stats, gallery, quotes, and outro — no timeline.",
+    href: "/templates",
+    accent: "from-cyan-500/20 to-transparent",
+  },
+  {
+    icon: Zap,
+    title: "Fast export",
+    description:
+      "Live preview as you edit. Export MP4 in 720p, Full HD, or 4K when you're ready.",
+    href: "/exports",
     accent: "from-amber-500/20 to-transparent",
   },
   {
-    icon: Download,
-    title: "Export MP4",
+    icon: Play,
+    title: "Long-form video support",
     description:
-      "Download production-ready MP4s in one click. Landscape, vertical, or square — 720p up to 4K.",
-    href: "/exports",
+      "Professional videos from 30 seconds to 5 minutes — reports, pitches, and presentations.",
+    href: "/showcase",
     accent: "from-emerald-500/20 to-transparent",
   },
 ] as const;
@@ -92,30 +103,38 @@ const FEATURES = [
 const STEPS = [
   {
     step: "01",
-    title: "Choose your starting point",
-    body: "Start from a template, paste a website URL, or upload a spreadsheet — whichever fits your content.",
+    title: "Choose a template",
+    body: "Pick from business reports, social clips, marketing ads, or data-driven layouts.",
   },
   {
     step: "02",
-    title: "Customize & brand",
-    body: "Edit titles and colors, apply your brand kit, and fine-tune the look until the preview feels right.",
+    title: "Upload content",
+    body: "Add images, videos, CSV, Excel, or JSON — or paste a website URL to auto-fill.",
   },
   {
     step: "03",
-    title: "Preview & export",
-    body: "Review the live preview, hit export, and download your finished MP4 when rendering completes.",
+    title: "Customize",
+    body: "Edit text, colors, scenes, animation presets, and music from the audio library.",
+  },
+  {
+    step: "04",
+    title: "Preview",
+    body: "Watch every scene update live before you commit to an export.",
+  },
+  {
+    step: "05",
+    title: "Export",
+    body: "Download MP4 — watermark-free on Pro, with priority rendering.",
   },
 ] as const;
 
-const SHOWCASE = TEMPLATE_CATALOG.filter(
-  (t) => t.popular || (t.category !== "Official" && t.category !== "Starter")
-).slice(0, 6);
+const SHOWCASE = TEMPLATE_CATALOG.filter((t) => t.featured || t.longForm).slice(0, 6);
 
 const STATS = [
   { value: String(TEMPLATE_CATALOG.length), label: "Templates" },
-  { value: "3", label: "Input sources" },
-  { value: "MP4", label: "Export format" },
-  { value: "0", label: "No timeline" },
+  { value: "5 min", label: "Max duration" },
+  { value: "50", label: "Scenes per video" },
+  { value: "4K", label: "Export quality" },
 ] as const;
 
 function LandingNav() {
@@ -375,20 +394,16 @@ export function LandingPage() {
             >
               <Badge className="mb-4 max-w-full whitespace-normal border-[#0b84f3]/30 bg-[#0b84f3]/10 px-2.5 py-1 text-[11px] leading-snug text-[#93c5fd] hover:bg-[#0b84f3]/10 sm:mb-5 sm:text-xs">
                 <Sparkles className="mr-1 inline h-3 w-3 shrink-0" />
-                Templates · URL import · Spreadsheet automation
+                Long-form · Multi-scene · Data to video
               </Badge>
-              <h1 className="font-display text-[2rem] font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
-                Your content.
-                <br />
-                <span className="bg-gradient-to-r from-[#0b84f3] via-[#38bdf8] to-[#a78bfa] bg-clip-text text-transparent">
-                  On video. Fast.
-                </span>
+              <h1 className="font-display text-[1.75rem] font-semibold leading-[1.12] tracking-tight sm:text-4xl lg:text-[2.75rem] xl:text-5xl">
+                Turn Data, Content, and Ideas into Professional Videos in Minutes.
               </h1>
               <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground sm:mt-5 sm:text-base lg:mx-0 lg:text-lg">
+                Create business reports, presentations, social media videos, and
+                analytics videos without complex editing.{" "}
                 <strong className="font-medium text-foreground">{APP_NAME}</strong>{" "}
-                turns templates, websites, and spreadsheets into branded videos.
-                Edit in a simple workflow, preview live, and export MP4 — no
-                timeline, no motion-design degree.
+                keeps it template-based — powerful output, simple workflow.
               </p>
               <div className="mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3 lg:justify-start">
                 <Button
@@ -398,7 +413,7 @@ export function LandingPage() {
                   className="h-11 w-full rounded-xl sm:w-auto"
                 >
                   <Link href="/templates">
-                    <Wand2 className="h-4 w-4" /> Start creating
+                    <Wand2 className="h-4 w-4" /> Start Creating
                   </Link>
                 </Button>
                 <Button
@@ -407,13 +422,13 @@ export function LandingPage() {
                   size="lg"
                   className="h-11 w-full rounded-xl sm:w-auto"
                 >
-                  <Link href="/dashboard">
-                    Open dashboard <ArrowRight className="h-4 w-4" />
+                  <Link href="/templates">
+                    Explore Templates <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
               </div>
               <p className="mt-3 text-[11px] text-muted-foreground sm:mt-4 sm:text-xs">
-                No install required · {TEMPLATE_CATALOG.length} templates · Free to try
+                No install required · {TEMPLATE_CATALOG.length} templates · Free plan available
               </p>
             </motion.div>
 
@@ -425,6 +440,26 @@ export function LandingPage() {
             >
               <HeroMockup />
             </motion.div>
+          </div>
+        </section>
+
+        {/* Trusted by */}
+        <section className="border-b border-white/5 bg-black/15 px-4 py-8 lg:px-6">
+          <div className="mx-auto max-w-6xl">
+            <p className="mb-6 text-center text-xs uppercase tracking-widest text-muted-foreground">
+              Trusted by
+            </p>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {TRUSTED_BY.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex flex-col items-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] py-4"
+                >
+                  <item.icon className="h-5 w-5 text-[#0b84f3]" />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -452,12 +487,11 @@ export function LandingPage() {
                 <Layers className="mr-1 h-3 w-3" /> Everything you need
               </Badge>
               <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
-                Three ways in. One video out.
+                Everything you need for professional video
               </h2>
               <p className="mt-3 text-sm text-muted-foreground sm:mt-4 sm:text-base">
-                Framekit is built for people who need video output, not a full
-                editing suite — marketers, founders, analysts, and creators who
-                want results today.
+                Framekit is built for teams who need polished long-form output
+                without a full editing suite — marketers, founders, analysts, and creators.
               </p>
             </motion.div>
 
@@ -505,7 +539,7 @@ export function LandingPage() {
                 <Zap className="mr-1 h-3 w-3" /> Simple workflow
               </Badge>
               <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
-                From idea to MP4 in three steps
+                From template to export in five steps
               </h2>
               <p className="mt-3 text-sm text-muted-foreground sm:mt-4 sm:text-base">
                 Skip the learning curve. Framekit keeps the workflow short so you
@@ -513,7 +547,7 @@ export function LandingPage() {
               </p>
             </motion.div>
 
-            <div className="mt-8 grid gap-6 sm:mt-14 sm:gap-8 lg:grid-cols-3">
+            <div className="mt-8 grid gap-6 sm:mt-14 sm:gap-8 sm:grid-cols-2 lg:grid-cols-5">
               {STEPS.map((item, i) => (
                 <motion.div
                   key={item.step}
@@ -556,19 +590,27 @@ export function LandingPage() {
                   <LayoutTemplate className="mr-1 h-3 w-3" /> Template gallery
                 </Badge>
                 <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
-                  {TEMPLATE_CATALOG.length} templates for every format
+                  Templates for every use case
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground sm:mt-3 sm:text-base">
-                  YouTube shorts, Instagram reels, product ads, podcast openers,
-                  and data slideshows — each one editable and export-ready.
+                  Business reports, social media, marketing, corporate presentations,
+                  and data-driven analytics — 30 seconds to 5 minutes.
                 </p>
               </div>
               <Button asChild variant="outline" className="w-full sm:w-auto sm:self-start">
                 <Link href="/templates">
-                  Browse all templates <ArrowRight className="h-4 w-4" />
+                  Browse marketplace <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
             </motion.div>
+
+            <div className="mt-8 flex flex-wrap gap-2">
+              {LONG_FORM_CATEGORIES.map((cat) => (
+                <Badge key={cat} variant="outline" className="border-white/10">
+                  {cat}
+                </Badge>
+              ))}
+            </div>
 
             <div className="mt-8 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:mt-10 lg:grid-cols-3">
               {(SHOWCASE.length > 0 ? SHOWCASE : TEMPLATE_CATALOG.slice(0, 6)).map(
@@ -626,7 +668,97 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Use cases */}
+        {/* Showcase examples */}
+        <section id="showcase" className="border-t border-white/5 bg-black/25 px-4 py-12 sm:py-16 lg:px-6">
+          <div className="mx-auto max-w-6xl">
+            <motion.div {...fadeUp} className="mb-8 text-center">
+              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+                See what you can create
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Business reports, analytics videos, product ads, and company presentations.
+              </p>
+            </motion.div>
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 md:grid-cols-4">
+              {[
+                { title: "Business reports", href: "/templates", body: "Monthly KPIs & executive summaries" },
+                { title: "Analytics videos", href: "/data-to-video", body: "CSV, Excel, JSON to animated charts" },
+                { title: "Product ads", href: "/website-to-video", body: "Launch videos from any URL" },
+                { title: "Company presentations", href: "/showcase", body: "Multi-scene decks up to 5 minutes" },
+              ].map((item) => (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="rounded-2xl border border-white/8 bg-card/40 p-5 transition hover:border-[#0b84f3]/30 sm:p-6"
+                >
+                  <h3 className="text-sm font-medium sm:text-base">{item.title}</h3>
+                  <p className="mt-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+                    {item.body}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className="scroll-mt-20 px-4 py-12 sm:py-20 lg:px-6 lg:py-28">
+          <div className="mx-auto max-w-6xl">
+            <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
+              <Badge variant="outline" className="mb-3 border-white/10 sm:mb-4">
+                Simple pricing
+              </Badge>
+              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
+                Start free. Upgrade when you scale.
+              </h2>
+            </motion.div>
+
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:mt-14">
+              <motion.div
+                {...fadeUp}
+                className="rounded-2xl border border-white/8 bg-card/50 p-6 sm:p-8"
+              >
+                <p className="text-sm font-medium text-muted-foreground">Free</p>
+                <p className="mt-2 font-display text-3xl font-semibold">$0</p>
+                <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
+                  <li>5 exports per month</li>
+                  <li>Watermark on exports</li>
+                  <li>720p export quality</li>
+                  <li>Limited template library</li>
+                </ul>
+                <Button asChild variant="outline" className="mt-8 w-full rounded-xl">
+                  <Link href="/templates">Get started free</Link>
+                </Button>
+              </motion.div>
+
+              <motion.div
+                {...fadeUp}
+                transition={{ ...fadeUp.transition, delay: 0.08 }}
+                className="relative rounded-2xl border border-[#0b84f3]/30 bg-gradient-to-br from-[#0b84f3]/10 to-card p-6 sm:p-8"
+              >
+                <Badge className="absolute right-4 top-4 bg-[#0b84f3] text-white">
+                  Popular
+                </Badge>
+                <p className="text-sm font-medium text-[#93c5fd]">Pro</p>
+                <p className="mt-2 font-display text-3xl font-semibold">
+                  $29<span className="text-base font-normal text-muted-foreground">/mo</span>
+                </p>
+                <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
+                  <li>Unlimited exports</li>
+                  <li>Full HD and 4K export</li>
+                  <li>All premium templates</li>
+                  <li>Brand kit & asset library</li>
+                  <li>Priority rendering</li>
+                </ul>
+                <Button asChild variant="glow" className="mt-8 w-full rounded-xl">
+                  <Link href="/templates">Upgrade to Pro</Link>
+                </Button>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Use cases — quick links */}
         <section className="border-t border-white/5 bg-black/25 px-4 py-12 sm:py-16 lg:px-6">
           <div className="mx-auto max-w-6xl">
             <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 md:grid-cols-3">

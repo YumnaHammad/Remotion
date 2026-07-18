@@ -1,8 +1,11 @@
 import type { BrandSettings, VideoTemplateProps } from "@/types/video";
+import type { SceneVideoProps } from "@/types/scene-video";
 import type { TemplateCatalogItem } from "@/templates/catalog";
 import { getCompositionDimensions } from "@/templates/catalog";
 import { applyBrandToProps } from "@/utils/brand-defaults";
 import { genId } from "@/lib/project-factory";
+import { scenesWithIds } from "@/lib/scene-presets";
+import { totalSceneDuration } from "@/types/scene-video";
 import type { SimpleVideoProject, UrlMetadata, DataRow } from "@/types/video";
 
 /** Build default template props with brand kit applied. */
@@ -31,8 +34,42 @@ export function createProjectFromTemplate(
   meta?: { name?: string; sourceType?: SimpleVideoProject["sourceType"] }
 ): SimpleVideoProject {
   const dims = getCompositionDimensions(template.compositionId);
-  const props = buildTemplateProps(brand, propsOverrides);
   const now = new Date().toISOString();
+
+  if (template.longForm && template.defaultScenes) {
+    const scenes = scenesWithIds(template.defaultScenes);
+    const sceneProps: SceneVideoProps = {
+      title: propsOverrides.title ?? template.name,
+      subtitle:
+        propsOverrides.subtitle ?? "Edit scenes in the next step",
+      accent: propsOverrides.accent ?? brand.colors.accent,
+      brandColor: propsOverrides.brandColor ?? brand.colors.primary,
+      fontFamily: propsOverrides.fontFamily ?? brand.fontFamily,
+      logoUrl: propsOverrides.logoUrl ?? brand.logoUrl,
+      musicUrl: propsOverrides.musicUrl ?? brand.musicUrl,
+      scenes,
+    };
+    const durationInFrames = totalSceneDuration(scenes);
+
+    return {
+      id: genId("svp"),
+      name: meta?.name ?? template.name,
+      sourceType: meta?.sourceType ?? "template",
+      compositionId: "LongFormVideo",
+      templateId: template.id,
+      props: sceneProps,
+      aspectRatio: template.aspectRatio,
+      durationInFrames,
+      fps: template.fps,
+      width: template.width,
+      height: template.height,
+      createdAt: now,
+      updatedAt: now,
+      status: "draft",
+    };
+  }
+
+  const props = buildTemplateProps(brand, propsOverrides);
 
   return {
     id: genId("svp"),

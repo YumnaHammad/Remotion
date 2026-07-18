@@ -1,9 +1,15 @@
 import type { AspectRatio } from "@/types";
+import type { LongFormCategory, TemplateDifficulty } from "@/types/scene-video";
+import type { VideoScene } from "@/types/scene-video";
 import { MOCK_TEMPLATES } from "@/data/mock";
 import {
   REMOTION_OFFICIAL_CATALOG,
   REMOTION_OFFICIAL_DIMS,
 } from "@/templates/remotion-official-catalog";
+import {
+  buildLongFormCatalogItems,
+  LONG_FORM_CATEGORIES,
+} from "@/templates/long-form-catalog";
 
 export type TemplateCategory =
   | "Official"
@@ -34,6 +40,15 @@ export interface TemplateCatalogItem {
   /** From remotion.dev/templates */
   official?: boolean;
   remotionUrl?: string;
+  /** Long-form multi-scene template (30s–5min) */
+  longForm?: boolean;
+  longFormCategory?: LongFormCategory;
+  difficulty?: TemplateDifficulty;
+  estimatedDuration?: string;
+  featured?: boolean;
+  trending?: boolean;
+  sceneCount?: number;
+  defaultScenes?: Omit<VideoScene, "id">[];
 }
 
 const REGISTRY_DIMS: Record<
@@ -51,6 +66,7 @@ const REGISTRY_DIMS: Record<
   Explainer: { width: 1920, height: 1080, fps: 30, durationInFrames: 270, aspectRatio: "16:9" },
   SaasDemo: { width: 1920, height: 1080, fps: 30, durationInFrames: 300, aspectRatio: "16:9" },
   DataSlideshow: { width: 1920, height: 1080, fps: 30, durationInFrames: 300, aspectRatio: "16:9" },
+  LongFormVideo: { width: 1920, height: 1080, fps: 30, durationInFrames: 3600, aspectRatio: "16:9" },
   ...REMOTION_OFFICIAL_DIMS,
 };
 
@@ -95,11 +111,17 @@ export const BUILTIN_TEMPLATE_CATALOG: TemplateCatalogItem[] = MOCK_TEMPLATES.ma
   };
 });
 
-/** Full template gallery — official Remotion demos + built-in templates. */
+/** Premium long-form templates (25 layouts, 30s–5min). */
+export const LONG_FORM_TEMPLATE_CATALOG = buildLongFormCatalogItems();
+
+/** Full template gallery — long-form + official demos + built-in templates. */
 export const TEMPLATE_CATALOG: TemplateCatalogItem[] = [
+  ...LONG_FORM_TEMPLATE_CATALOG,
   ...REMOTION_OFFICIAL_CATALOG,
   ...BUILTIN_TEMPLATE_CATALOG,
 ];
+
+export { LONG_FORM_CATEGORIES };
 
 export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
   "Official",

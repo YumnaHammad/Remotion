@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TemplatePreview } from "@/features/shared/template-preview";
+import { MusicPicker } from "@/features/shared/music-picker";
 import { ExportVideoButton } from "@/features/shared/export-video-button";
 import { useBrandKit } from "@/hooks/use-brand-kit";
 import { useBrandStore } from "@/stores/brand-store";
@@ -326,17 +327,10 @@ export function BrandKitFeature() {
           </section>
 
           <section className="space-y-2 rounded-xl border border-border bg-card p-5 shadow-sm">
-            <Label>Background music URL (optional)</Label>
-            <Input
-              placeholder="https://example.com/track.mp3"
+            <MusicPicker
               value={brand.musicUrl ?? ""}
-              onChange={(e) =>
-                updateBrand({ musicUrl: e.target.value || undefined })
-              }
+              onChange={(url) => updateBrand({ musicUrl: url || undefined })}
             />
-            <p className="text-xs text-muted-foreground">
-              Direct MP3 link — passed to templates that support audio.
-            </p>
           </section>
 
           <section className="space-y-3 rounded-xl border border-border bg-card p-5 shadow-sm">

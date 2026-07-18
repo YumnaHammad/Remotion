@@ -9,6 +9,7 @@ export const templateSchema = z.object({
   brandColor: zColor(),
   fontFamily: z.string().optional(),
   logoUrl: z.string().optional(),
+  musicUrl: z.string().optional(),
 });
 
 export type TemplateProps = z.infer<typeof templateSchema>;

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Copy, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react";
+import { Copy, LayoutGrid, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ProjectPreview } from "@/components/shared/project-preview";
 import { NewProjectDialog } from "@/components/shared/new-project-dialog";
+import { ShowcaseGallery } from "@/features/showcase/showcase-gallery";
 import { useProjectStore } from "@/stores/project-store";
+import { TEMPLATE_CATALOG } from "@/templates/catalog";
 import { formatRelative } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -36,7 +39,7 @@ export default function ProjectsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
           <p className="text-sm text-muted-foreground">
-            Manage compositions, duplicates, and drafts
+            Timeline editor projects and the full template showcase
           </p>
         </div>
         <NewProjectDialog
@@ -48,65 +51,97 @@ export default function ProjectsPage() {
         />
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          placeholder="Search projects…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
+      <Tabs defaultValue="showcase">
+        <TabsList>
+          <TabsTrigger value="showcase" className="gap-1.5">
+            <LayoutGrid className="h-3.5 w-3.5" />
+            Showcase ({TEMPLATE_CATALOG.length})
+          </TabsTrigger>
+          <TabsTrigger value="mine">
+            My projects ({projects.length})
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((p) => (
-          <div
-            key={p.id}
-            className="group overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:border-primary/30"
-          >
-            <Link href={`/editor/${p.id}`}>
-              <ProjectPreview project={p} className="rounded-none" />
-            </Link>
-            <div className="flex items-start justify-between gap-2 p-3.5">
-              <div className="min-w-0">
-                <Link
-                  href={`/editor/${p.id}`}
-                  className="block truncate text-sm font-medium hover:text-primary"
-                >
-                  {p.name}
-                </Link>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {formatRelative(p.updatedAt)} · {p.settings.aspectRatio}
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                <Badge variant="secondary">{p.status}</Badge>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon-sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => duplicateProject(p.id)}>
-                      <Copy className="h-4 w-4" /> Duplicate
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={() => {
-                        deleteProject(p.id);
-                        toast.success("Project deleted");
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
+        <TabsContent value="showcase" className="mt-6 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Every template with a live preview — click any card for full-screen
+            preview, export, or &quot;Use template&quot; to start editing.
+          </p>
+          <ShowcaseGallery />
+        </TabsContent>
+
+        <TabsContent value="mine" className="mt-6 space-y-4">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Search projects…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
-        ))}
-      </div>
+
+          {filtered.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
+              No timeline projects yet.{" "}
+              <Link href="/showcase" className="text-primary hover:underline">
+                Browse the showcase
+              </Link>{" "}
+              or create a new project.
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {filtered.map((p) => (
+                <div
+                  key={p.id}
+                  className="group overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:border-primary/30"
+                >
+                  <Link href={`/editor/${p.id}`}>
+                    <ProjectPreview project={p} className="rounded-none" />
+                  </Link>
+                  <div className="flex items-start justify-between gap-2 p-3.5">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/editor/${p.id}`}
+                        className="block truncate text-sm font-medium hover:text-primary"
+                      >
+                        {p.name}
+                      </Link>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatRelative(p.updatedAt)} · {p.settings.aspectRatio}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary">{p.status}</Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon-sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => duplicateProject(p.id)}>
+                            <Copy className="h-4 w-4" /> Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => {
+                              deleteProject(p.id);
+                              toast.success("Project deleted");
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -17,16 +17,16 @@ export function DashboardShell({
   const sidebarCollapsed = useUIStore((s) => s.sidebarCollapsed);
 
   return (
-    <div className="mesh-bg min-h-dvh">
+    <div className="mesh-bg h-dvh overflow-hidden">
       <Sidebar />
       <div
         className={cn(
-          "flex min-h-dvh min-w-0 flex-col transition-[margin-left] duration-300 ease-out",
+          "flex h-dvh min-w-0 flex-col overflow-hidden transition-[margin-left] duration-300 ease-out",
           sidebarCollapsed ? "lg:ml-[68px]" : "lg:ml-[240px]"
         )}
       >
         <Header title={title} />
-        <main className="scrollbar-thin flex-1 overflow-y-auto overscroll-y-contain p-3 sm:p-4 lg:p-6">
+        <main className="scrollbar-thin min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-3 sm:p-4 lg:p-6">
           {children}
         </main>
       </div>

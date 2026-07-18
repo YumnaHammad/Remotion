@@ -1,4 +1,5 @@
 import type { AspectRatio, ExportFormat, ExportQuality } from "./index";
+import type { SceneVideoProps } from "./scene-video";
 
 /** Metadata extracted from a website URL (Open Graph / HTML). */
 export interface UrlMetadata {
@@ -68,7 +69,7 @@ export interface SimpleVideoProject {
   sourceType: VideoSourceType;
   compositionId: string;
   templateId?: string;
-  props: VideoTemplateProps | DataVideoProps;
+  props: VideoTemplateProps | DataVideoProps | SceneVideoProps;
   aspectRatio: AspectRatio;
   durationInFrames: number;
   fps: number;
