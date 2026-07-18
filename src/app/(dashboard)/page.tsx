@@ -4,31 +4,57 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Clapperboard,
-  Clock,
   Download,
-  FolderOpen,
-  HardDrive,
+  FileSpreadsheet,
+  Globe,
+  LayoutTemplate,
+  Palette,
   Play,
-  Sparkles,
-  TrendingUp,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/components/shared/primitives";
-import { ProjectPreview } from "@/components/shared/project-preview";
-import { NewProjectDialog } from "@/components/shared/new-project-dialog";
-import { CreateAIDialog } from "@/components/shared/create-ai-dialog";
 import { useProjectStore } from "@/stores/project-store";
-import { useUIStore } from "@/stores/ui-store";
-import { formatBytes, formatRelative } from "@/lib/utils";
+import { useSimpleVideoStore } from "@/stores/simple-video-store";
+import { formatRelative } from "@/lib/utils";
+
+const QUICK_LINKS = [
+  {
+    href: "/templates",
+    label: "Templates",
+    desc: "Pick a style and customize",
+    icon: LayoutTemplate,
+  },
+  {
+    href: "/website-to-video",
+    label: "Website to Video",
+    desc: "Paste a URL → auto-fill video",
+    icon: Globe,
+  },
+  {
+    href: "/data-to-video",
+    label: "Data to Video",
+    desc: "CSV, Excel, or JSON → slides",
+    icon: FileSpreadsheet,
+  },
+  {
+    href: "/brand",
+    label: "Brand Kit",
+    desc: "Logo, colors, fonts",
+    icon: Palette,
+  },
+] as const;
 
 export default function HomePage() {
-  const projects = useProjectStore((s) => s.projects);
   const renders = useProjectStore((s) => s.renders);
-  const { storageUsed, storageLimit } = useUIStore();
+  const simpleProjects = useSimpleVideoStore((s) => s.projects);
   const activeRenders = renders.filter(
-    (r) => r.status === "rendering" || r.status === "queued" || r.status === "processing"
+    (r) =>
+      r.status === "rendering" ||
+      r.status === "queued" ||
+      r.status === "processing"
   );
 
   return (
@@ -42,119 +68,118 @@ export default function HomePage() {
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <Badge className="mb-3 bg-[#0b84f3] text-white hover:bg-[#0b84f3]">
-              <Clapperboard className="mr-1 h-3 w-3" /> Remotion Studio
+              <Video className="mr-1 h-3 w-3" /> Video SaaS
             </Badge>
             <h1 className="font-display text-3xl font-semibold tracking-tight lg:text-4xl">
-              Make videos programmatically
+              Templates & automation
             </h1>
             <p className="mt-2 max-w-xl text-muted-foreground">
-              A Remotion operating system — compositions, timeline, transitions,
-              captions, 3D, and render queues in one studio.
+              Turn websites and spreadsheets into videos. Pick a template, edit
+              text and colors, preview live, export MP4 — no timeline needed.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <NewProjectDialog
-              trigger={
-                <Button variant="glow" size="lg">
-                  <Clapperboard className="h-4 w-4" /> New project
-                </Button>
-              }
-            />
-            <Button asChild variant="outline" size="lg">
-              <Link href="/templates">Browse templates</Link>
+            <Button asChild variant="glow" size="lg">
+              <Link href="/templates">
+                <Clapperboard className="h-4 w-4" /> New video
+              </Link>
             </Button>
-            <CreateAIDialog
-              trigger={
-                <Button variant="ghost" size="lg">
-                  <Sparkles className="h-4 w-4" /> Create with AI
-                </Button>
-              }
-            />
+            <Button asChild variant="outline" size="lg">
+              <Link href="/website-to-video">
+                <Globe className="h-4 w-4" /> From URL
+              </Link>
+            </Button>
           </div>
         </div>
       </motion.section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Projects"
-          value={String(projects.length)}
-          hint="+2 this week"
-          icon={FolderOpen}
+          label="Your videos"
+          value={String(simpleProjects.length)}
+          hint="Simple workflow projects"
+          icon={Video}
         />
         <StatCard
-          label="Renders today"
+          label="Exports"
           value={String(renders.length)}
-          hint={`${activeRenders.length} in queue`}
+          hint={`${activeRenders.length} in progress`}
           icon={Download}
         />
         <StatCard
-          label="Avg. render time"
-          value="2m 14s"
-          hint="−18% vs last week"
-          icon={Clock}
+          label="Templates"
+          value="10+"
+          hint="Remotion compositions"
+          icon={LayoutTemplate}
         />
         <StatCard
-          label="Engagement"
-          value="+34%"
-          hint="Template reuse rate"
-          icon={TrendingUp}
+          label="Brand kit"
+          value="1"
+          hint="Applied to all videos"
+          icon={Palette}
         />
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {QUICK_LINKS.map((item, i) => (
+          <motion.div
+            key={item.href}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+          >
+            <Link
+              href={item.href}
+              className="block rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md"
+            >
+              <item.icon className="mb-3 h-6 w-6 text-primary" />
+              <p className="font-medium">{item.label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+            </Link>
+          </motion.div>
+        ))}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="space-y-4 lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Recent projects</h2>
+            <h2 className="text-sm font-semibold">Recent videos</h2>
             <Button asChild variant="ghost" size="sm">
-              <Link href="/projects">View all</Link>
+              <Link href="/exports">View exports</Link>
             </Button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {projects.slice(0, 4).map((p, i) => (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
+          {simpleProjects.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+              No videos yet.{" "}
+              <Link href="/templates" className="text-primary hover:underline">
+                Create your first
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {simpleProjects.slice(0, 4).map((p) => (
                 <Link
-                  href={`/editor/${p.id}`}
-                  className="group block overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:border-primary/30 hover:shadow-md"
+                  key={p.id}
+                  href={`/create/${p.id}`}
+                  className="group flex items-center gap-3 rounded-xl border border-border bg-card p-4 transition hover:border-primary/30"
                 >
-                  <ProjectPreview project={p} className="rounded-none">
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/20 group-hover:opacity-100">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-black shadow-lg">
-                        <Play className="h-4 w-4 fill-current" />
-                      </div>
-                    </div>
-                  </ProjectPreview>
-                  <div className="p-3.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="truncate text-sm font-medium">{p.name}</p>
-                      <Badge
-                        variant={
-                          p.status === "ready"
-                            ? "success"
-                            : p.status === "rendering"
-                              ? "warning"
-                              : "secondary"
-                        }
-                      >
-                        {p.status}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Edited {formatRelative(p.updatedAt)} · {p.settings.aspectRatio}
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Play className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.compositionId} · {formatRelative(p.updatedAt)}
                     </p>
                   </div>
                 </Link>
-              </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-sm font-semibold">Rendering queue</h2>
+          <h2 className="text-sm font-semibold">Export queue</h2>
           <div className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-sm">
             {renders.slice(0, 4).map((r) => (
               <div key={r.id} className="space-y-1.5">
@@ -173,25 +198,11 @@ export default function HomePage() {
                   </Badge>
                 </div>
                 <Progress value={r.progress} />
-                <p className="text-[11px] text-muted-foreground">
-                  {r.format.toUpperCase()} · {r.quality} · {r.progress}%
-                </p>
               </div>
             ))}
             <Button asChild variant="outline" size="sm" className="w-full">
-              <Link href="/export">Open Export Center</Link>
+              <Link href="/exports">Open Exports</Link>
             </Button>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-            <div className="mb-3 flex items-center gap-2">
-              <HardDrive className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">Storage</h3>
-            </div>
-            <Progress value={(storageUsed / storageLimit) * 100} />
-            <p className="mt-2 text-xs text-muted-foreground">
-              {formatBytes(storageUsed)} of {formatBytes(storageLimit)} used
-            </p>
           </div>
         </section>
       </div>

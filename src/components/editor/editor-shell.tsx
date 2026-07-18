@@ -8,7 +8,6 @@ import {
   Redo2,
   Save,
   Scissors,
-  Sparkles,
   Trash2,
   Undo2,
 } from "lucide-react";
@@ -197,15 +196,6 @@ export function EditorTopBar() {
       >
         <Save className="h-3.5 w-3.5" />
         Save
-      </Button>
-
-      <Button
-        size="sm"
-        variant="secondary"
-        className="bg-white/10 text-white hover:bg-white/15"
-      >
-        <Sparkles className="h-3.5 w-3.5" />
-        AI Assist
       </Button>
 
       <ExportDialog />

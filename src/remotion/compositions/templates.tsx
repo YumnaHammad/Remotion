@@ -7,20 +7,11 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { z } from "zod";
-import { zColor } from "@remotion/zod-types";
 import { ParticleField } from "../components/ParticleField";
-import { DEFAULT_FONT } from "../fonts";
+import type { TemplateProps } from "./templates-schema";
 
-/** Zod schema powering Remotion Studio prop controls + type-safe defaults. */
-export const templateSchema = z.object({
-  title: z.string(),
-  subtitle: z.string(),
-  accent: zColor(),
-  brandColor: zColor(),
-});
-
-export type TemplateProps = z.infer<typeof templateSchema>;
+/** Safe for @remotion/player in the browser — no zod or google-fonts loader. */
+const DEFAULT_FONT = "Inter, system-ui, sans-serif";
 
 const defaultProps: TemplateProps = {
   title: "LUMEN",

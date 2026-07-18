@@ -12,9 +12,9 @@ import {
   StartupPromo,
   TikTokTrend,
   YoutubeShort,
-  templateSchema,
-  type TemplateProps,
 } from "./compositions/templates";
+import { templateSchema } from "./compositions/templates-schema";
+import type { TemplateProps } from "./compositions/templates-schema";
 import { ThreeShowcase } from "./compositions/ThreeShowcase";
 import { CaptionDemo } from "./compositions/Captions";
 import {
@@ -26,6 +26,8 @@ import {
   PrimitivesLab,
 } from "./labs/PrimitivesLab";
 import { AnimationLab } from "./labs/AnimationLab";
+import { DataSlideshow } from "./compositions/DataSlideshow";
+import { dataVideoSchema } from "./compositions/data-slideshow-schema";
 import { MOCK_PROJECTS, SAMPLE_IMAGE } from "@/data/mock";
 
 const defaultProject = MOCK_PROJECTS[0];
@@ -150,6 +152,23 @@ export const RemotionRoot: React.FC = () => {
           width={1920}
           height={1080}
           defaultProps={templateDefaults}
+        />
+        <Composition
+          id="DataSlideshow"
+          component={DataSlideshow}
+          schema={dataVideoSchema}
+          durationInFrames={300}
+          fps={30}
+          width={1920}
+          height={1080}
+          defaultProps={{
+            title: "Data Report",
+            subtitle: "Your spreadsheet, animated",
+            accent: "#0b84f3",
+            brandColor: "#6366f1",
+            rows: [{ Product: "Widget Pro", Revenue: "$12,400" }],
+            columns: ["Product", "Revenue"],
+          }}
         />
       </Folder>
 

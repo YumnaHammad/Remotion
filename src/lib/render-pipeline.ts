@@ -51,7 +51,16 @@ export function stageLabel(stage: PipelineStage) {
   return labels[stage];
 }
 
-/** Maps quality preset to Remotion scale */
-export function qualityToScale(quality: PipelineJob["quality"]) {
-  return { "720p": 0.67, "1080p": 1, "2k": 1.33, "4k": 2 }[quality];
+/** Maps quality preset to Remotion scale relative to composition height. */
+export function qualityToScale(
+  quality: PipelineJob["quality"],
+  compositionHeight = 1080
+) {
+  const targetHeight = {
+    "720p": 720,
+    "1080p": 1080,
+    "2k": 1440,
+    "4k": 2160,
+  }[quality];
+  return targetHeight / compositionHeight;
 }

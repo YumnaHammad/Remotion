@@ -1,7 +1,7 @@
 import type { AspectRatio, ExportQuality } from "@/types";
 
 export const APP_NAME = "Remotion Studio";
-export const APP_TAGLINE = "Make videos programmatically";
+export const APP_TAGLINE = "Templates & video automation";
 
 export const ASPECT_PRESETS: Record<
   AspectRatio,
@@ -27,39 +27,22 @@ export const NAV_SECTIONS = [
     label: "Create",
     items: [
       { href: "/", label: "Dashboard", icon: "Home" },
-      { href: "/projects", label: "Projects", icon: "FolderOpen" },
       { href: "/templates", label: "Templates", icon: "LayoutTemplate" },
+      { href: "/website-to-video", label: "Website to Video", icon: "Globe" },
+      { href: "/data-to-video", label: "Data to Video", icon: "FileSpreadsheet" },
     ],
   },
   {
-    label: "Studios",
+    label: "Brand",
     items: [
-      { href: "/storyboard", label: "Storyboard", icon: "Clapperboard" },
-      { href: "/compositions", label: "Compositions", icon: "Boxes" },
-      { href: "/timeline", label: "Timeline", icon: "ListVideo" },
-      { href: "/assets", label: "Assets", icon: "Images" },
-      { href: "/audio", label: "Audio", icon: "Music" },
-    ],
-  },
-  {
-    label: "Labs",
-    items: [
-      { href: "/showcase", label: "Showcase", icon: "Sparkles" },
-      { href: "/primitives", label: "Primitives", icon: "Layers" },
-      { href: "/animations", label: "Animations", icon: "Wand2" },
-      { href: "/transitions", label: "Transitions", icon: "ArrowLeftRight" },
-      { href: "/captions", label: "Captions", icon: "Captions" },
-      { href: "/three", label: "3D Studio", icon: "Box" },
-      { href: "/player-lab", label: "Player Lab", icon: "PlayCircle" },
-    ],
-  },
-  {
-    label: "Platform",
-    items: [
-      { href: "/render-center", label: "Render Center", icon: "Server" },
       { href: "/brand", label: "Brand Kit", icon: "Palette" },
-      { href: "/team", label: "Team", icon: "Users" },
-      { href: "/analytics", label: "Analytics", icon: "BarChart3" },
+      { href: "/exports", label: "Exports", icon: "Download" },
+    ],
+  },
+  {
+    label: "Advanced",
+    items: [
+      { href: "/projects", label: "Timeline Projects", icon: "FolderOpen" },
       { href: "/settings", label: "Settings", icon: "Settings" },
     ],
   },

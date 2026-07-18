@@ -1,6 +1,8 @@
-# Remotion Studio
+# Remotion Studio — Templates & Automation
 
-Production-grade Remotion operating system — compositions, timeline editing, labs, and render queues. Built with **Next.js**, **Remotion**, **Zustand**, and **Tailwind**.
+Lightweight video SaaS built with **Next.js**, **Remotion**, **Zustand**, and **Tailwind**.
+
+Turn websites and spreadsheets into videos — pick a template, edit text and colors, preview live, export MP4.
 
 ## Quick start
 
@@ -11,25 +13,40 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Official Remotion Studio (composition registry):
+For real MP4 export locally:
 
 ```bash
-npm run remotion
+REMOTION_RENDER=1 npm run dev
 ```
 
-## Studio routes
+## Main pages
 
 | Route | Purpose |
 |-------|---------|
-| `/` · `/dashboard` | Enterprise dashboard |
-| `/projects` · `/templates` | Projects & template marketplace |
-| `/editor/[id]` | Full timeline editor |
-| `/storyboard` | Scene planning |
-| `/compositions` | Composition registry inspector |
-| `/timeline` · `/assets` · `/audio` | Timeline / assets / mixer hubs |
-| `/showcase` | Capability showcase |
-| `/primitives` · `/animations` · `/transitions` · `/captions` · `/three` · `/player-lab` | Interactive Remotion labs |
-| `/render-center` | Render queue & export history |
+| `/` | Dashboard |
+| `/templates` | Template gallery → simple create workflow |
+| `/website-to-video` | Paste URL → auto-fill from metadata |
+| `/data-to-video` | Upload CSV / Excel / JSON → slideshow video |
+| `/brand` | Brand kit (logo, colors, font) — localStorage |
+| `/exports` | Download renders + manage projects |
+| `/create/[id]` | 5-step editor (no timeline) |
+| `/projects` | Advanced timeline projects (preserved) |
+| `/editor/[id]` | Full timeline editor (preserved) |
+
+## Folder structure
+
+```
+src/
+  app/              # Next.js routes
+  components/       # UI + layout + editor (advanced)
+  features/         # Website-to-video, data-to-video, brand kit, workflow
+  templates/        # Template catalog + composition map
+  hooks/            # useBrandKit, etc.
+  types/            # Shared TypeScript types
+  utils/            # Parsers, project factory, brand defaults
+  remotion/         # Compositions (templates + DataSlideshow)
+  stores/           # Zustand (projects, brand, simple videos)
+```
 
 ## Scripts
 
@@ -37,5 +54,4 @@ npm run remotion
 |---------|-------------|
 | `npm run dev` | Next.js app |
 | `npm run remotion` | Remotion Studio CLI |
-| `npm run remotion:render` | CLI render Main composition |
 | `npm run build` | Production build |
