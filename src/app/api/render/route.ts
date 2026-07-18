@@ -6,6 +6,7 @@ import {
   canRenderInThisEnvironment,
   renderLocally,
 } from "@/server/render-local";
+import { prepareRenderInputProps } from "@/server/sanitize-render-props";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -76,12 +77,17 @@ export async function POST(req: Request) {
       }
     }
 
+    const inputProps = prepareRenderInputProps(
+      body.compositionId,
+      body.inputProps
+    );
+
     jobs.set(jobId, { progress: 10, status: "rendering" });
 
     try {
       const tmpPath = await renderLocally({
         compositionId: body.compositionId,
-        inputProps: body.inputProps ?? {},
+        inputProps,
         format: body.format,
         quality: body.quality,
         onProgress: (progress) => {

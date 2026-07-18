@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zColor } from "@remotion/zod-types";
 
 export const videoSceneSchema = z.object({
   id: z.string(),
@@ -30,8 +31,8 @@ export const videoSceneSchema = z.object({
 export const sceneVideoSchema = z.object({
   title: z.string(),
   subtitle: z.string(),
-  accent: z.string(),
-  brandColor: z.string(),
+  accent: zColor(),
+  brandColor: zColor(),
   fontFamily: z.string().optional(),
   logoUrl: z.string().optional(),
   musicUrl: z.string().optional(),
@@ -93,3 +94,11 @@ export const DEFAULT_SCENE_VIDEO_PROPS: SceneVideoSchemaProps = {
     },
   ],
 };
+
+/** Sum scene durations for calculateMetadata / export. */
+export function sceneListDuration(
+  scenes: { durationInFrames: number }[] | undefined
+): number {
+  if (!Array.isArray(scenes) || scenes.length === 0) return 30;
+  return Math.max(30, scenes.reduce((sum, s) => sum + s.durationInFrames, 0));
+}

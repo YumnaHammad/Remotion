@@ -273,7 +273,7 @@ export const LongFormVideo: React.FC<Partial<SceneVideoSchemaProps>> = (raw) => 
             key={scene.id}
             from={from}
             durationInFrames={scene.durationInFrames}
-            name={scene.title}
+            name={scene.id}
           >
             <SceneContent
               scene={scene}

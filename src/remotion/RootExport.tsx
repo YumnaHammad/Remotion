@@ -15,17 +15,6 @@ import {
 } from "./compositions/templates";
 import { templateSchema } from "./compositions/templates-schema";
 import type { TemplateProps } from "./compositions/templates-schema";
-import { ThreeShowcase } from "./compositions/ThreeShowcase";
-import { CaptionDemo } from "./compositions/Captions";
-import {
-  NestedSequences,
-  TransitionsShowcase,
-} from "./compositions/TransitionsShowcase";
-import {
-  MediaPrimitivesLab,
-  PrimitivesLab,
-} from "./labs/PrimitivesLab";
-import { AnimationLab } from "./labs/AnimationLab";
 import { DataSlideshow } from "./compositions/DataSlideshow";
 import { dataVideoSchema } from "./compositions/data-slideshow-schema";
 import { LongFormVideo } from "./compositions/LongFormVideo";
@@ -33,9 +22,7 @@ import {
   DEFAULT_SCENE_VIDEO_PROPS,
   sceneListDuration,
 } from "./compositions/scene-video-schema";
-import { REMOTION_OFFICIAL_COMPONENTS } from "./compositions/remotion-official-demos";
-import { REMOTION_OFFICIAL_DIMS } from "@/templates/remotion-official-catalog";
-import { MOCK_PROJECTS, SAMPLE_IMAGE } from "@/data/mock";
+import { MOCK_PROJECTS } from "@/data/mock";
 import { withBackgroundMusic } from "./with-background-music";
 
 const defaultProject = MOCK_PROJECTS[0];
@@ -58,7 +45,12 @@ const ExplainerMusic = withBackgroundMusic(Explainer);
 const SaasDemoMusic = withBackgroundMusic(SaasDemo);
 const DataSlideshowMusic = withBackgroundMusic(DataSlideshow);
 
-export const RemotionRoot: React.FC = () => {
+/**
+ * Lean Remotion root for server-side export (Vercel / API render).
+ * Excludes Three.js labs and official demo compositions that break
+ * headless Linux bundles with minified "t is not a function" errors.
+ */
+export const RemotionExportRoot: React.FC = () => {
   return (
     <>
       <Composition
@@ -203,101 +195,6 @@ export const RemotionRoot: React.FC = () => {
               Array.isArray(props.scenes) ? props.scenes : []
             ),
           })}
-        />
-      </Folder>
-
-      <Folder name="Remotion-Official">
-        {(
-          Object.entries(REMOTION_OFFICIAL_COMPONENTS) as [
-            keyof typeof REMOTION_OFFICIAL_COMPONENTS,
-            (typeof REMOTION_OFFICIAL_COMPONENTS)[keyof typeof REMOTION_OFFICIAL_COMPONENTS],
-          ][]
-        ).map(([id, Component]) => {
-          const dims = REMOTION_OFFICIAL_DIMS[id];
-          return (
-            <Composition
-              key={id}
-              id={id}
-              component={withBackgroundMusic(Component)}
-              schema={templateSchema}
-              durationInFrames={dims.durationInFrames}
-              fps={dims.fps}
-              width={dims.width}
-              height={dims.height}
-              defaultProps={templateDefaults}
-            />
-          );
-        })}
-      </Folder>
-
-      <Folder name="Effects">
-        <Composition
-          id="ThreeShowcase"
-          component={ThreeShowcase}
-          durationInFrames={120}
-          fps={30}
-          width={1920}
-          height={1080}
-          defaultProps={{ title: "3D Product Orbit" }}
-        />
-        <Composition
-          id="CaptionDemo"
-          component={CaptionDemo}
-          durationInFrames={150}
-          fps={30}
-          width={1080}
-          height={1920}
-        />
-        <Composition
-          id="TransitionsShowcase"
-          component={TransitionsShowcase}
-          durationInFrames={240}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="NestedSequences"
-          component={NestedSequences}
-          durationInFrames={150}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-      </Folder>
-
-      <Folder name="Labs">
-        <Composition
-          id="PrimitivesLab"
-          component={PrimitivesLab}
-          durationInFrames={120}
-          fps={30}
-          width={1280}
-          height={720}
-          defaultProps={{ mode: "sequence" as const, accent: "#0b84f3" }}
-        />
-        <Composition
-          id="MediaPrimitivesLab"
-          component={MediaPrimitivesLab}
-          durationInFrames={90}
-          fps={30}
-          width={1280}
-          height={720}
-          defaultProps={{ imageSrc: SAMPLE_IMAGE }}
-        />
-        <Composition
-          id="AnimationLab"
-          component={AnimationLab}
-          durationInFrames={120}
-          fps={30}
-          width={1280}
-          height={720}
-          defaultProps={{
-            mode: "spring" as const,
-            intensity: 1,
-            accent: "#0b84f3",
-            text: "Make videos programmatically with Remotion",
-          }}
         />
       </Folder>
     </>

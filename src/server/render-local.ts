@@ -20,12 +20,13 @@ const codecFor: Record<ExportFormat, "h264" | "vp8" | "gif"> = {
 
 let cachedServeUrl: string | null = null;
 
-/** Remotion bundler runs outside Next.js — wire up the same `@/` alias as tsconfig. */
+/** Remotion bundler runs outside Next.js — wire up aliases and dedupe zod. */
 const webpackOverride: WebpackOverrideFn = (config) => {
   config.resolve ??= {};
   config.resolve.alias = {
     ...config.resolve.alias,
     "@": path.resolve(process.cwd(), "src"),
+    zod: path.resolve(process.cwd(), "node_modules/zod"),
   };
   config.cache = false;
   return config;
@@ -35,7 +36,7 @@ export async function getServeUrl(): Promise<string> {
   if (cachedServeUrl) return cachedServeUrl;
   const { bundle } = await import("@remotion/bundler");
   cachedServeUrl = await bundle({
-    entryPoint: path.resolve(process.cwd(), "src/remotion/index.ts"),
+    entryPoint: path.resolve(process.cwd(), "src/remotion/index-export.ts"),
     webpackOverride,
     enableCaching: false,
   });
