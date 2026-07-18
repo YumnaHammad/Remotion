@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/shared/primitives";
 import { useProjectStore } from "@/stores/project-store";
 import { useSimpleVideoStore } from "@/stores/simple-video-store";
 import { formatRelative } from "@/lib/utils";
+import { downloadExportFile } from "@/lib/export-download";
 import { toast } from "sonner";
 
 /** Export history and simple project management. */
@@ -67,10 +68,29 @@ export default function ExportsPage() {
                   {r.status}
                 </Badge>
                 {r.status === "completed" && r.outputUrl && (
-                  <Button asChild size="sm" variant="outline">
-                    <a href={r.outputUrl} download>
-                      <Download className="mr-2 h-4 w-4" /> Download
-                    </a>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const url = r.outputUrl!.startsWith("/exports/")
+                        ? r.outputUrl!.replace(
+                            "/exports/",
+                            "/api/exports/"
+                          )
+                        : r.outputUrl!;
+                      downloadExportFile(
+                        url,
+                        `${r.projectName}.${r.format}`
+                      ).catch((err) =>
+                        toast.error(
+                          err instanceof Error
+                            ? err.message
+                            : "Download failed"
+                        )
+                      );
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download
                   </Button>
                 )}
               </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,10 @@ import type {
   ExportQuality,
   RenderJob,
 } from "@/types";
+import {
+  downloadExportFile,
+  startExportProgress,
+} from "@/lib/export-download";
 
 const FORMATS: ExportFormat[] = ["mp4", "webm", "gif"];
 const QUALITIES: ExportQuality[] = ["720p", "1080p", "2k", "4k"];
@@ -65,9 +70,11 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
   const [ratio, setRatio] = useState<AspectRatio>(project.settings.aspectRatio);
   const [fps, setFps] = useState<number>(project.settings.fps);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const start = async () => {
     setBusy(true);
+    setProgress(5);
     const job: RenderJob = {
       id: `r-${Date.now()}`,
       projectId: project.id,
@@ -83,49 +90,87 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
     addRender(job);
     updateProject(project.id, { ...project, status: "rendering" });
 
+    const stopProgress = startExportProgress(setProgress);
+    updateRender(job.id, { status: "rendering", progress: 5 });
+
     try {
-      await fetch("/api/render", {
+      const res = await fetch("/api/render", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId: project.id,
           compositionId: "Main",
+          inputProps: { project },
           format,
           quality,
-          aspectRatio: ratio,
-          mode: "local",
+          directDownload: true,
         }),
       });
-    } catch {
-      /* queue is optimistic; worker consumes it */
-    }
 
-    toast.success("Render queued", {
-      description: `${format.toUpperCase()} · ${quality} · ${ratio}`,
-    });
-    setBusy(false);
-    setOpen(false);
+      stopProgress();
 
-    // simulate pipeline progress
-    let progress = 0;
-    const timer = setInterval(() => {
-      progress += 6 + Math.random() * 12;
-      if (progress >= 100) {
-        clearInterval(timer);
+      const contentType = res.headers.get("Content-Type") ?? "";
+      const filename = `${project.name.replace(/[^\w.-]+/g, "-") || project.id}.${format}`;
+
+      if (contentType.includes("video/") || contentType.includes("image/gif")) {
+        const blob = await res.blob();
+        if (!blob.size) {
+          throw new Error("Export returned an empty file.");
+        }
+
+        const outputUrl =
+          res.headers.get("X-Export-Output-Url") ??
+          `/api/exports/${project.id}.${format}`;
+
         updateRender(job.id, {
           status: "completed",
           progress: 100,
-          outputUrl: `/exports/${project.id}.${format}`,
+          outputUrl,
         });
         updateProject(project.id, { ...project, status: "ready" });
+        setProgress(100);
         toast.success("Render complete", { description: project.name });
-      } else {
-        updateRender(job.id, {
-          status: progress > 80 ? "processing" : "rendering",
-          progress: Math.min(99, Math.round(progress)),
-        });
+        await downloadExportFile(blob, filename);
+        setOpen(false);
+        return;
       }
-    }, 550);
+
+      const data = (await res.json()) as {
+        ok?: boolean;
+        outputUrl?: string;
+        error?: string;
+      };
+
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.error ?? "Export failed.");
+      }
+
+      if (data.outputUrl) {
+        updateRender(job.id, {
+          status: "completed",
+          progress: 100,
+          outputUrl: data.outputUrl,
+        });
+        updateProject(project.id, { ...project, status: "ready" });
+        setProgress(100);
+        toast.success("Render complete", { description: project.name });
+        await downloadExportFile(data.outputUrl, filename);
+        setOpen(false);
+        return;
+      }
+
+      throw new Error("Export failed — no output file was produced.");
+    } catch (err) {
+      stopProgress();
+      const msg =
+        err instanceof Error ? err.message : "Export failed unexpectedly.";
+      updateRender(job.id, { status: "failed", progress: 0, error: msg });
+      updateProject(project.id, { ...project, status: "ready" });
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+      setProgress(0);
+    }
   };
 
   return (
@@ -141,8 +186,7 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
         <DialogHeader>
           <DialogTitle>Export video</DialogTitle>
           <DialogDescription>
-            Rendered via Remotion → frames → FFmpeg. Track progress in Export
-            Center.
+            Renders your timeline via Remotion and downloads when complete.
           </DialogDescription>
         </DialogHeader>
 
@@ -190,6 +234,16 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
               ))}
             </div>
           </div>
+
+          {busy && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Rendering… {progress}%
+              </div>
+              <Progress value={progress} />
+            </div>
+          )}
 
           <Button
             variant="glow"

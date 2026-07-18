@@ -27,6 +27,7 @@ const webpackOverride: WebpackOverrideFn = (config) => {
     ...config.resolve.alias,
     "@": path.resolve(process.cwd(), "src"),
   };
+  config.cache = false;
   return config;
 };
 
@@ -36,8 +37,18 @@ export async function getServeUrl(): Promise<string> {
   cachedServeUrl = await bundle({
     entryPoint: path.resolve(process.cwd(), "src/remotion/index.ts"),
     webpackOverride,
+    enableCaching: false,
   });
   return cachedServeUrl;
+}
+
+export function canRenderInThisEnvironment(): boolean {
+  if (process.env.REMOTION_RENDER === "0") return false;
+  return (
+    process.env.REMOTION_RENDER === "1" ||
+    process.env.NODE_ENV === "development" ||
+    process.env.VERCEL === "1"
+  );
 }
 
 /** Local MP4/WebM/GIF render — no optional @remotion/lambda dependency. */
@@ -53,7 +64,12 @@ export async function renderLocally(req: RenderRequest): Promise<string> {
 
   const outputLocation = path.join(
     os.tmpdir(),
-    `lumen-${Date.now()}.${req.format}`
+    `framekit-${Date.now()}.${req.format}`
+  );
+
+  const scale = Math.max(
+    1,
+    Math.round(qualityToScale(req.quality, composition.height))
   );
 
   await renderMedia({
@@ -62,7 +78,7 @@ export async function renderLocally(req: RenderRequest): Promise<string> {
     codec: codecFor[req.format],
     outputLocation,
     inputProps: req.inputProps,
-    scale: qualityToScale(req.quality, composition.height),
+    scale,
     onProgress: ({ progress }) => req.onProgress?.(Math.round(progress * 100)),
   });
 

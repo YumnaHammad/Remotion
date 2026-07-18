@@ -13,11 +13,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-For real MP4 export locally:
-
-```bash
-REMOTION_RENDER=1 npm run dev
-```
+MP4 export works in dev automatically. On Vercel, add `REMOTION_RENDER=1` in Project → Settings → Environment Variables (export is enabled on Vercel by default unless you set `REMOTION_RENDER=0`).
 
 ## Main pages
 
