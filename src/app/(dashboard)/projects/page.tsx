@@ -13,15 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProjectPreview } from "@/components/shared/project-preview";
+import { NewProjectDialog } from "@/components/shared/new-project-dialog";
 import { useProjectStore } from "@/stores/project-store";
-import { ASPECT_PRESETS } from "@/lib/constants";
 import { formatRelative } from "@/lib/utils";
-import type { Project } from "@/types";
 import { toast } from "sonner";
 
 export default function ProjectsPage() {
-  const { projects, addProject, deleteProject, duplicateProject } =
-    useProjectStore();
+  const { projects, deleteProject, duplicateProject } = useProjectStore();
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(
@@ -32,69 +30,6 @@ export default function ProjectsPage() {
     [projects, query]
   );
 
-  const createProject = () => {
-    const preset = ASPECT_PRESETS["16:9"];
-    const project: Project = {
-      id: `proj-${Date.now()}`,
-      name: "Untitled Project",
-      description: "New Remotion composition",
-      thumbnail: "gradient-5",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: "draft",
-      settings: {
-        width: preset.width,
-        height: preset.height,
-        fps: 30,
-        durationInFrames: 150,
-        aspectRatio: "16:9",
-      },
-      scenes: [
-        {
-          id: "sc-new",
-          name: "Intro",
-          startFrame: 0,
-          durationInFrames: 150,
-          transition: "fade",
-          transitionDuration: 15,
-          background: "#0a0a0f",
-        },
-      ],
-      tracks: [
-        { id: "t-v1", name: "Video 1", kind: "video", locked: false, muted: false, height: 48 },
-        { id: "t-tx1", name: "Text 1", kind: "text", locked: false, muted: false, height: 40 },
-        { id: "t-a1", name: "Audio 1", kind: "audio", locked: false, muted: false, height: 36 },
-      ],
-      layers: [
-        {
-          id: `l-${Date.now()}`,
-          name: "Title",
-          type: "text",
-          trackId: "t-tx1",
-          startFrame: 10,
-          durationInFrames: 90,
-          transform: { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1, blur: 0 },
-          animation: "fade",
-          animationDuration: 20,
-          text: "New Project",
-          textStyle: {
-            fontFamily: "Inter",
-            fontSize: 72,
-            fontWeight: 800,
-            color: "#ffffff",
-            align: "center",
-            lineHeight: 1.1,
-            letterSpacing: -1,
-            gradient: "linear-gradient(135deg,#fff,#a5b4fc)",
-          },
-        },
-      ],
-      tags: [],
-    };
-    addProject(project);
-    toast.success("Project created");
-  };
-
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -104,9 +39,13 @@ export default function ProjectsPage() {
             Manage compositions, duplicates, and drafts
           </p>
         </div>
-        <Button onClick={createProject} variant="glow">
-          <Plus className="h-4 w-4" /> New Project
-        </Button>
+        <NewProjectDialog
+          trigger={
+            <Button variant="glow">
+              <Plus className="h-4 w-4" /> New Project
+            </Button>
+          }
+        />
       </div>
 
       <div className="relative max-w-sm">

@@ -15,34 +15,36 @@ export function useAnimatedStyle(
 ) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const dur = Math.max(1, duration || 1);
 
   const progress = spring({
     frame,
     fps,
     config: { damping: 200 },
-    durationInFrames: duration,
+    durationInFrames: dur,
   });
 
-  const fade = interpolate(frame, [0, duration], [0, 1], {
+  // Start slightly visible so frame 0 (scrub/pause) isn't a blank canvas.
+  const fade = interpolate(frame, [0, dur], [0.2, 1], {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
 
-  const slideY = interpolate(frame, [0, duration], [40, 0], {
+  const slideY = interpolate(frame, [0, dur], [40, 0], {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
 
-  const scaleIn = interpolate(frame, [0, duration], [0.85, 1], {
+  const scaleIn = interpolate(frame, [0, dur], [0.85, 1], {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.back(1.4)),
   });
 
-  const rotate = interpolate(frame, [0, duration], [-8, 0], {
+  const rotate = interpolate(frame, [0, dur], [-8, 0], {
     extrapolateRight: "clamp",
   });
 
-  const blur = interpolate(frame, [0, duration], [12, 0], {
+  const blur = interpolate(frame, [0, dur], [12, 0], {
     extrapolateRight: "clamp",
   });
 
@@ -54,7 +56,7 @@ export function useAnimatedStyle(
 
   let opacity = transform.opacity;
   let translateY = transform.y;
-  let translateX = transform.x;
+  const translateX = transform.x;
   let scale = transform.scale;
   let rotation = transform.rotation;
   let filterBlur = transform.blur;

@@ -45,8 +45,15 @@ export function RightPanel() {
   const setLayerAnimation = useEditorStore((s) => s.setLayerAnimation);
   const setSceneTransition = useEditorStore((s) => s.setSceneTransition);
 
+  const currentFrame = useEditorStore((s) => s.currentFrame);
+
   const layer = project.layers.find((l) => l.id === selectedLayerIds[0]);
-  const scene = project.scenes[0];
+  const scene =
+    project.scenes.find(
+      (sc) =>
+        currentFrame >= sc.startFrame &&
+        currentFrame < sc.startFrame + sc.durationInFrames
+    ) ?? project.scenes[0];
 
   return (
     <div className="flex h-full w-72 flex-col border-l border-[var(--editor-border)] bg-[var(--editor-panel)]">

@@ -25,8 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useProjectStore } from "@/stores/project-store";
+import { createBlankProject, makeTextLayer } from "@/lib/project-factory";
 import { ASPECT_PRESETS } from "@/lib/constants";
-import type { AspectRatio, Project } from "@/types";
+import type { Project } from "@/types";
 import { toast } from "sonner";
 
 const schema = z.object({
@@ -54,25 +55,20 @@ export function CreateAIDialog({
   });
 
   const onSubmit = (values: FormValues) => {
-    const preset = ASPECT_PRESETS[values.aspectRatio as AspectRatio];
     const title =
       values.prompt.split(/[.!?]/)[0]?.slice(0, 42) || "AI Video";
 
-    const project: Project = {
-      id: `proj-${Date.now()}`,
+    const base = createBlankProject({
       name: title,
       description: values.prompt,
       thumbnail: "gradient-1",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: "draft",
-      settings: {
-        width: preset.width,
-        height: preset.height,
-        fps: 30,
-        durationInFrames: 180,
-        aspectRatio: values.aspectRatio,
-      },
+      aspectRatio: values.aspectRatio,
+      durationInFrames: 180,
+      tags: ["ai", "prompt"],
+    });
+
+    const project: Project = {
+      ...base,
       scenes: [
         {
           id: "sc-intro",
@@ -102,45 +98,24 @@ export function CreateAIDialog({
           background: "#0f172a",
         },
       ],
-      tracks: [
-        { id: "t-v1", name: "Video 1", kind: "video", locked: false, muted: false, height: 48 },
-        { id: "t-tx1", name: "Text 1", kind: "text", locked: false, muted: false, height: 40 },
-        { id: "t-a1", name: "Audio 1", kind: "audio", locked: false, muted: false, height: 36 },
-      ],
       layers: [
-        {
-          id: `l-${Date.now()}`,
+        makeTextLayer({
           name: "AI Title",
-          type: "text",
-          trackId: "t-tx1",
+          text: title,
           startFrame: 8,
           durationInFrames: 50,
-          transform: { x: 0, y: -20, scale: 1, rotation: 0, opacity: 1, blur: 0 },
           animation: "split-text",
           animationDuration: 24,
-          text: title,
-          textStyle: {
-            fontFamily: "Inter",
-            fontSize: 64,
-            fontWeight: 800,
-            color: "#ffffff",
-            align: "center",
-            lineHeight: 1.1,
-            letterSpacing: -1,
-            gradient: "linear-gradient(135deg,#fff,#a5b4fc)",
-          },
-        },
-        {
-          id: `l-${Date.now()}-2`,
+          transform: { x: 0, y: -20, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+        }),
+        makeTextLayer({
           name: "AI Subtitle",
-          type: "text",
-          trackId: "t-tx1",
+          text: values.prompt.slice(0, 80),
           startFrame: 70,
           durationInFrames: 55,
-          transform: { x: 0, y: 40, scale: 1, rotation: 0, opacity: 1, blur: 0 },
           animation: "typewriter",
           animationDuration: 40,
-          text: values.prompt.slice(0, 80),
+          transform: { x: 0, y: 40, scale: 1, rotation: 0, opacity: 1, blur: 0 },
           textStyle: {
             fontFamily: "Inter",
             fontSize: 28,
@@ -150,9 +125,8 @@ export function CreateAIDialog({
             lineHeight: 1.4,
             letterSpacing: 0,
           },
-        },
+        }),
       ],
-      tags: ["ai", "prompt"],
     };
 
     addProject(project);

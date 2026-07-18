@@ -3,36 +3,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import {
-  BarChart3,
-  Download,
-  FolderOpen,
-  Home,
-  Images,
-  LayoutTemplate,
-  Mic,
-  Palette,
-  Plus,
-  Settings,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { FolderOpen, LayoutTemplate, Plus, Sparkles } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
 import { useProjectStore } from "@/stores/project-store";
+import { NAV_SECTIONS } from "@/lib/constants";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-
-const PAGES = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/projects", label: "Projects", icon: FolderOpen },
-  { href: "/templates", label: "Templates", icon: LayoutTemplate },
-  { href: "/media", label: "Media Library", icon: Images },
-  { href: "/voices", label: "Voice Library", icon: Mic },
-  { href: "/brand", label: "Brand Kit", icon: Palette },
-  { href: "/export", label: "Export Center", icon: Download },
-  { href: "/team", label: "Team", icon: Users },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
 
 export function CommandPalette() {
   const router = useRouter();
@@ -86,17 +61,20 @@ export function CommandPalette() {
               </Command.Item>
             </Command.Group>
 
-            <Command.Group heading="Pages">
-              {PAGES.map((p) => (
-                <Command.Item
-                  key={p.href}
-                  onSelect={() => go(p.href)}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm aria-selected:bg-accent"
-                >
-                  <p.icon className="h-4 w-4" /> {p.label}
-                </Command.Item>
-              ))}
-            </Command.Group>
+            {NAV_SECTIONS.map((section) => (
+              <Command.Group key={section.label} heading={section.label}>
+                {section.items.map((p) => (
+                  <Command.Item
+                    key={p.href}
+                    value={`${section.label} ${p.label}`}
+                    onSelect={() => go(p.href)}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm aria-selected:bg-accent"
+                  >
+                    <Sparkles className="h-4 w-4 opacity-60" /> {p.label}
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            ))}
 
             <Command.Group heading="Projects">
               {projects.slice(0, 6).map((p) => (

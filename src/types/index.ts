@@ -142,6 +142,8 @@ export interface Track {
   locked: boolean;
   muted: boolean;
   height: number;
+  volume?: number;
+  solo?: boolean;
 }
 
 export interface Scene {
@@ -175,6 +177,7 @@ export interface Project {
   tracks: Track[];
   layers: Layer[];
   brandKitId?: string;
+  masterVolume?: number;
   tags: string[];
 }
 

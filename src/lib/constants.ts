@@ -1,7 +1,7 @@
 import type { AspectRatio, ExportQuality } from "@/types";
 
-export const APP_NAME = "Lumen Studio";
-export const APP_TAGLINE = "AI Video Creation Platform";
+export const APP_NAME = "Remotion Studio";
+export const APP_TAGLINE = "Make videos programmatically";
 
 export const ASPECT_PRESETS: Record<
   AspectRatio,
@@ -22,22 +22,57 @@ export const QUALITY_SCALE: Record<ExportQuality, number> = {
 
 export const FPS_OPTIONS = [24, 25, 30, 60] as const;
 
-export const NAV_ITEMS = [
-  { href: "/", label: "Home", icon: "Home" },
-  { href: "/projects", label: "Projects", icon: "FolderOpen" },
-  { href: "/templates", label: "Templates", icon: "LayoutTemplate" },
-  { href: "/media", label: "Media Library", icon: "Images" },
-  { href: "/voices", label: "Voice Library", icon: "Mic" },
-  { href: "/brand", label: "Brand Kit", icon: "Palette" },
-  { href: "/export", label: "Export Center", icon: "Download" },
-  { href: "/team", label: "Team", icon: "Users" },
-  { href: "/analytics", label: "Analytics", icon: "BarChart3" },
-  { href: "/settings", label: "Settings", icon: "Settings" },
+export const NAV_SECTIONS = [
+  {
+    label: "Create",
+    items: [
+      { href: "/", label: "Dashboard", icon: "Home" },
+      { href: "/projects", label: "Projects", icon: "FolderOpen" },
+      { href: "/templates", label: "Templates", icon: "LayoutTemplate" },
+    ],
+  },
+  {
+    label: "Studios",
+    items: [
+      { href: "/storyboard", label: "Storyboard", icon: "Clapperboard" },
+      { href: "/compositions", label: "Compositions", icon: "Boxes" },
+      { href: "/timeline", label: "Timeline", icon: "ListVideo" },
+      { href: "/assets", label: "Assets", icon: "Images" },
+      { href: "/audio", label: "Audio", icon: "Music" },
+    ],
+  },
+  {
+    label: "Labs",
+    items: [
+      { href: "/showcase", label: "Showcase", icon: "Sparkles" },
+      { href: "/primitives", label: "Primitives", icon: "Layers" },
+      { href: "/animations", label: "Animations", icon: "Wand2" },
+      { href: "/transitions", label: "Transitions", icon: "ArrowLeftRight" },
+      { href: "/captions", label: "Captions", icon: "Captions" },
+      { href: "/three", label: "3D Studio", icon: "Box" },
+      { href: "/player-lab", label: "Player Lab", icon: "PlayCircle" },
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      { href: "/render-center", label: "Render Center", icon: "Server" },
+      { href: "/brand", label: "Brand Kit", icon: "Palette" },
+      { href: "/team", label: "Team", icon: "Users" },
+      { href: "/analytics", label: "Analytics", icon: "BarChart3" },
+      { href: "/settings", label: "Settings", icon: "Settings" },
+    ],
+  },
 ] as const;
+
+export const NAV_ITEMS = NAV_SECTIONS.flatMap(
+  (s) => s.items as readonly { href: string; label: string; icon: string }[]
+);
 
 export const EDITOR_TABS = [
   { id: "assets", label: "Assets", icon: "Folder" },
   { id: "templates", label: "Templates", icon: "LayoutTemplate" },
+  { id: "scenes", label: "Scenes", icon: "Film" },
   { id: "text", label: "Text", icon: "Type" },
   { id: "shapes", label: "Shapes", icon: "Shapes" },
   { id: "audio", label: "Audio", icon: "Music" },

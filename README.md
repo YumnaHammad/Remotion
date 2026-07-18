@@ -1,6 +1,6 @@
-# Lumen Studio
+# Remotion Studio
 
-Enterprise AI video studio built with **Next.js**, **Remotion**, **Zustand**, and **Tailwind**.
+Production-grade Remotion operating system — compositions, timeline editing, labs, and render queues. Built with **Next.js**, **Remotion**, **Zustand**, and **Tailwind**.
 
 ## Quick start
 
@@ -11,57 +11,31 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Remotion Studio (compositions):
+Official Remotion Studio (composition registry):
 
 ```bash
 npm run remotion
 ```
 
-## Folder structure
+## Studio routes
 
-```
-src/
-  app/
-    (dashboard)/     # Home, Projects, Templates, Media, Voices, Brand,
-                     # Export, Team, Analytics, Settings, Billing
-    editor/[id]/      # Full Remotion editor studio
-    api/render/      # Render pipeline API
-  components/
-    ui/              # Shadcn-style primitives
-    layout/          # Sidebar, header, command palette
-    editor/          # Player, timeline, panels
-    shared/          # Theme, empty states
-  remotion/
-    Root.tsx         # Composition registry
-    compositions/    # Main + template packs + 3D + captions
-    components/      # Animated text, shapes, transitions, particles
-  stores/            # Zustand (project, editor, UI)
-  types/             # Shared TypeScript models
-  data/              # Mock seed data
-  lib/               # Utils, constants, render pipeline
-```
-
-## Features
-
-- Remotion Player preview with frame-accurate timeline
-- Multi-track editor: text, vector shapes, image, video, audio, GIF, noise, captions, solids
-- Media primitives: `Img`, `OffthreadVideo`/`Video`, `Audio`, `Loop`, `Freeze`, playback rate, volume, object-fit
-- Effects: color filters (brightness/contrast/saturation/hue/grayscale/sepia), blur, `@remotion/motion-blur`
-- Animation presets (fade, slide, scale, bounce, typewriter, split-text...)
-- Scene transitions (fade, wipe, cinematic, flip...) + `@remotion/transitions` showcase
-- Template marketplace (Shorts, Reels, TikTok, SaaS, News...) with `@remotion/zod-types` Studio controls
-- Vector shapes via `@remotion/shapes`, procedural motion via `@remotion/noise`
-- TikTok-style karaoke captions via `@remotion/captions`
-- Real audio waveforms via `@remotion/media-utils`
-- Google Fonts via `@remotion/google-fonts`, 3D via `@remotion/three`, GIF via `@remotion/gif`
-- Server render service (`src/server/render-service.ts`): local `@remotion/bundler` + `@remotion/renderer`, or `@remotion/lambda`
-- Export queue, dark/light themes, command palette (K), shortcuts
+| Route | Purpose |
+|-------|---------|
+| `/` · `/dashboard` | Enterprise dashboard |
+| `/projects` · `/templates` | Projects & template marketplace |
+| `/editor/[id]` | Full timeline editor |
+| `/storyboard` | Scene planning |
+| `/compositions` | Composition registry inspector |
+| `/timeline` · `/assets` · `/audio` | Timeline / assets / mixer hubs |
+| `/showcase` | Capability showcase |
+| `/primitives` · `/animations` · `/transitions` · `/captions` · `/three` · `/player-lab` | Interactive Remotion labs |
+| `/render-center` | Render queue & export history |
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Next.js app |
-| `npm run remotion` | Remotion Studio |
+| `npm run remotion` | Remotion Studio CLI |
 | `npm run remotion:render` | CLI render Main composition |
 | `npm run build` | Production build |

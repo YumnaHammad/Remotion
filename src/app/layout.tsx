@@ -21,9 +21,9 @@ const display = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Lumen Studio — AI Video Creation",
+  title: "Remotion Studio — Professional Video OS",
   description:
-    "Enterprise AI video studio powered by Remotion. Create, edit, and export cinematic videos.",
+    "Production-grade Remotion platform: compositions, timeline, transitions, captions, 3D, and render pipeline.",
 };
 
 export default function RootLayout({

@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProjectThumb } from "@/components/shared/primitives";
 import { MOCK_TEMPLATES } from "@/data/mock";
 import { useProjectStore } from "@/stores/project-store";
-import { ASPECT_PRESETS } from "@/lib/constants";
+import { createBlankProject, makeTextLayer } from "@/lib/project-factory";
 import type { Project } from "@/types";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -47,65 +47,38 @@ export default function TemplatesPage() {
     [query, category]
   );
 
-  const useTemplate = (tplId: string) => {
+  const handleUseTemplate = (tplId: string) => {
     const tpl = MOCK_TEMPLATES.find((t) => t.id === tplId);
     if (!tpl) return;
-    const preset = ASPECT_PRESETS[tpl.aspectRatio];
-    const project: Project = {
-      id: `proj-${Date.now()}`,
+
+    const base = createBlankProject({
       name: `${tpl.name} Project`,
       description: tpl.description,
       thumbnail: tpl.thumbnail,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: "draft",
-      settings: {
-        width: preset.width,
-        height: preset.height,
-        fps: 30,
-        durationInFrames: tpl.durationInFrames,
-        aspectRatio: tpl.aspectRatio,
-      },
+      aspectRatio: tpl.aspectRatio,
+      durationInFrames: tpl.durationInFrames,
+      tags: tpl.tags,
+    });
+
+    const project: Project = {
+      ...base,
       scenes: [
         {
-          id: "sc-1",
+          ...base.scenes[0],
           name: "Main",
-          startFrame: 0,
-          durationInFrames: tpl.durationInFrames,
           transition: "fade",
           transitionDuration: 15,
-          background: "#0a0a0f",
         },
-      ],
-      tracks: [
-        { id: "t-v1", name: "Video 1", kind: "video", locked: false, muted: false, height: 48 },
-        { id: "t-tx1", name: "Text 1", kind: "text", locked: false, muted: false, height: 40 },
       ],
       layers: [
-        {
-          id: `l-${Date.now()}`,
+        makeTextLayer({
           name: "Headline",
-          type: "text",
-          trackId: "t-tx1",
+          text: tpl.name,
           startFrame: 10,
           durationInFrames: Math.min(90, tpl.durationInFrames - 10),
-          transform: { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1, blur: 0 },
           animation: "bounce",
-          animationDuration: 18,
-          text: tpl.name,
-          textStyle: {
-            fontFamily: "Inter",
-            fontSize: 64,
-            fontWeight: 800,
-            color: "#ffffff",
-            align: "center",
-            lineHeight: 1.1,
-            letterSpacing: -1,
-            gradient: "linear-gradient(135deg,#fff,#a5b4fc)",
-          },
-        },
+        }),
       ],
-      tags: tpl.tags,
     };
     addProject(project);
     toast.success("Template applied");
@@ -171,7 +144,7 @@ export default function TemplatesPage() {
                 <span className="text-[11px] text-muted-foreground">
                   {t.aspectRatio} · {Math.round(t.durationInFrames / 30)}s
                 </span>
-                <Button size="sm" onClick={() => useTemplate(t.id)}>
+                <Button size="sm" onClick={() => handleUseTemplate(t.id)}>
                   Use template
                 </Button>
               </div>

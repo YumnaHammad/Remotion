@@ -77,6 +77,31 @@ export function PreviewPlayer() {
           clickToPlay={false}
           spaceKeyToPlayOrPause={false}
           acknowledgeRemotionLicense
+          errorFallback={({ error }) => (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                padding: 24,
+                background: "#0b0c0f",
+                color: "#fca5a5",
+                fontFamily: "ui-sans-serif, system-ui, sans-serif",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#fecaca" }}>
+                Preview failed
+              </div>
+              <div style={{ fontSize: 11, color: "#9ca3af", maxWidth: 360 }}>
+                {error.message}
+              </div>
+            </div>
+          )}
         />
       </div>
     </div>

@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import {
   Captions,
+  Film,
   Folder,
   Images,
   LayoutTemplate,
@@ -11,12 +13,14 @@ import {
   Sparkles,
   Sticker,
   Type,
+  Upload,
   Video,
   Waves,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EDITOR_TABS } from "@/lib/constants";
 import { useEditorStore } from "@/stores/editor-store";
+import { useAssetStore, assetFromFile } from "@/stores/asset-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,11 +33,14 @@ import {
   SAMPLE_AUDIO,
 } from "@/data/mock";
 import { DEFAULT_FILTERS, type Layer, type ShapeKind } from "@/types";
+import { ScenesPanel } from "./scenes-panel";
+import { AudioMixer } from "./audio-mixer";
 import { toast } from "sonner";
 
 const TAB_ICONS = {
   assets: Folder,
   templates: LayoutTemplate,
+  scenes: Film,
   text: Type,
   shapes: Shapes,
   audio: Music,
@@ -51,7 +58,7 @@ function makeLayer(
     startFrame: 0,
     durationInFrames: 60,
     transform: { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1, blur: 0 },
-    animation: "fade",
+    animation: "none",
     animationDuration: 15,
     filters: { ...DEFAULT_FILTERS },
     ...partial,
@@ -74,12 +81,28 @@ export function LeftPanel() {
   const leftTab = useEditorStore((s) => s.leftTab);
   const setLeftTab = useEditorStore((s) => s.setLeftTab);
   const addLayer = useEditorStore((s) => s.addLayer);
+  const applyTemplate = useEditorStore((s) => s.applyTemplate);
   const currentFrame = useEditorStore((s) => s.currentFrame);
+  const uploadedAssets = useAssetStore((s) => s.assets);
+  const addAsset = useAssetStore((s) => s.addAsset);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const add = (layer: Layer) => {
     addLayer(layer);
     toast.success(`${layer.name} added`);
   };
+
+  const onUpload = (files: FileList | null) => {
+    if (!files) return;
+    let count = 0;
+    for (const file of Array.from(files)) {
+      addAsset(assetFromFile(file));
+      count++;
+    }
+    if (count) toast.success(`${count} asset${count > 1 ? "s" : ""} uploaded`);
+  };
+
+  const assets = [...uploadedAssets, ...MOCK_MEDIA];
 
   return (
     <div className="flex h-full border-r border-[var(--editor-border)] bg-[var(--editor-panel)]">
@@ -230,27 +253,59 @@ export function LeftPanel() {
               </div>
             )}
 
-            {leftTab === "templates" &&
-              MOCK_TEMPLATES.slice(0, 6).map((t) => (
-                <div
-                  key={t.id}
-                  className="cursor-pointer overflow-hidden rounded-lg border border-white/10 transition hover:border-primary/40"
-                >
-                  <div
-                    className="aspect-video"
-                    style={{ background: GRADIENTS[t.thumbnail] }}
-                  />
-                  <div className="p-2">
-                    <p className="truncate text-xs font-medium text-white">
-                      {t.name}
-                    </p>
-                    <p className="text-[10px] text-white/40">{t.category}</p>
-                  </div>
-                </div>
-              ))}
+            {leftTab === "templates" && (
+              <>
+                <p className="px-0.5 text-[10px] text-white/40">
+                  Applies the template to the current composition.
+                </p>
+                {MOCK_TEMPLATES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      applyTemplate(t);
+                      toast.success(`${t.name} applied`);
+                    }}
+                    className="block w-full cursor-pointer overflow-hidden rounded-lg border border-white/10 text-left transition hover:border-primary/40"
+                  >
+                    <div
+                      className="aspect-video"
+                      style={{ background: GRADIENTS[t.thumbnail] }}
+                    />
+                    <div className="p-2">
+                      <p className="truncate text-xs font-medium text-white">
+                        {t.name}
+                      </p>
+                      <p className="text-[10px] text-white/40">{t.category}</p>
+                    </div>
+                  </button>
+                ))}
+              </>
+            )}
 
-            {leftTab === "assets" &&
-              MOCK_MEDIA.map((m) => (
+            {leftTab === "scenes" && <ScenesPanel />}
+
+            {leftTab === "assets" && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*,audio/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    onUpload(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  className="w-full justify-start border-dashed border-white/15 bg-white/5 text-white hover:bg-white/10"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4 text-primary" /> Upload media
+                </Button>
+                {assets.map((m) => (
                 <button
                   key={m.id}
                   type="button"
@@ -279,7 +334,7 @@ export function LeftPanel() {
                         objectFit: "cover",
                         volume: 1,
                         playbackRate: 1,
-                        animation: "fade",
+                        animation: "none",
                       })
                     )
                   }
@@ -300,7 +355,9 @@ export function LeftPanel() {
                     <p className="text-[10px] text-white/40">{m.type}</p>
                   </div>
                 </button>
-              ))}
+                ))}
+              </>
+            )}
 
             {leftTab === "video" && (
               <>
@@ -320,7 +377,7 @@ export function LeftPanel() {
                         useOffthread: true,
                         volume: 1,
                         playbackRate: 1,
-                        animation: "fade",
+                        animation: "none",
                       })
                     )
                   }
@@ -396,6 +453,7 @@ export function LeftPanel() {
                 >
                   <Mic className="mr-2 h-4 w-4 text-rose-400" /> Voice-over
                 </Button>
+                <AudioMixer />
               </>
             )}
 

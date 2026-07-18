@@ -7,8 +7,8 @@
   --card-foreground: #0c0d10;
   --popover: #ffffff;
   --popover-foreground: #0c0d10;
-  --primary: #4f46e5;
-  --primary-foreground: #f8fafc;
+  --primary: #0b84f3;
+  --primary-foreground: #ffffff;
   --secondary: #e8eaf0;
   --secondary-foreground: #1e2030;
   --muted: #eceef3;
@@ -40,41 +40,42 @@
 }
 
 .dark {
-  --background: #07080c;
-  --foreground: #eef0f6;
-  --card: #101218;
-  --card-foreground: #eef0f6;
-  --popover: #12141c;
-  --popover-foreground: #eef0f6;
-  --primary: #818cf8;
-  --primary-foreground: #0b0c14;
-  --secondary: #1a1d28;
-  --secondary-foreground: #d8dce8;
-  --muted: #161922;
-  --muted-foreground: #8b93a7;
-  --accent: #1a1f35;
-  --accent-foreground: #c7d2fe;
+  /* Remotion Studio palette — charcoal panels, signature blue */
+  --background: #0f1115;
+  --foreground: #e4e4e7;
+  --card: #191b1f;
+  --card-foreground: #e4e4e7;
+  --popover: #1c1e24;
+  --popover-foreground: #e4e4e7;
+  --primary: #0b84f3;
+  --primary-foreground: #ffffff;
+  --secondary: #22252b;
+  --secondary-foreground: #d4d4d8;
+  --muted: #181a1f;
+  --muted-foreground: #9ca3af;
+  --accent: #1a2a3d;
+  --accent-foreground: #93c5fd;
   --destructive: #ef4444;
   --destructive-foreground: #fef2f2;
-  --border: #1e2230;
-  --input: #1e2230;
-  --ring: #818cf8;
-  --sidebar: #0a0b10;
-  --sidebar-foreground: #eef0f6;
-  --sidebar-border: #161922;
-  --glass: rgba(16, 18, 24, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --surface-elevated: #14161e;
-  --success: #34d399;
-  --warning: #fbbf24;
-  --chart-1: #818cf8;
+  --border: #2b2f36;
+  --input: #2b2f36;
+  --ring: #0b84f3;
+  --sidebar: #0b0c0f;
+  --sidebar-foreground: #e4e4e7;
+  --sidebar-border: #1f2228;
+  --glass: rgba(25, 27, 31, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --surface-elevated: #1e2128;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --chart-1: #0b84f3;
   --chart-2: #22d3ee;
-  --chart-3: #f472b6;
-  --chart-4: #fbbf24;
-  --editor-bg: #050608;
-  --editor-panel: #0c0e14;
-  --editor-border: #1a1e2a;
-  --timeline-track: #12151e;
+  --chart-3: #a78bfa;
+  --chart-4: #f59e0b;
+  --editor-bg: #000000;
+  --editor-panel: #191b1f;
+  --editor-border: #2b2f36;
+  --timeline-track: #15171c;
 }
 
 @theme inline {

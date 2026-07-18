@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
+  Clapperboard,
   Clock,
   Download,
   FolderOpen,
@@ -10,13 +11,13 @@ import {
   Play,
   Sparkles,
   TrendingUp,
-  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/components/shared/primitives";
 import { ProjectPreview } from "@/components/shared/project-preview";
+import { NewProjectDialog } from "@/components/shared/new-project-dialog";
 import { CreateAIDialog } from "@/components/shared/create-ai-dialog";
 import { useProjectStore } from "@/stores/project-store";
 import { useUIStore } from "@/stores/ui-store";
@@ -40,28 +41,35 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklab,var(--primary)_18%,transparent),transparent_55%)]" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <Badge variant="secondary" className="mb-3">
-              <Sparkles className="mr-1 h-3 w-3" /> AI Studio
+            <Badge className="mb-3 bg-[#0b84f3] text-white hover:bg-[#0b84f3]">
+              <Clapperboard className="mr-1 h-3 w-3" /> Remotion Studio
             </Badge>
             <h1 className="font-display text-3xl font-semibold tracking-tight lg:text-4xl">
-              Welcome back, Alex
+              Make videos programmatically
             </h1>
             <p className="mt-2 max-w-xl text-muted-foreground">
-              Create cinematic videos from prompts, edit on a Remotion timeline,
-              and export in minutes.
+              A Remotion operating system — compositions, timeline, transitions,
+              captions, 3D, and render queues in one studio.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <CreateAIDialog
+            <NewProjectDialog
               trigger={
                 <Button variant="glow" size="lg">
-                  <Zap className="h-4 w-4" /> Create with AI
+                  <Clapperboard className="h-4 w-4" /> New project
                 </Button>
               }
             />
             <Button asChild variant="outline" size="lg">
               <Link href="/templates">Browse templates</Link>
             </Button>
+            <CreateAIDialog
+              trigger={
+                <Button variant="ghost" size="lg">
+                  <Sparkles className="h-4 w-4" /> Create with AI
+                </Button>
+              }
+            />
           </div>
         </div>
       </motion.section>

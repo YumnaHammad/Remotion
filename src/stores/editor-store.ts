@@ -4,14 +4,19 @@ import type {
   AspectRatio,
   Layer,
   Project,
+  Scene,
+  Template,
+  Track,
   TransitionType,
 } from "@/types";
 import { ASPECT_PRESETS } from "@/lib/constants";
 import { MOCK_PROJECTS } from "@/data/mock";
+import { makeTextLayer } from "@/lib/project-factory";
 
 type LeftTab =
   | "assets"
   | "templates"
+  | "scenes"
   | "text"
   | "shapes"
   | "audio"
@@ -56,6 +61,13 @@ interface EditorState {
   removeLayers: (ids: string[]) => void;
   setLayerAnimation: (id: string, animation: AnimationPreset) => void;
   setSceneTransition: (sceneId: string, transition: TransitionType) => void;
+  applyTemplate: (template: Template) => void;
+  addScene: () => void;
+  removeScene: (id: string) => void;
+  reorderScene: (id: string, direction: "up" | "down") => void;
+  updateScene: (id: string, patch: Partial<Scene>) => void;
+  updateTrack: (id: string, patch: Partial<Track>) => void;
+  setMasterVolume: (volume: number) => void;
   duplicateSelected: () => void;
   moveLayer: (id: string, startFrame: number) => void;
   trimLayer: (id: string, startFrame: number, durationInFrames: number) => void;
@@ -76,6 +88,21 @@ const defaultProject = structuredClone(MOCK_PROJECTS[0]);
 
 const uid = (prefix = "l") =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+/**
+ * Lay scenes back-to-back on the timeline (recomputing each startFrame) and
+ * return the recomputed scenes plus the total frame count so the composition
+ * length stays in sync with the sum of scene durations.
+ */
+const resequenceScenes = (scenes: Scene[]) => {
+  let cursor = 0;
+  const next = scenes.map((s) => {
+    const withStart = { ...s, startFrame: cursor };
+    cursor += s.durationInFrames;
+    return withStart;
+  });
+  return { scenes: next, total: cursor };
+};
 
 export const useEditorStore = create<EditorState>((set, get) => {
   /** Apply a project mutation while recording an undo snapshot. */
@@ -177,6 +204,115 @@ export const useEditorStore = create<EditorState>((set, get) => {
         scenes: p.scenes.map((sc) =>
           sc.id === sceneId ? { ...sc, transition } : sc
         ),
+      })),
+
+    applyTemplate: (template) => {
+      const preset = ASPECT_PRESETS[template.aspectRatio];
+      commit(
+        (p) => {
+          const scene: Scene = {
+            id: uid("sc"),
+            name: "Main",
+            startFrame: 0,
+            durationInFrames: template.durationInFrames,
+            transition: "fade",
+            transitionDuration: 15,
+            background: "#0a0a0f",
+          };
+          const headline = makeTextLayer({
+            name: "Headline",
+            text: template.name,
+            startFrame: 10,
+            durationInFrames: Math.min(90, template.durationInFrames - 10),
+            animation: "bounce",
+          });
+          return {
+            ...p,
+            settings: {
+              ...p.settings,
+              aspectRatio: template.aspectRatio,
+              width: preset.width,
+              height: preset.height,
+              durationInFrames: template.durationInFrames,
+            },
+            scenes: [scene],
+            layers: [...p.layers, headline],
+          };
+        },
+        { selectedLayerIds: [] }
+      );
+    },
+
+    addScene: () =>
+      commit((p) => {
+        const scene: Scene = {
+          id: uid("sc"),
+          name: `Scene ${p.scenes.length + 1}`,
+          startFrame: 0,
+          durationInFrames: 60,
+          transition: "fade",
+          transitionDuration: 12,
+          background: "#0a0a0f",
+        };
+        const { scenes, total } = resequenceScenes([...p.scenes, scene]);
+        return {
+          ...p,
+          scenes,
+          settings: { ...p.settings, durationInFrames: total },
+        };
+      }),
+
+    removeScene: (id) =>
+      commit((p) => {
+        if (p.scenes.length <= 1) return p;
+        const { scenes, total } = resequenceScenes(
+          p.scenes.filter((s) => s.id !== id)
+        );
+        return {
+          ...p,
+          scenes,
+          settings: { ...p.settings, durationInFrames: total },
+        };
+      }),
+
+    reorderScene: (id, direction) =>
+      commit((p) => {
+        const idx = p.scenes.findIndex((s) => s.id === id);
+        if (idx === -1) return p;
+        const swap = direction === "up" ? idx - 1 : idx + 1;
+        if (swap < 0 || swap >= p.scenes.length) return p;
+        const arr = [...p.scenes];
+        [arr[idx], arr[swap]] = [arr[swap], arr[idx]];
+        const { scenes, total } = resequenceScenes(arr);
+        return {
+          ...p,
+          scenes,
+          settings: { ...p.settings, durationInFrames: total },
+        };
+      }),
+
+    updateScene: (id, patch) =>
+      commit((p) => {
+        const { scenes, total } = resequenceScenes(
+          p.scenes.map((s) => (s.id === id ? { ...s, ...patch } : s))
+        );
+        return {
+          ...p,
+          scenes,
+          settings: { ...p.settings, durationInFrames: total },
+        };
+      }),
+
+    updateTrack: (id, patch) =>
+      commit((p) => ({
+        ...p,
+        tracks: p.tracks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      })),
+
+    setMasterVolume: (volume) =>
+      commit((p) => ({
+        ...p,
+        masterVolume: Math.max(0, Math.min(1, volume)),
       })),
 
     duplicateSelected: () => {

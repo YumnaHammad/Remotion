@@ -21,14 +21,19 @@ import {
   NestedSequences,
   TransitionsShowcase,
 } from "./compositions/TransitionsShowcase";
-import { MOCK_PROJECTS } from "@/data/mock";
+import {
+  MediaPrimitivesLab,
+  PrimitivesLab,
+} from "./labs/PrimitivesLab";
+import { AnimationLab } from "./labs/AnimationLab";
+import { MOCK_PROJECTS, SAMPLE_IMAGE } from "@/data/mock";
 
 const defaultProject = MOCK_PROJECTS[0];
 const templateDefaults: TemplateProps = {
-  title: "LUMEN",
-  subtitle: "AI Video Studio",
-  accent: "#818cf8",
-  brandColor: "#6366f1",
+  title: "REMOTION",
+  subtitle: "Make videos programmatically",
+  accent: "#0b84f3",
+  brandColor: "#0b84f3",
 };
 
 export const RemotionRoot: React.FC = () => {
@@ -181,6 +186,41 @@ export const RemotionRoot: React.FC = () => {
           fps={30}
           width={1920}
           height={1080}
+        />
+      </Folder>
+
+      <Folder name="Labs">
+        <Composition
+          id="PrimitivesLab"
+          component={PrimitivesLab}
+          durationInFrames={120}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={{ mode: "sequence" as const, accent: "#0b84f3" }}
+        />
+        <Composition
+          id="MediaPrimitivesLab"
+          component={MediaPrimitivesLab}
+          durationInFrames={90}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={{ imageSrc: SAMPLE_IMAGE }}
+        />
+        <Composition
+          id="AnimationLab"
+          component={AnimationLab}
+          durationInFrames={120}
+          fps={30}
+          width={1280}
+          height={720}
+          defaultProps={{
+            mode: "spring" as const,
+            intensity: 1,
+            accent: "#0b84f3",
+            text: "Make videos programmatically with Remotion",
+          }}
         />
       </Folder>
     </>

@@ -8,8 +8,6 @@ import {
   Video,
   useVideoConfig,
 } from "remotion";
-import { Gif } from "@remotion/gif";
-import { Lottie } from "@remotion/lottie";
 import { CameraMotionBlur } from "@remotion/motion-blur";
 import type { Layer } from "@/types";
 import { useAnimatedStyle } from "./AnimatedText";
@@ -42,9 +40,16 @@ function Wrapper({
   );
 }
 
-export function MediaLayer({ layer }: { layer: Layer }) {
+export function MediaLayer({
+  layer,
+  gain = 1,
+}: {
+  layer: Layer;
+  gain?: number;
+}) {
   const { width, height } = useVideoConfig();
   const fit = layer.objectFit ?? "cover";
+  const volume = (layer.muted ? 0 : layer.volume ?? 1) * gain;
 
   if (layer.type === "image" && layer.src) {
     const img = (
@@ -57,14 +62,13 @@ export function MediaLayer({ layer }: { layer: Layer }) {
   }
 
   if (layer.type === "gif" && layer.src) {
+    // Use Img in the browser Player — @remotion/gif fetch failures used to
+    // blank the entire preview. Animated GIFs still play via <img>.
     return (
       <Wrapper layer={layer}>
-        <Gif
+        <Img
           src={layer.src}
-          width={width}
-          height={height}
-          fit={fit}
-          playbackRate={layer.playbackRate ?? 1}
+          style={{ width, height, objectFit: fit }}
         />
       </Wrapper>
     );
@@ -80,7 +84,7 @@ export function MediaLayer({ layer }: { layer: Layer }) {
     let node: React.ReactNode = (
       <VideoComp
         src={layer.src}
-        volume={layer.muted ? 0 : layer.volume ?? 1}
+        volume={volume}
         playbackRate={layer.playbackRate ?? 1}
         style={{ width, height, objectFit: fit }}
       />
@@ -106,7 +110,7 @@ export function MediaLayer({ layer }: { layer: Layer }) {
     let node: React.ReactNode = (
       <Audio
         src={layer.src}
-        volume={layer.muted ? 0 : layer.volume ?? 1}
+        volume={volume}
         playbackRate={layer.playbackRate ?? 1}
       />
     );
