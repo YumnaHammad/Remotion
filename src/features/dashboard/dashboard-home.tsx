@@ -18,6 +18,8 @@ import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/components/shared/primitives";
 import { useProjectStore } from "@/stores/project-store";
 import { useSimpleVideoStore } from "@/stores/simple-video-store";
+import { TEMPLATE_CATALOG } from "@/templates/catalog";
+import { APP_NAME } from "@/lib/constants";
 import { formatRelative } from "@/lib/utils";
 
 const QUICK_LINKS = [
@@ -47,7 +49,7 @@ const QUICK_LINKS = [
   },
 ] as const;
 
-export default function HomePage() {
+export function DashboardHome() {
   const renders = useProjectStore((s) => s.renders);
   const simpleProjects = useSimpleVideoStore((s) => s.projects);
   const activeRenders = renders.filter(
@@ -58,33 +60,33 @@ export default function HomePage() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm lg:p-8"
+        className="relative overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm sm:rounded-2xl sm:p-6 lg:p-8"
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklab,var(--primary)_18%,transparent),transparent_55%)]" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+        <div className="relative flex flex-col gap-5 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
             <Badge className="mb-3 bg-[#0b84f3] text-white hover:bg-[#0b84f3]">
-              <Video className="mr-1 h-3 w-3" /> Video SaaS
+              <Video className="mr-1 h-3 w-3" /> {APP_NAME}
             </Badge>
-            <h1 className="font-display text-3xl font-semibold tracking-tight lg:text-4xl">
+            <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
               Templates & automation
             </h1>
-            <p className="mt-2 max-w-xl text-muted-foreground">
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
               Turn websites and spreadsheets into videos. Pick a template, edit
               text and colors, preview live, export MP4 — no timeline needed.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="glow" size="lg">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button asChild variant="glow" size="lg" className="w-full sm:w-auto">
               <Link href="/templates">
                 <Clapperboard className="h-4 w-4" /> New video
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
               <Link href="/website-to-video">
                 <Globe className="h-4 w-4" /> From URL
               </Link>
@@ -108,8 +110,8 @@ export default function HomePage() {
         />
         <StatCard
           label="Templates"
-          value="10+"
-          hint="Remotion compositions"
+          value={String(TEMPLATE_CATALOG.length)}
+          hint="Social, product, podcast & more"
           icon={LayoutTemplate}
         />
         <StatCard

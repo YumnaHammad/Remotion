@@ -1,4 +1,4 @@
-# Remotion Studio — Templates & Automation
+# Framekit — Templates & Automation
 
 Lightweight video SaaS built with **Next.js**, **Remotion**, **Zustand**, and **Tailwind**.
 
@@ -53,5 +53,5 @@ src/
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Next.js app |
-| `npm run remotion` | Remotion Studio CLI |
+| `npm run remotion` | Remotion CLI (composition inspector) |
 | `npm run build` | Production build |

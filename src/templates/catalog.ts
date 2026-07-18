@@ -1,12 +1,19 @@
 import type { AspectRatio } from "@/types";
 import { MOCK_TEMPLATES } from "@/data/mock";
+import {
+  REMOTION_OFFICIAL_CATALOG,
+  REMOTION_OFFICIAL_DIMS,
+} from "@/templates/remotion-official-catalog";
 
 export type TemplateCategory =
+  | "Official"
+  | "Starter"
   | "Social"
   | "Product"
   | "Business"
   | "Podcast"
-  | "News";
+  | "News"
+  | "Creative";
 
 export interface TemplateCatalogItem {
   id: string;
@@ -21,8 +28,12 @@ export interface TemplateCatalogItem {
   height: number;
   thumbnail: string;
   popular?: boolean;
+  premium?: boolean;
   /** Best suited for website or data automation */
   useCases: ("website" | "data" | "manual")[];
+  /** From remotion.dev/templates */
+  official?: boolean;
+  remotionUrl?: string;
 }
 
 const REGISTRY_DIMS: Record<
@@ -40,6 +51,7 @@ const REGISTRY_DIMS: Record<
   Explainer: { width: 1920, height: 1080, fps: 30, durationInFrames: 270, aspectRatio: "16:9" },
   SaasDemo: { width: 1920, height: 1080, fps: 30, durationInFrames: 300, aspectRatio: "16:9" },
   DataSlideshow: { width: 1920, height: 1080, fps: 30, durationInFrames: 300, aspectRatio: "16:9" },
+  ...REMOTION_OFFICIAL_DIMS,
 };
 
 const CATEGORY_MAP: Record<string, TemplateCategory> = {
@@ -48,15 +60,15 @@ const CATEGORY_MAP: Record<string, TemplateCategory> = {
   TikTok: "Social",
   Podcast: "Podcast",
   "Product Ads": "Product",
-  Startup: "Business",
+  "Startup Promo": "Business",
   News: "News",
   Motivational: "Social",
   Explainer: "Business",
-  SaaS: "Business",
+  "SaaS Demos": "Business",
 };
 
-/** Template gallery catalog — maps UI cards to Remotion composition IDs. */
-export const TEMPLATE_CATALOG: TemplateCatalogItem[] = MOCK_TEMPLATES.map((t) => {
+/** Built-in marketing templates (custom compositions). */
+export const BUILTIN_TEMPLATE_CATALOG: TemplateCatalogItem[] = MOCK_TEMPLATES.map((t) => {
   const dims = REGISTRY_DIMS[t.compositionId] ?? REGISTRY_DIMS.ProductAd;
   const useCases: TemplateCatalogItem["useCases"] =
     t.compositionId === "ProductAd" || t.compositionId === "SaasDemo"
@@ -78,9 +90,27 @@ export const TEMPLATE_CATALOG: TemplateCatalogItem[] = MOCK_TEMPLATES.map((t) =>
     height: dims.height,
     thumbnail: t.thumbnail,
     popular: t.popular,
+    premium: t.premium,
     useCases,
   };
 });
+
+/** Full template gallery — official Remotion demos + built-in templates. */
+export const TEMPLATE_CATALOG: TemplateCatalogItem[] = [
+  ...REMOTION_OFFICIAL_CATALOG,
+  ...BUILTIN_TEMPLATE_CATALOG,
+];
+
+export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
+  "Official",
+  "Starter",
+  "Social",
+  "Product",
+  "Business",
+  "Podcast",
+  "News",
+  "Creative",
+];
 
 /** Data-only template for CSV/Excel/JSON uploads. */
 export const DATA_TEMPLATE: TemplateCatalogItem = {

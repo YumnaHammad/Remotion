@@ -24,7 +24,9 @@ export const useBrandStore = create<BrandState>()(
           },
         })),
       setLogo: (logoUrl) =>
-        set((s) => ({ brand: { ...s.brand, logoUrl } })),
+        set((s) => ({
+          brand: { ...s.brand, logoUrl: logoUrl || undefined },
+        })),
       resetBrand: () => set({ brand: DEFAULT_BRAND }),
     }),
     { name: "video-brand-kit" }

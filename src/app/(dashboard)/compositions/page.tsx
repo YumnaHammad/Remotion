@@ -44,7 +44,7 @@ export default function CompositionsPage() {
         actions={
           <Button asChild variant="outline">
             <a href="http://localhost:3001" target="_blank" rel="noreferrer">
-              <ExternalLink className="h-4 w-4" /> Open Remotion Studio CLI
+              <ExternalLink className="h-4 w-4" /> Open Remotion CLI
             </a>
           </Button>
         }

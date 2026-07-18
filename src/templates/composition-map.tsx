@@ -14,6 +14,7 @@ import {
   YoutubeShort,
 } from "@/remotion/compositions/templates";
 import { DataSlideshow } from "@/remotion/compositions/DataSlideshow";
+import { REMOTION_OFFICIAL_COMPONENTS } from "@/remotion/compositions/remotion-official-demos";
 
 /**
  * Maps composition IDs to React components for @remotion/player.
@@ -34,8 +35,19 @@ export const COMPOSITION_MAP: Record<
   Explainer: Explainer as React.ComponentType<Record<string, unknown>>,
   SaasDemo: SaasDemo as React.ComponentType<Record<string, unknown>>,
   DataSlideshow: DataSlideshow as React.ComponentType<Record<string, unknown>>,
+  ...Object.fromEntries(
+    Object.entries(REMOTION_OFFICIAL_COMPONENTS).map(([id, Component]) => [
+      id,
+      Component as React.ComponentType<Record<string, unknown>>,
+    ])
+  ),
 };
 
 export function getCompositionComponent(compositionId: string) {
-  return COMPOSITION_MAP[compositionId] ?? ProductAd;
+  return (
+    COMPOSITION_MAP[compositionId] ??
+    (REMOTION_OFFICIAL_COMPONENTS.HelloWorld as React.ComponentType<
+      Record<string, unknown>
+    >)
+  );
 }

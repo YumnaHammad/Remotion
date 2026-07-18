@@ -5,6 +5,7 @@ import { MOCK_NOTIFICATIONS } from "@/data/mock";
 
 interface UIState {
   sidebarCollapsed: boolean;
+  mobileNavOpen: boolean;
   commandOpen: boolean;
   shortcutsOpen: boolean;
   notifications: NotificationItem[];
@@ -12,6 +13,7 @@ interface UIState {
   storageLimit: number;
 
   toggleSidebar: () => void;
+  setMobileNavOpen: (open: boolean) => void;
   setCommandOpen: (open: boolean) => void;
   setShortcutsOpen: (open: boolean) => void;
   markNotificationRead: (id: string) => void;
@@ -22,6 +24,7 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       sidebarCollapsed: false,
+      mobileNavOpen: false,
       commandOpen: false,
       shortcutsOpen: false,
       notifications: MOCK_NOTIFICATIONS,
@@ -30,6 +33,7 @@ export const useUIStore = create<UIState>()(
 
       toggleSidebar: () =>
         set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      setMobileNavOpen: (mobileNavOpen) => set({ mobileNavOpen }),
       setCommandOpen: (commandOpen) => set({ commandOpen }),
       setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
       markNotificationRead: (id) =>

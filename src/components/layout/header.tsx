@@ -6,6 +6,7 @@ import {
   CreditCard,
   Keyboard,
   LogOut,
+  Menu,
   Plus,
   Search,
   User,
@@ -29,6 +30,7 @@ export function Header({ title }: { title?: string }) {
   const {
     setCommandOpen,
     setShortcutsOpen,
+    setMobileNavOpen,
     notifications,
     markNotificationRead,
     markAllRead,
@@ -36,7 +38,16 @@ export function Header({ title }: { title?: string }) {
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl lg:px-6">
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-xl sm:gap-3 sm:px-4 lg:px-6">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="shrink-0 lg:hidden"
+        onClick={() => setMobileNavOpen(true)}
+        aria-label="Open menu"
+      >
+        <Menu className="h-4 w-4" />
+      </Button>
       <div className="min-w-0 flex-1">
         {title ? (
           <h1 className="truncate text-sm font-semibold tracking-tight">
@@ -49,7 +60,10 @@ export function Header({ title }: { title?: string }) {
             className="relative flex h-9 w-full max-w-md items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 text-left text-sm text-muted-foreground transition hover:bg-muted"
           >
             <Search className="h-4 w-4 shrink-0" />
-            <span className="truncate">Search projects, templates…</span>
+            <span className="truncate sm:hidden">Search…</span>
+            <span className="hidden truncate sm:inline">
+              Search projects, templates…
+            </span>
             <kbd className="pointer-events-none absolute right-2 hidden h-5 select-none items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium sm:flex">
               ⌘K
             </kbd>

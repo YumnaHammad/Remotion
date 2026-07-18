@@ -8,20 +8,17 @@ import {
   useVideoConfig,
 } from "remotion";
 import { ParticleField } from "../components/ParticleField";
+import { BrandLogo } from "../components/BrandLogo";
 import type { TemplateProps } from "./templates-schema";
+import { mergeTemplateProps } from "./template-utils";
 
-/** Safe for @remotion/player in the browser — no zod or google-fonts loader. */
-const DEFAULT_FONT = "Inter, system-ui, sans-serif";
-
-const defaultProps: TemplateProps = {
-  title: "LUMEN",
-  subtitle: "Create without limits",
-  accent: "#818cf8",
-  brandColor: "#6366f1",
+type TemplateComponentProps = Partial<TemplateProps> & {
+  fontFamily?: string;
+  logoUrl?: string;
 };
 
-export const YoutubeShort: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, subtitle, accent } = { ...defaultProps, ...props };
+export const YoutubeShort: React.FC<TemplateComponentProps> = (props) => {
+  const { title, subtitle, accent, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const scale = spring({ frame, fps, config: { damping: 14 } });
@@ -31,9 +28,10 @@ export const YoutubeShort: React.FC<Partial<TemplateProps>> = (props) => {
     <AbsoluteFill
       style={{
         background: "linear-gradient(160deg,#0a0612,#1a1030)",
-        fontFamily: DEFAULT_FONT,
+        fontFamily,
       }}
     >
+      <BrandLogo logoUrl={logoUrl} />
       <ParticleField density={24} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div style={{ transform: `scale(${scale})`, textAlign: "center" }}>
@@ -60,13 +58,14 @@ export const YoutubeShort: React.FC<Partial<TemplateProps>> = (props) => {
   );
 };
 
-export const InstagramReel: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, subtitle, brandColor } = { ...defaultProps, ...props };
+export const InstagramReel: React.FC<TemplateComponentProps> = (props) => {
+  const { title, subtitle, brandColor, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const glow = interpolate(frame % 45, [0, 22, 45], [0.4, 1, 0.4]);
 
   return (
-    <AbsoluteFill style={{ background: "#12040e" }}>
+    <AbsoluteFill style={{ background: "#12040e", fontFamily }}>
+      <BrandLogo logoUrl={logoUrl} />
       <AbsoluteFill
         style={{
           background: `radial-gradient(circle at 50% 40%, ${brandColor}55, transparent 55%)`,
@@ -93,13 +92,14 @@ export const InstagramReel: React.FC<Partial<TemplateProps>> = (props) => {
   );
 };
 
-export const ProductAd: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, subtitle, brandColor } = { ...defaultProps, ...props };
+export const ProductAd: React.FC<TemplateComponentProps> = (props) => {
+  const { title, subtitle, brandColor, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   return (
-    <AbsoluteFill style={{ background: "#05070c" }}>
+    <AbsoluteFill style={{ background: "#05070c", fontFamily }}>
+      <BrandLogo logoUrl={logoUrl} />
       <Sequence from={0} durationInFrames={60}>
         <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
           <div
@@ -130,8 +130,8 @@ export const ProductAd: React.FC<Partial<TemplateProps>> = (props) => {
   );
 };
 
-export const PodcastOpener: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, subtitle, accent } = { ...defaultProps, ...props };
+export const PodcastOpener: React.FC<TemplateComponentProps> = (props) => {
+  const { title, subtitle, accent, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const bars = Array.from({ length: 24 }, (_, i) => {
     const h =
@@ -153,7 +153,8 @@ export const PodcastOpener: React.FC<Partial<TemplateProps>> = (props) => {
   });
 
   return (
-    <AbsoluteFill style={{ background: "#0c0a09", justifyContent: "center", alignItems: "center", gap: 40 }}>
+    <AbsoluteFill style={{ background: "#0c0a09", justifyContent: "center", alignItems: "center", gap: 40, fontFamily }}>
+      <BrandLogo logoUrl={logoUrl} />
       <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 140 }}>
         {bars}
       </div>
@@ -165,14 +166,15 @@ export const PodcastOpener: React.FC<Partial<TemplateProps>> = (props) => {
   );
 };
 
-export const SaasDemo: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, subtitle, brandColor } = { ...defaultProps, ...props };
+export const SaasDemo: React.FC<TemplateComponentProps> = (props) => {
+  const { title, subtitle, brandColor, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const y = interpolate(frame, [0, 40], [60, 0], { extrapolateRight: "clamp" });
   const opacity = interpolate(frame, [0, 25], [0, 1], { extrapolateRight: "clamp" });
 
   return (
-    <AbsoluteFill style={{ background: "#0b1020" }}>
+    <AbsoluteFill style={{ background: "#0b1020", fontFamily }}>
+      <BrandLogo logoUrl={logoUrl} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -217,8 +219,8 @@ export const SaasDemo: React.FC<Partial<TemplateProps>> = (props) => {
   );
 };
 
-export const Motivational: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, subtitle } = { ...defaultProps, ...props };
+export const Motivational: React.FC<TemplateComponentProps> = (props) => {
+  const { title, subtitle, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const words = title.split(" ");
 
@@ -229,8 +231,10 @@ export const Motivational: React.FC<Partial<TemplateProps>> = (props) => {
         justifyContent: "center",
         alignItems: "center",
         padding: 48,
+        fontFamily,
       }}
     >
+      <BrandLogo logoUrl={logoUrl} />
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 16 }}>
         {words.map((w, i) => {
           const delay = i * 8;
@@ -268,13 +272,14 @@ export const Motivational: React.FC<Partial<TemplateProps>> = (props) => {
   );
 };
 
-export const Explainer: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, brandColor } = { ...defaultProps, ...props };
+export const Explainer: React.FC<TemplateComponentProps> = (props) => {
+  const { title, brandColor, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const values = [65, 82, 47, 91, 73];
 
   return (
-    <AbsoluteFill style={{ background: "#0a0f1a", padding: 80 }}>
+    <AbsoluteFill style={{ background: "#0a0f1a", padding: 80, fontFamily }}>
+      <BrandLogo logoUrl={logoUrl} />
       <div style={{ fontSize: 48, fontWeight: 800, color: "#fff", marginBottom: 48 }}>
         {title}
       </div>
@@ -303,13 +308,14 @@ export const Explainer: React.FC<Partial<TemplateProps>> = (props) => {
   );
 };
 
-export const NewsVideo: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, subtitle, accent } = { ...defaultProps, ...props };
+export const NewsVideo: React.FC<TemplateComponentProps> = (props) => {
+  const { title, subtitle, accent, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const tickerX = interpolate(frame, [0, 200], [100, -100]);
 
   return (
-    <AbsoluteFill style={{ background: "#0c1222" }}>
+    <AbsoluteFill style={{ background: "#0c1222", fontFamily }}>
+      <BrandLogo logoUrl={logoUrl} />
       <AbsoluteFill style={{ justifyContent: "flex-end", padding: 48 }}>
         <div
           style={{
@@ -359,8 +365,8 @@ export const NewsVideo: React.FC<Partial<TemplateProps>> = (props) => {
   );
 };
 
-export const StartupPromo: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, subtitle, brandColor } = { ...defaultProps, ...props };
+export const StartupPromo: React.FC<TemplateComponentProps> = (props) => {
+  const { title, subtitle, brandColor, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 18 } });
@@ -371,8 +377,10 @@ export const StartupPromo: React.FC<Partial<TemplateProps>> = (props) => {
         background: `radial-gradient(ellipse at 30% 20%, ${brandColor}33, #05060a 50%)`,
         justifyContent: "center",
         padding: 100,
+        fontFamily,
       }}
     >
+      <BrandLogo logoUrl={logoUrl} />
       <div style={{ opacity: enter, transform: `translateY(${(1 - enter) * 40}px)` }}>
         <div style={{ fontSize: 18, letterSpacing: 6, color: brandColor, fontWeight: 600 }}>
           INTRODUCING
@@ -402,13 +410,14 @@ export const StartupPromo: React.FC<Partial<TemplateProps>> = (props) => {
   );
 };
 
-export const TikTokTrend: React.FC<Partial<TemplateProps>> = (props) => {
-  const { title, subtitle } = { ...defaultProps, ...props };
+export const TikTokTrend: React.FC<TemplateComponentProps> = (props) => {
+  const { title, subtitle, fontFamily, logoUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const beat = Math.sin(frame / 4) * 0.05 + 1;
 
   return (
-    <AbsoluteFill style={{ background: "#000", justifyContent: "center", alignItems: "center" }}>
+    <AbsoluteFill style={{ background: "#000", justifyContent: "center", alignItems: "center", fontFamily }}>
+      <BrandLogo logoUrl={logoUrl} />
       <div
         style={{
           transform: `scale(${beat}) rotate(${Math.sin(frame / 10) * 2}deg)`,

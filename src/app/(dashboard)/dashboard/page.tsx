@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { DashboardHome } from "@/features/dashboard/dashboard-home";
 
-export default function DashboardAliasPage() {
-  redirect("/");
+export default function DashboardPage() {
+  return <DashboardHome />;
 }

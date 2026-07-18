@@ -28,6 +28,8 @@ import {
 import { AnimationLab } from "./labs/AnimationLab";
 import { DataSlideshow } from "./compositions/DataSlideshow";
 import { dataVideoSchema } from "./compositions/data-slideshow-schema";
+import { REMOTION_OFFICIAL_COMPONENTS } from "./compositions/remotion-official-demos";
+import { REMOTION_OFFICIAL_DIMS } from "@/templates/remotion-official-catalog";
 import { MOCK_PROJECTS, SAMPLE_IMAGE } from "@/data/mock";
 
 const defaultProject = MOCK_PROJECTS[0];
@@ -170,6 +172,30 @@ export const RemotionRoot: React.FC = () => {
             columns: ["Product", "Revenue"],
           }}
         />
+      </Folder>
+
+      <Folder name="Remotion Official">
+        {(
+          Object.entries(REMOTION_OFFICIAL_COMPONENTS) as [
+            keyof typeof REMOTION_OFFICIAL_COMPONENTS,
+            (typeof REMOTION_OFFICIAL_COMPONENTS)[keyof typeof REMOTION_OFFICIAL_COMPONENTS],
+          ][]
+        ).map(([id, Component]) => {
+          const dims = REMOTION_OFFICIAL_DIMS[id];
+          return (
+            <Composition
+              key={id}
+              id={id}
+              component={Component}
+              schema={templateSchema}
+              durationInFrames={dims.durationInFrames}
+              fps={dims.fps}
+              width={dims.width}
+              height={dims.height}
+              defaultProps={templateDefaults}
+            />
+          );
+        })}
       </Folder>
 
       <Folder name="Effects">

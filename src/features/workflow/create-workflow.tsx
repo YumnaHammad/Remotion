@@ -20,7 +20,7 @@ import { ExportVideoButton } from "@/features/shared/export-video-button";
 import { useSimpleVideoStore } from "@/stores/simple-video-store";
 import { useBrandKit } from "@/hooks/use-brand-kit";
 import { TEMPLATE_CATALOG, getTemplateById } from "@/templates/catalog";
-import { applyBrandToProps } from "@/utils/brand-defaults";
+import { syncPropsFromBrand } from "@/utils/brand-defaults";
 import type { VideoTemplateProps } from "@/types/video";
 import { toast } from "sonner";
 
@@ -71,7 +71,8 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
   }, [project, brand]);
 
   const inputProps = useMemo((): Record<string, unknown> => {
-    const base = {
+    const saved = project?.props as VideoTemplateProps | undefined;
+    return {
       ...(project?.props ?? {}),
       title,
       subtitle,
@@ -79,12 +80,36 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
       brandColor,
       fontFamily,
       ...(musicUrl ? { musicUrl } : {}),
+      ...(saved?.logoUrl || brand.logoUrl
+        ? { logoUrl: saved?.logoUrl ?? brand.logoUrl }
+        : {}),
     };
-    return applyBrandToProps(base as VideoTemplateProps, brand) as unknown as Record<
-      string,
-      unknown
-    >;
-  }, [project, title, subtitle, accent, brandColor, fontFamily, musicUrl, brand]);
+  }, [project, title, subtitle, accent, brandColor, fontFamily, musicUrl, brand.logoUrl]);
+
+  const applyBrandKit = () => {
+    const synced = syncPropsFromBrand(
+      {
+        title,
+        subtitle,
+        accent,
+        brandColor,
+        fontFamily,
+        logoUrl: (project?.props as VideoTemplateProps)?.logoUrl,
+        ...(musicUrl ? { musicUrl } : {}),
+      },
+      brand
+    );
+    setTitle(synced.title);
+    setSubtitle(synced.subtitle);
+    setAccent(synced.accent);
+    setBrandColor(synced.brandColor);
+    setFontFamily(synced.fontFamily ?? brand.fontFamily);
+    setMusicUrl(synced.musicUrl ?? "");
+    updateProject(projectId, {
+      props: synced,
+    });
+    toast.success("Brand kit applied to this video");
+  };
 
   if (!hydrated) {
     return (
@@ -138,7 +163,7 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon">
-            <Link href="/">
+            <Link href="/dashboard">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -257,6 +282,9 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
               </div>
 
               <div className="flex flex-wrap gap-2 pt-2">
+                <Button variant="outline" onClick={applyBrandKit}>
+                  Apply brand kit
+                </Button>
                 <Button variant="outline" onClick={save}>
                   <Save className="mr-2 h-4 w-4" /> Save
                 </Button>

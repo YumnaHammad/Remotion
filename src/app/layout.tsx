@@ -21,9 +21,15 @@ const display = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Remotion Studio — Professional Video OS",
+  title: "Framekit — Templates & Video Automation",
   description:
-    "Production-grade Remotion platform: compositions, timeline, transitions, captions, 3D, and render pipeline.",
+    "Framekit turns templates, websites, and spreadsheets into branded videos. Edit text and colors, preview live, export MP4.",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

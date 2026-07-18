@@ -4,6 +4,8 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { CommandPalette } from "@/components/layout/command-palette";
 import { ShortcutsDialog } from "@/components/layout/shortcuts-dialog";
+import { useUIStore } from "@/stores/ui-store";
+import { cn } from "@/lib/utils";
 
 export function DashboardShell({
   children,
@@ -12,12 +14,21 @@ export function DashboardShell({
   children: React.ReactNode;
   title?: string;
 }) {
+  const sidebarCollapsed = useUIStore((s) => s.sidebarCollapsed);
+
   return (
-    <div className="mesh-bg flex min-h-screen">
+    <div className="mesh-bg min-h-dvh">
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div
+        className={cn(
+          "flex min-h-dvh min-w-0 flex-col transition-[margin-left] duration-300 ease-out",
+          sidebarCollapsed ? "lg:ml-[68px]" : "lg:ml-[240px]"
+        )}
+      >
         <Header title={title} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        <main className="scrollbar-thin flex-1 overflow-y-auto overscroll-y-contain p-3 sm:p-4 lg:p-6">
+          {children}
+        </main>
       </div>
       <CommandPalette />
       <ShortcutsDialog />

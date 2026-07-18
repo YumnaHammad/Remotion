@@ -40,6 +40,7 @@ export interface VideoTemplateProps {
   brandColor: string;
   imageUrl?: string;
   fontFamily?: string;
+  logoUrl?: string;
   musicUrl?: string;
 }
 

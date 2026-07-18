@@ -1,6 +1,6 @@
 import type { AspectRatio, ExportQuality } from "@/types";
 
-export const APP_NAME = "Remotion Studio";
+export const APP_NAME = "Framekit";
 export const APP_TAGLINE = "Templates & video automation";
 
 export const ASPECT_PRESETS: Record<
@@ -26,7 +26,7 @@ export const NAV_SECTIONS = [
   {
     label: "Create",
     items: [
-      { href: "/", label: "Dashboard", icon: "Home" },
+      { href: "/dashboard", label: "Dashboard", icon: "Home" },
       { href: "/templates", label: "Templates", icon: "LayoutTemplate" },
       { href: "/website-to-video", label: "Website to Video", icon: "Globe" },
       { href: "/data-to-video", label: "Data to Video", icon: "FileSpreadsheet" },

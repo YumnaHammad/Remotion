@@ -16,6 +16,7 @@ export function buildTemplateProps(
     accent: brand.colors.accent,
     brandColor: brand.colors.primary,
     fontFamily: brand.fontFamily,
+    logoUrl: brand.logoUrl,
     musicUrl: brand.musicUrl,
     ...overrides,
   };
