@@ -1,0 +1,14 @@
+{
+  "jobId": "veo-1785013778473-p9k3",
+  "prompt": "3d video of childrens playing in the garden",
+  "aspectRatio": "16:9",
+  "status": "failed",
+  "stage": "error",
+  "progress": 100,
+  "message": "Google Veo quota exceeded. Try again later or check billing.",
+  "operationName": "pending",
+  "operationSnapshot": {},
+  "createdAt": "2026-07-25T21:09:38.473Z",
+  "updatedAt": "2026-07-25T21:09:39.311Z",
+  "error": "Google Veo quota exceeded. Try again later or check billing."
+}

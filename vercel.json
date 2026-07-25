@@ -12,5 +12,11 @@
     "src/app/api/exports/[filename]/route.ts": {
       "maxDuration": 60
     }
+  "src/app/api/video/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/video/[jobId]/route.ts": {
+      "maxDuration": 60
+    }
   }
 }

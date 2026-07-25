@@ -1,21 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowRight,
+  Copy,
   Loader2,
   Sparkles,
   Wand2,
   Film,
   Download,
+  Share2,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -43,6 +47,9 @@ import type { EditRecipe, ResolvedEditRecipe } from "@/types/edit-recipe";
 import { ASPECT_PRESETS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { generateVideoWithVeo } from "@/lib/veo-client";
+import type { VeoJobPublic } from "@/lib/google-video";
+import { VEO_STAGE_LABELS } from "@/lib/google-video";
 
 const EXAMPLE_SCRIPT = `The business collapsed overnight [WHOOSH EFFECT]. The founder lost everything. But then, he had a breakthrough [DING EFFECT]!`;
 
@@ -116,6 +123,13 @@ export function ScriptToVideoFeature() {
   /** Captions (and matching spoken voice) only when the user turns this on. */
   const [showCaptions, setShowCaptions] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
+
+  /** Google Veo generation (async poll) */
+  const [veoBusy, setVeoBusy] = useState(false);
+  const [veoJob, setVeoJob] = useState<VeoJobPublic | null>(null);
+  const [veoVideoUrl, setVeoVideoUrl] = useState<string | null>(null);
+  const [veoProgressLabel, setVeoProgressLabel] = useState("");
+  const veoAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const scriptParam = searchParams.get("script");
@@ -349,6 +363,78 @@ export function ScriptToVideoFeature() {
     }
   };
 
+  /** Primary AI video path: Google Veo (async). Remotion stock stays available above. */
+  const generateWithVeo = async () => {
+    if (script.trim().length < 8) {
+      toast.error("Enter a prompt or script first");
+      return;
+    }
+    veoAbortRef.current?.abort();
+    const ac = new AbortController();
+    veoAbortRef.current = ac;
+    setVeoBusy(true);
+    setVeoVideoUrl(null);
+    setVeoJob(null);
+    setVeoProgressLabel(VEO_STAGE_LABELS.preparing);
+    setStep(3);
+    try {
+      const job = await generateVideoWithVeo({
+        prompt: script.trim(),
+        aspectRatio,
+        signal: ac.signal,
+        onProgress: (j, label) => {
+          setVeoJob(j);
+          setVeoProgressLabel(label);
+        },
+      });
+      setVeoJob(job);
+      if (job.videoUrl) {
+        setVeoVideoUrl(job.videoUrl);
+        toast.success("Veo video ready");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Veo generation failed";
+      toast.error(msg);
+      setVeoProgressLabel(msg);
+    } finally {
+      setVeoBusy(false);
+    }
+  };
+
+  const copyVeoUrl = async () => {
+    if (!veoVideoUrl) return;
+    const absolute =
+      typeof window !== "undefined"
+        ? new URL(veoVideoUrl, window.location.origin).toString()
+        : veoVideoUrl;
+    try {
+      await navigator.clipboard.writeText(absolute);
+      toast.success("Video URL copied");
+    } catch {
+      toast.error("Could not copy URL");
+    }
+  };
+
+  const shareVeo = async () => {
+    if (!veoVideoUrl) return;
+    const absolute =
+      typeof window !== "undefined"
+        ? new URL(veoVideoUrl, window.location.origin).toString()
+        : veoVideoUrl;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Framekit video",
+          url: absolute,
+        });
+        return;
+      } catch {
+        /* fall through */
+      }
+    }
+    await copyVeoUrl();
+  };
+
   const toggleCaptions = async (on: boolean) => {
     setShowCaptions(on);
     if (!resolved) return;
@@ -449,27 +535,34 @@ export function ScriptToVideoFeature() {
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="glow"
+                onClick={() => void generateWithVeo()}
+                disabled={loading || veoBusy}
+              >
+                {veoBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Generate with Veo
+              </Button>
+              <Button
+                variant="outline"
                 onClick={runBreakdown}
-                disabled={loading}
+                disabled={loading || veoBusy}
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Wand2 className="h-4 w-4" />
                 )}
-                Step 1: AI Breakdown
+                Remotion breakdown
               </Button>
               <Button
-                variant="outline"
-                onClick={generateAll}
-                disabled={loading}
+                variant="ghost"
+                onClick={() => void generateAll()}
+                disabled={loading || veoBusy}
               >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Generate all (1-click)
+                Remotion 1-click
               </Button>
             </div>
           </div>
@@ -478,18 +571,17 @@ export function ScriptToVideoFeature() {
             <h2 className="mb-2 text-sm font-semibold">How it works</h2>
             <ol className="space-y-3 text-sm text-muted-foreground">
               <li>
-                <strong className="text-foreground">Script breakdown</strong> — splits
-                your script into timed scenes with stock keywords and SFX tags.
+                <strong className="text-foreground">Generate with Veo</strong> —
+                Google AI creates a real video from your prompt (needs{" "}
+                <code className="text-xs">GOOGLE_API_KEY</code>).
               </li>
               <li>
-                <strong className="text-foreground">Asset matching</strong> —
-                picks B-roll and sound effects from your built-in library (no
-                API keys).
+                <strong className="text-foreground">Remotion breakdown</strong> —
+                splits your script into timed scenes with stock pictures.
               </li>
               <li>
-                <strong className="text-foreground">Remotion assembly</strong> —
-                the AutomatedVideo template renders stock footage, captions, music,
-                and effects frame-by-frame.
+                <strong className="text-foreground">Captions toggle</strong> —
+                optional on-screen words + spoken voice for Remotion previews.
               </li>
             </ol>
           </div>
@@ -567,6 +659,101 @@ export function ScriptToVideoFeature() {
             )}
             Step 2: Fetch assets & preview
           </Button>
+        </div>
+      )}
+
+      {(step === 3 || veoBusy || veoVideoUrl) && (
+        <div className="space-y-4">
+          {(veoBusy || veoJob || veoVideoUrl) && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="overflow-hidden rounded-xl border bg-black">
+                {veoVideoUrl ? (
+                  <video
+                    key={veoVideoUrl}
+                    src={veoVideoUrl}
+                    controls
+                    playsInline
+                    className="aspect-video w-full bg-black"
+                  />
+                ) : (
+                  <div className="flex aspect-video flex-col items-center justify-center gap-3 bg-zinc-950 p-6 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm font-medium text-white">
+                      {veoProgressLabel || "Preparing…"}
+                    </p>
+                    <Progress
+                      value={veoJob?.progress ?? 8}
+                      className="h-2 w-full max-w-xs"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Google Veo</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {veoBusy
+                      ? veoProgressLabel
+                      : veoVideoUrl
+                        ? "Your AI video is ready"
+                        : "Generate from your script"}
+                  </p>
+                </div>
+                {veoBusy && (
+                  <ul className="space-y-1.5 text-xs text-muted-foreground">
+                    {(
+                      [
+                        "preparing",
+                        "sending",
+                        "generating",
+                        "rendering",
+                        "finalizing",
+                        "complete",
+                      ] as const
+                    ).map((stage) => (
+                      <li
+                        key={stage}
+                        className={cn(
+                          veoJob?.stage === stage ||
+                            (stage === "complete" && veoJob?.status === "completed")
+                            ? "font-medium text-primary"
+                            : ""
+                        )}
+                      >
+                        {VEO_STAGE_LABELS[stage]}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {veoVideoUrl && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="glow" asChild>
+                      <a href={veoVideoUrl} download>
+                        <Download className="h-4 w-4" />
+                        Download
+                      </a>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={veoBusy}
+                      onClick={() => void generateWithVeo()}
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Regenerate
+                    </Button>
+                    <Button variant="outline" onClick={() => void copyVeoUrl()}>
+                      <Copy className="h-4 w-4" />
+                      Copy URL
+                    </Button>
+                    <Button variant="ghost" onClick={() => void shareVeo()}>
+                      <Share2 className="h-4 w-4" />
+                      Share
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
