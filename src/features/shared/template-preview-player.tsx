@@ -4,11 +4,14 @@ import { Player } from "@remotion/player";
 import { getCompositionComponent } from "@/templates/composition-map";
 import { getCompositionDimensions } from "@/templates/catalog";
 
-interface TemplatePreviewPlayerProps {
+export interface TemplatePreviewPlayerProps {
   compositionId: string;
   inputProps: Record<string, unknown>;
   className?: string;
   durationInFrames?: number;
+  width?: number;
+  height?: number;
+  fps?: number;
 }
 
 /** Inner player — loaded client-only via next/dynamic to avoid Turbopack SSR issues. */
@@ -17,29 +20,35 @@ export function TemplatePreviewPlayer({
   inputProps,
   className,
   durationInFrames: durationOverride,
+  width: widthOverride,
+  height: heightOverride,
+  fps: fpsOverride,
 }: TemplatePreviewPlayerProps) {
   const Component = getCompositionComponent(compositionId);
   const dims = getCompositionDimensions(compositionId);
   const durationInFrames = durationOverride ?? dims.durationInFrames;
+  const width = widthOverride ?? dims.width;
+  const height = heightOverride ?? dims.height;
+  const fps = fpsOverride ?? dims.fps;
 
   return (
     <div
       className={className}
       style={{
-        aspectRatio: `${dims.width} / ${dims.height}`,
+        aspectRatio: `${width} / ${height}`,
         maxHeight: "100%",
         maxWidth: "100%",
-        width: dims.height > dims.width ? "auto" : "100%",
-        height: dims.height > dims.width ? "100%" : "auto",
+        width: height > width ? "auto" : "100%",
+        height: height > width ? "100%" : "auto",
       }}
     >
       <Player
         component={Component}
         inputProps={inputProps}
         durationInFrames={durationInFrames}
-        compositionWidth={dims.width}
-        compositionHeight={dims.height}
-        fps={dims.fps}
+        compositionWidth={width}
+        compositionHeight={height}
+        fps={fps}
         style={{ width: "100%", height: "100%" }}
         controls
         loop

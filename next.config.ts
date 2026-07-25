@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
     "@remotion/bundler",
     "@remotion/renderer",
     "@remotion/lambda",
+    "@remotion/install-whisper-cpp",
     "esbuild",
     "@esbuild/win32-x64",
     "@esbuild/win32-arm64",

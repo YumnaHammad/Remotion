@@ -77,6 +77,34 @@ export async function POST(req: Request) {
       }
     }
 
+    if (body.compositionId === "AutomatedVideo") {
+      const scenes = body.inputProps?.scenes;
+      if (!Array.isArray(scenes) || scenes.length === 0) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error:
+              "Automated video export requires at least one scene. Generate from Script to Video first.",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (body.compositionId === "CharacterMapVideo") {
+      const title = body.inputProps?.title;
+      if (typeof title !== "string" || !title.trim()) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error:
+              "CharacterMapVideo export requires props from Feature Factory generate.",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const inputProps = prepareRenderInputProps(
       body.compositionId,
       body.inputProps

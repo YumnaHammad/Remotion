@@ -15,3 +15,5 @@ export const TemplatePreview = dynamic(
     ),
   }
 );
+
+export type { TemplatePreviewPlayerProps } from "./template-preview-player";

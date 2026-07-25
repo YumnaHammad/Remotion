@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ASPECT_PRESETS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/stores/editor-store";
 import { useProjectStore } from "@/stores/project-store";
@@ -94,13 +95,38 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
     updateRender(job.id, { status: "rendering", progress: 5 });
 
     try {
+      // Persist aspect / fps / Q-rate choices onto the project before render
+      const nextSettings = {
+        ...project.settings,
+        aspectRatio: ratio,
+        fps,
+        width:
+          ratio === "9:16"
+            ? 1080
+            : ratio === "1:1"
+              ? 1080
+              : ratio === "4:5"
+                ? 1080
+                : 1920,
+        height:
+          ratio === "9:16"
+            ? 1920
+            : ratio === "1:1"
+              ? 1080
+              : ratio === "4:5"
+                ? 1350
+                : 1080,
+      };
+      const projectForRender = { ...project, settings: nextSettings };
+      updateProject(project.id, projectForRender);
+
       const res = await fetch("/api/render", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId: project.id,
           compositionId: "Main",
-          inputProps: { project },
+          inputProps: { project: projectForRender },
           format,
           quality,
           directDownload: true,
@@ -129,7 +155,9 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
         });
         updateProject(project.id, { ...project, status: "ready" });
         setProgress(100);
-        toast.success("Render complete", { description: project.name });
+        toast.success("Your video is ready — downloading now", {
+          description: project.name,
+        });
         await downloadExportFile(blob, filename);
         setOpen(false);
         return;
@@ -153,7 +181,9 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
         });
         updateProject(project.id, { ...project, status: "ready" });
         setProgress(100);
-        toast.success("Render complete", { description: project.name });
+        toast.success("Your video is ready — downloading now", {
+          description: project.name,
+        });
         await downloadExportFile(data.outputUrl, filename);
         setOpen(false);
         return;
@@ -178,58 +208,77 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
       <DialogTrigger asChild>
         {trigger ?? (
           <Button size="sm" variant="glow">
-            <Download className="h-3.5 w-3.5" /> Export
+            <Download className="h-3.5 w-3.5" /> Download video
           </Button>
         )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Export video</DialogTitle>
+          <DialogTitle>Download your video</DialogTitle>
           <DialogDescription>
-            Renders your timeline via Remotion and downloads when complete.
+            Pick how you want the file, then we’ll create it and save it to your
+            computer.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Format</Label>
+            <Label>File type</Label>
+            <p className="text-[11px] text-muted-foreground">
+              MP4 works almost everywhere. GIF is for short looping clips.
+            </p>
             <div className="grid grid-cols-3 gap-2">
               {FORMATS.map((f) => (
                 <Option key={f} active={format === f} onClick={() => setFormat(f)}>
-                  {f.toUpperCase()}
+                  {f === "mp4" ? "Video (MP4)" : f === "webm" ? "WebM" : "GIF"}
                 </Option>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Quality</Label>
+            <Label>How sharp?</Label>
+            <p className="text-[11px] text-muted-foreground">
+              Higher looks clearer but the file is larger and takes longer.
+            </p>
             <div className="grid grid-cols-4 gap-2">
               {QUALITIES.map((q) => (
                 <Option key={q} active={quality === q} onClick={() => setQuality(q)}>
-                  {q}
+                  {q === "720p"
+                    ? "OK"
+                    : q === "1080p"
+                      ? "HD"
+                      : q === "2k"
+                        ? "2K"
+                        : "4K"}
                 </Option>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Aspect ratio</Label>
-            <div className="grid grid-cols-4 gap-2">
+            <Label>Shape</Label>
+            <p className="text-[11px] text-muted-foreground">
+              Landscape for YouTube · Vertical for TikTok / Reels
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {RATIOS.map((r) => (
                 <Option key={r} active={ratio === r} onClick={() => setRatio(r)}>
-                  {r}
+                  {ASPECT_PRESETS[r].label}
                 </Option>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Frame rate</Label>
+            <Label>Smoothness</Label>
+            <p className="text-[11px] text-muted-foreground">
+              30 is a good default. 60 looks smoother in action clips.
+            </p>
             <div className="grid grid-cols-3 gap-2">
               {FPS_CHOICES.map((f) => (
                 <Option key={f} active={fps === f} onClick={() => setFps(f)}>
-                  {f} fps
+                  {f}
                 </Option>
               ))}
             </div>
@@ -239,7 +288,7 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Rendering… {progress}%
+                Creating your video… {progress}%
               </div>
               <Progress value={progress} />
             </div>
@@ -256,7 +305,7 @@ export function ExportDialog({ trigger }: { trigger?: React.ReactNode }) {
             ) : (
               <Download className="h-4 w-4" />
             )}
-            Start export
+            {busy ? "Please wait…" : "Create & download"}
           </Button>
         </div>
       </DialogContent>

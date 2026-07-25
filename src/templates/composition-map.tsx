@@ -15,6 +15,8 @@ import {
 } from "@/remotion/compositions/templates";
 import { DataSlideshow } from "@/remotion/compositions/DataSlideshow";
 import { LongFormVideo } from "@/remotion/compositions/LongFormVideo";
+import { AutomatedVideo } from "@/remotion/compositions/AutomatedVideo";
+import { CharacterMapVideo } from "@/remotion/compositions/CharacterMapVideo";
 import { withBackgroundMusic } from "@/remotion/with-background-music";
 import { REMOTION_OFFICIAL_COMPONENTS } from "@/remotion/compositions/remotion-official-demos";
 
@@ -33,6 +35,8 @@ const RAW_MAP: Record<string, React.ComponentType<Props>> = {
   SaasDemo: SaasDemo as React.ComponentType<Props>,
   DataSlideshow: DataSlideshow as React.ComponentType<Props>,
   LongFormVideo: LongFormVideo as React.ComponentType<Props>,
+  AutomatedVideo: AutomatedVideo as React.ComponentType<Props>,
+  CharacterMapVideo: CharacterMapVideo as React.ComponentType<Props>,
   ...Object.fromEntries(
     Object.entries(REMOTION_OFFICIAL_COMPONENTS).map(([id, Component]) => [
       id,
@@ -49,7 +53,11 @@ export const COMPOSITION_MAP: Record<string, React.ComponentType<Props>> =
   Object.fromEntries(
     Object.entries(RAW_MAP).map(([id, Comp]) => [
       id,
-      id === "LongFormVideo" ? Comp : withBackgroundMusic(Comp),
+      id === "LongFormVideo" ||
+      id === "AutomatedVideo" ||
+      id === "CharacterMapVideo"
+        ? Comp
+        : withBackgroundMusic(Comp),
     ])
   );
 

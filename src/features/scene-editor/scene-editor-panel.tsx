@@ -27,6 +27,7 @@ import {
 } from "@/lib/scene-presets";
 import type { SceneType, VideoScene } from "@/types/scene-video";
 import { totalSceneDuration, formatDurationFromFrames } from "@/types/scene-video";
+import { EditingToolsPanel } from "@/features/editor-tools/editing-tools-panel";
 
 const SCENE_TYPES: SceneType[] = [
   "intro",
@@ -291,6 +292,19 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
                 onChange={(e) =>
                   updateScene(selected.id, {
                     durationInFrames: Math.max(30, Number(e.target.value) * fps),
+                  })
+                }
+              />
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <h4 className="mb-2 text-sm font-medium">Scene editing tools</h4>
+              <EditingToolsPanel
+                sceneMode
+                sceneEditing={selected.editing ?? {}}
+                onSceneEditingChange={(patch) =>
+                  updateScene(selected.id, {
+                    editing: { ...selected.editing, ...patch } as VideoScene["editing"],
                   })
                 }
               />

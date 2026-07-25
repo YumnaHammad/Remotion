@@ -44,16 +44,18 @@ export function EditorTopBar() {
   const save = () => {
     updateProject(project.id, project);
     markSaved();
-    toast.success("Project saved");
+    toast.success("Saved — you can close safely");
   };
 
   // Autosave: debounce persist to the project store whenever dirty.
+  // Only persist — never reload the editor from the store (that cleared selection).
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!dirty) return;
     if (autosaveRef.current) clearTimeout(autosaveRef.current);
+    const snapshot = project;
     autosaveRef.current = setTimeout(() => {
-      updateProject(project.id, project);
+      updateProject(snapshot.id, snapshot);
       markSaved();
     }, 1500);
     return () => {
@@ -106,7 +108,7 @@ export function EditorTopBar() {
         size="icon-sm"
         className="text-white/70 hover:bg-white/10 hover:text-white"
       >
-        <Link href="/projects">
+        <Link href="/projects" aria-label="Back to projects">
           <ArrowLeft className="h-4 w-4" />
         </Link>
       </Button>
@@ -120,7 +122,7 @@ export function EditorTopBar() {
             {project.settings.aspectRatio}
           </Badge>
           <span className="text-[10px] text-white/40">
-            {dirty ? "Unsaved…" : "All changes saved"}
+            {dirty ? "Saving soon…" : "Saved"}
           </span>
         </div>
       </div>
@@ -138,7 +140,7 @@ export function EditorTopBar() {
               <Undo2 className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Undo (⌘Z)</TooltipContent>
+          <TooltipContent>Undo last change</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -152,7 +154,7 @@ export function EditorTopBar() {
               <Redo2 className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Redo (⌘⇧Z)</TooltipContent>
+          <TooltipContent>Redo</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -166,26 +168,36 @@ export function EditorTopBar() {
               <Scissors className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Split at playhead (S)</TooltipContent>
+          <TooltipContent>Cut clip in two at the red line</TooltipContent>
         </Tooltip>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-30"
-          disabled={selectedLayerIds.length === 0}
-          onClick={duplicateSelected}
-        >
-          <Copy className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-30"
-          disabled={selectedLayerIds.length === 0}
-          onClick={() => removeLayers(selectedLayerIds)}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-30"
+              disabled={selectedLayerIds.length === 0}
+              onClick={duplicateSelected}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Make a copy</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-30"
+              disabled={selectedLayerIds.length === 0}
+              onClick={() => removeLayers(selectedLayerIds)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Delete selected</TooltipContent>
+        </Tooltip>
       </div>
 
       <Button

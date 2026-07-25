@@ -12,6 +12,8 @@ import type {
 import { ASPECT_PRESETS } from "@/lib/constants";
 import { MOCK_PROJECTS } from "@/data/mock";
 import { makeTextLayer } from "@/lib/project-factory";
+import { migrateProjectMediaUrls } from "@/lib/sample-media";
+import { assignLayerToFreeTrack } from "@/lib/track-assignment";
 
 type LeftTab =
   | "assets"
@@ -21,10 +23,14 @@ type LeftTab =
   | "shapes"
   | "audio"
   | "video"
+  | "broll"
   | "stickers"
+  | "patterns"
+  | "effects"
+  | "collage"
   | "brand";
 
-type RightTab = "properties" | "animation" | "effects" | "timing";
+type RightTab = "properties" | "animation" | "effects" | "timing" | "tools";
 
 const HISTORY_LIMIT = 50;
 
@@ -42,8 +48,11 @@ interface EditorState {
   snapEnabled: boolean;
   showWaveforms: boolean;
   dirty: boolean;
+  /** Browser TTS while timeline plays (caption layers). */
+  speakCaptionsOnPlay: boolean;
 
   loadProject: (project: Project) => void;
+  migrateBrokenMedia: () => void;
   setFrame: (frame: number) => void;
   setPlaying: (playing: boolean) => void;
   togglePlay: () => void;
@@ -53,6 +62,7 @@ interface EditorState {
   setTimelineZoom: (zoom: number) => void;
   setSnap: (enabled: boolean) => void;
   toggleWaveforms: () => void;
+  setSpeakCaptionsOnPlay: (enabled: boolean) => void;
   setAspectRatio: (ratio: AspectRatio) => void;
 
   // history-tracked mutations
@@ -73,6 +83,8 @@ interface EditorState {
   trimLayer: (id: string, startFrame: number, durationInFrames: number) => void;
   splitLayerAtPlayhead: () => void;
   reorderLayer: (id: string, direction: "up" | "down") => void;
+  bringLayerToFront: (id: string) => void;
+  sendLayerToBack: (id: string) => void;
   toggleLayerLock: (id: string) => void;
   toggleLayerVisibility: (id: string) => void;
   nudgeSelected: (frames: number) => void;
@@ -135,16 +147,39 @@ export const useEditorStore = create<EditorState>((set, get) => {
     snapEnabled: true,
     showWaveforms: true,
     dirty: false,
+    speakCaptionsOnPlay: true,
 
     loadProject: (project) =>
-      set({
-        project: structuredClone(project),
-        past: [],
-        future: [],
-        currentFrame: 0,
-        isPlaying: false,
-        selectedLayerIds: [],
-        dirty: false,
+      set((s) => {
+        const migrated = migrateProjectMediaUrls(project);
+        const sameProject = s.project.id === migrated.id;
+        const nextIds = sameProject
+          ? s.selectedLayerIds.filter((id) =>
+              migrated.layers.some((l) => l.id === id)
+            )
+          : [];
+        return {
+          project: structuredClone(migrated),
+          past: [],
+          future: [],
+          currentFrame: sameProject
+            ? Math.min(
+                s.currentFrame,
+                Math.max(0, migrated.settings.durationInFrames - 1)
+              )
+            : 0,
+          isPlaying: false,
+          selectedLayerIds: nextIds,
+          dirty: false,
+        };
+      }),
+
+    /** Fix broken CDN urls on the open project without wiping selection. */
+    migrateBrokenMedia: () =>
+      set((s) => {
+        const migrated = migrateProjectMediaUrls(s.project);
+        if (migrated === s.project) return s;
+        return { project: migrated, dirty: true };
       }),
 
     setFrame: (frame) =>
@@ -164,6 +199,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
       set({ timelineZoom: Math.max(0.25, Math.min(4, timelineZoom)) }),
     setSnap: (snapEnabled) => set({ snapEnabled }),
     toggleWaveforms: () => set((s) => ({ showWaveforms: !s.showWaveforms })),
+    setSpeakCaptionsOnPlay: (enabled) => set({ speakCaptionsOnPlay: enabled }),
 
     setAspectRatio: (ratio) => {
       const preset = ASPECT_PRESETS[ratio];
@@ -186,7 +222,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
     addLayer: (layer) =>
       commit(
-        (p) => ({ ...p, layers: [...p.layers, layer] }),
+        (p) => {
+          const { layer: placed, tracks } = assignLayerToFreeTrack(p, layer);
+          return { ...p, tracks, layers: [...p.layers, placed] };
+        },
         { selectedLayerIds: [layer.id] }
       ),
 
@@ -317,7 +356,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
     duplicateSelected: () => {
       const { project, selectedLayerIds } = get();
-      const copies = project.layers
+      const drafts = project.layers
         .filter((l) => selectedLayerIds.includes(l.id))
         .map((l) => ({
           ...structuredClone(l),
@@ -325,10 +364,26 @@ export const useEditorStore = create<EditorState>((set, get) => {
           name: `${l.name} Copy`,
           startFrame: l.startFrame + 5,
         }));
-      if (!copies.length) return;
-      commit((p) => ({ ...p, layers: [...p.layers, ...copies] }), {
-        selectedLayerIds: copies.map((c) => c.id),
-      });
+      if (!drafts.length) return;
+      commit(
+        (p) => {
+          let tracks = p.tracks;
+          let layers = [...p.layers];
+          const placedIds: string[] = [];
+          for (const draft of drafts) {
+            const { layer: placed, tracks: nextTracks } = assignLayerToFreeTrack(
+              { ...p, tracks, layers },
+              draft
+            );
+            tracks = nextTracks;
+            layers = [...layers, placed];
+            placedIds.push(placed.id);
+          }
+          return { ...p, tracks, layers };
+        },
+        // selected ids set after commit via second arg — use draft ids (unchanged)
+        { selectedLayerIds: drafts.map((d) => d.id) }
+      );
     },
 
     moveLayer: (id, startFrame) =>
@@ -386,10 +441,31 @@ export const useEditorStore = create<EditorState>((set, get) => {
       commit((p) => {
         const idx = p.layers.findIndex((l) => l.id === id);
         if (idx === -1) return p;
+        // up = toward front (higher index), down = toward back (lower index)
         const swap = direction === "up" ? idx + 1 : idx - 1;
         if (swap < 0 || swap >= p.layers.length) return p;
         const layers = [...p.layers];
         [layers[idx], layers[swap]] = [layers[swap], layers[idx]];
+        return { ...p, layers };
+      }),
+
+    bringLayerToFront: (id) =>
+      commit((p) => {
+        const idx = p.layers.findIndex((l) => l.id === id);
+        if (idx === -1 || idx === p.layers.length - 1) return p;
+        const layers = [...p.layers];
+        const [item] = layers.splice(idx, 1);
+        layers.push(item);
+        return { ...p, layers };
+      }),
+
+    sendLayerToBack: (id) =>
+      commit((p) => {
+        const idx = p.layers.findIndex((l) => l.id === id);
+        if (idx <= 0) return p;
+        const layers = [...p.layers];
+        const [item] = layers.splice(idx, 1);
+        layers.unshift(item);
         return { ...p, layers };
       }),
 

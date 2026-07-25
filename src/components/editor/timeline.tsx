@@ -141,8 +141,8 @@ export function Timeline() {
       <div className="flex min-h-0 flex-1">
         {/* Track labels */}
         <div className="flex w-36 shrink-0 flex-col border-r border-[var(--editor-border)] bg-[var(--editor-panel)]">
-          <div className="flex h-7 items-center border-b border-[var(--editor-border)] px-3 text-[10px] uppercase tracking-wider text-white/40">
-            Tracks
+          <div className="flex h-7 items-center border-b border-[var(--editor-border)] px-3 text-[10px] text-white/45">
+            Timeline rows
           </div>
           {tracks.map((t) => (
             <div

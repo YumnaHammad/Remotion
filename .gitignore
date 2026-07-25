@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# whisper.cpp (local STT binary + models)
+/whisper.cpp/
+/tmp/whisper/

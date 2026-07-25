@@ -118,7 +118,7 @@ export function MusicPicker({ value = "", onChange, compact }: MusicPickerProps)
           <Input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="https://remotion.media/lofi.mp3"
+            placeholder="https://remotion.media/audio.mp3"
           />
         </div>
       )}

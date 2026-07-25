@@ -31,6 +31,7 @@ export const NAV_SECTIONS = [
       { href: "/templates", label: "Templates", icon: "LayoutTemplate" },
       { href: "/website-to-video", label: "Website to Video", icon: "Globe" },
       { href: "/data-to-video", label: "Data to Video", icon: "FileSpreadsheet" },
+      { href: "/script-to-video", label: "Script to Video", icon: "Sparkles" },
     ],
   },
   {
@@ -56,15 +57,84 @@ export const NAV_ITEMS = NAV_SECTIONS.flatMap(
 );
 
 export const EDITOR_TABS = [
-  { id: "assets", label: "Assets", icon: "Folder" },
-  { id: "templates", label: "Templates", icon: "LayoutTemplate" },
-  { id: "scenes", label: "Scenes", icon: "Film" },
-  { id: "text", label: "Text", icon: "Type" },
-  { id: "shapes", label: "Shapes", icon: "Shapes" },
-  { id: "audio", label: "Audio", icon: "Music" },
-  { id: "video", label: "Video", icon: "Video" },
-  { id: "stickers", label: "Stickers", icon: "Sticker" },
-  { id: "brand", label: "Brand", icon: "Sparkles" },
+  {
+    id: "assets",
+    label: "My files",
+    hint: "Upload photos, videos, and music",
+    icon: "Folder",
+  },
+  {
+    id: "templates",
+    label: "Ready-made",
+    hint: "Start from a finished look",
+    icon: "LayoutTemplate",
+  },
+  {
+    id: "scenes",
+    label: "Chapters",
+    hint: "Split your video into parts",
+    icon: "Film",
+  },
+  {
+    id: "text",
+    label: "Words",
+    hint: "Titles, subtitles, and captions",
+    icon: "Type",
+  },
+  {
+    id: "shapes",
+    label: "Shapes",
+    hint: "Circles, stars, arrows, and more",
+    icon: "Shapes",
+  },
+  {
+    id: "audio",
+    label: "Music",
+    hint: "Songs, voice, and sound",
+    icon: "Music",
+  },
+  {
+    id: "video",
+    label: "Clips",
+    hint: "Add video clips to your story",
+    icon: "Video",
+  },
+  {
+    id: "broll",
+    label: "Extra clips",
+    hint: "Supporting footage between main shots",
+    icon: "Film",
+  },
+  {
+    id: "stickers",
+    label: "Stickers",
+    hint: "Fun graphics on top of your video",
+    icon: "Sticker",
+  },
+  {
+    id: "patterns",
+    label: "Backgrounds",
+    hint: "Patterns and textured backdrops",
+    icon: "Waves",
+  },
+  {
+    id: "effects",
+    label: "Effects",
+    hint: "Visual extras and polish",
+    icon: "Sparkles",
+  },
+  {
+    id: "collage",
+    label: "Collage",
+    hint: "Put several photos side by side",
+    icon: "LayoutGrid",
+  },
+  {
+    id: "brand",
+    label: "Brand",
+    hint: "Your colors and logo",
+    icon: "Sparkles",
+  },
 ] as const;
 
 export const ANIMATION_PRESETS = [
@@ -91,6 +161,10 @@ export const TRANSITION_TYPES = [
   "camera",
   "flip",
   "cinematic",
+  "dissolve",
+  "crossfade",
+  "push",
+  "cube",
   "none",
 ] as const;
 

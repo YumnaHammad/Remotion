@@ -29,6 +29,17 @@ import { AnimationLab } from "./labs/AnimationLab";
 import { DataSlideshow } from "./compositions/DataSlideshow";
 import { dataVideoSchema } from "./compositions/data-slideshow-schema";
 import { LongFormVideo } from "./compositions/LongFormVideo";
+import { AutomatedVideo } from "./compositions/AutomatedVideo";
+import {
+  DEFAULT_AUTOMATED_VIDEO_PROPS,
+  automatedVideoDuration,
+} from "./compositions/automated-video-schema";
+import { CharacterMapVideo } from "./compositions/CharacterMapVideo";
+import {
+  DEFAULT_CHARACTER_MAP_PROPS,
+  characterMapDuration,
+} from "./compositions/character-map-schema";
+import { aspectRatioToDimensions } from "@/types/edit-recipe";
 import {
   DEFAULT_SCENE_VIDEO_PROPS,
   sceneListDuration,
@@ -203,6 +214,50 @@ export const RemotionRoot: React.FC = () => {
               Array.isArray(props.scenes) ? props.scenes : []
             ),
           })}
+        />
+        <Composition
+          id="AutomatedVideo"
+          component={AutomatedVideo}
+          durationInFrames={automatedVideoDuration(
+            DEFAULT_AUTOMATED_VIDEO_PROPS.scenes
+          )}
+          fps={30}
+          width={1920}
+          height={1080}
+          defaultProps={DEFAULT_AUTOMATED_VIDEO_PROPS}
+          calculateMetadata={({ props }) => {
+            const ar = props.aspectRatio;
+            const aspectRatio =
+              ar === "9:16" || ar === "1:1" ? ar : "16:9";
+            const dims = aspectRatioToDimensions(aspectRatio);
+            return {
+              durationInFrames: automatedVideoDuration(
+                Array.isArray(props.scenes) ? props.scenes : []
+              ),
+              width: dims.width,
+              height: dims.height,
+            };
+          }}
+        />
+        <Composition
+          id="CharacterMapVideo"
+          component={CharacterMapVideo}
+          durationInFrames={characterMapDuration(DEFAULT_CHARACTER_MAP_PROPS)}
+          fps={30}
+          width={1080}
+          height={1920}
+          defaultProps={DEFAULT_CHARACTER_MAP_PROPS}
+          calculateMetadata={({ props }) => {
+            const ar = props.aspectRatio;
+            const aspectRatio =
+              ar === "16:9" || ar === "1:1" ? ar : "9:16";
+            const dims = aspectRatioToDimensions(aspectRatio);
+            return {
+              durationInFrames: characterMapDuration(props),
+              width: dims.width,
+              height: dims.height,
+            };
+          }}
         />
       </Folder>
 

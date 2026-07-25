@@ -1,4 +1,5 @@
 import type { AspectRatio, ExportFormat, ExportQuality } from "./index";
+import type { AutomatedVideoProps } from "./edit-recipe";
 import type { SceneVideoProps } from "./scene-video";
 
 /** Metadata extracted from a website URL (Open Graph / HTML). */
@@ -57,7 +58,12 @@ export interface DataVideoProps {
 }
 
 /** Source that created a simple video project. */
-export type VideoSourceType = "template" | "website" | "data" | "manual";
+export type VideoSourceType =
+  | "template"
+  | "website"
+  | "data"
+  | "manual"
+  | "script";
 
 /**
  * Lightweight video project — no timeline tracks.
@@ -69,7 +75,7 @@ export interface SimpleVideoProject {
   sourceType: VideoSourceType;
   compositionId: string;
   templateId?: string;
-  props: VideoTemplateProps | DataVideoProps | SceneVideoProps;
+  props: VideoTemplateProps | DataVideoProps | SceneVideoProps | AutomatedVideoProps;
   aspectRatio: AspectRatio;
   durationInFrames: number;
   fps: number;

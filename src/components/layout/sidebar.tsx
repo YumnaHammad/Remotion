@@ -19,6 +19,7 @@ import {
   Settings,
   Sparkles,
   X,
+  Film,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { APP_NAME, APP_TAGLINE, NAV_SECTIONS } from "@/lib/constants";
@@ -43,6 +44,7 @@ const ICONS = {
   Sparkles,
   Image,
   Music,
+  Film,
 } as const;
 
 export function Sidebar() {

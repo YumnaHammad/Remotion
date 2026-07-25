@@ -3,6 +3,12 @@
     "src/app/api/render/route.ts": {
       "maxDuration": 300
     },
+    "src/app/api/generate/route.ts": {
+      "maxDuration": 180
+    },
+    "src/app/api/assets/resolve/route.ts": {
+      "maxDuration": 120
+    },
     "src/app/api/exports/[filename]/route.ts": {
       "maxDuration": 60
     }

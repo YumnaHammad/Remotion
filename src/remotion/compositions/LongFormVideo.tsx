@@ -9,6 +9,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { BackgroundMusic } from "../components/BackgroundMusic";
+import { PatternOverlay } from "../components/PatternOverlay";
 import type { SceneAnimationPreset, SceneType, VideoScene } from "@/types/scene-video";
 import type { SceneVideoSchemaProps } from "./scene-video-schema";
 
@@ -239,6 +240,21 @@ function SceneContent({
           />
         )}
       </div>
+
+      {scene.editing?.pattern && (
+        <PatternOverlay pattern={scene.editing.pattern} opacity={0.35} />
+      )}
+      {scene.editing?.overlay?.enabled && (
+        <AbsoluteFill
+          style={{
+            background:
+              scene.editing.overlay.color ?? accent,
+            opacity: scene.editing.overlay.opacity ?? 0.3,
+            mixBlendMode: scene.editing.blendMode ?? "overlay",
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </AbsoluteFill>
   );
 }

@@ -1,5 +1,10 @@
 import type { BrandSettings, VideoTemplateProps } from "@/types/video";
 import type { SceneVideoProps } from "@/types/scene-video";
+import type { ResolvedEditRecipe } from "@/types/edit-recipe";
+import {
+  aspectRatioToDimensions,
+  editRecipeDuration,
+} from "@/types/edit-recipe";
 import type { TemplateCatalogItem } from "@/templates/catalog";
 import { getCompositionDimensions } from "@/templates/catalog";
 import { applyBrandToProps } from "@/utils/brand-defaults";
@@ -155,4 +160,43 @@ export function propsFromData(
 export function dataVideoDuration(rowCount: number): number {
   const slides = Math.min(rowCount, 8);
   return 60 + slides * 60; // title card + rows
+}
+
+/** Create a simple video project from a resolved edit recipe. */
+export function createProjectFromEditRecipe(
+  resolved: ResolvedEditRecipe,
+  brand: BrandSettings,
+  meta?: { name?: string; script?: string }
+): SimpleVideoProject {
+  const dims = aspectRatioToDimensions(resolved.aspectRatio);
+  const durationInFrames = editRecipeDuration(resolved);
+  const now = new Date().toISOString();
+
+  const props = {
+    title: resolved.title,
+    accent: resolved.accent ?? brand.colors.accent,
+    brandColor: resolved.brandColor ?? brand.colors.primary,
+    aspectRatio: resolved.aspectRatio,
+    fontFamily: resolved.fontFamily ?? brand.fontFamily,
+    voiceoverUrl: resolved.voiceoverUrl,
+    backgroundMusicUrl: resolved.backgroundMusicUrl,
+    captions: resolved.captions,
+    scenes: resolved.scenes,
+  };
+
+  return {
+    id: genId("svp"),
+    name: meta?.name ?? resolved.title.slice(0, 60),
+    sourceType: "script",
+    compositionId: "AutomatedVideo",
+    props,
+    aspectRatio: resolved.aspectRatio,
+    durationInFrames,
+    fps: 30,
+    width: dims.width,
+    height: dims.height,
+    createdAt: now,
+    updatedAt: now,
+    status: "ready",
+  };
 }

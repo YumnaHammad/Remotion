@@ -13,6 +13,7 @@ import {
 import type { Layer } from "@/types";
 import { useAnimatedStyle } from "./AnimatedText";
 import { filtersToCss } from "./filters";
+import { maskToStyle, stabilizeTransform } from "@/lib/media-tools";
 
 /**
  * Renders vector shapes via @remotion/shapes with animation + filters.
@@ -24,11 +25,16 @@ export function ShapeLayer({ layer }: { layer: Layer }) {
     layer.animationDuration,
     layer.transform
   );
+  const maskStyle = maskToStyle(layer.mask);
+  const stab = stabilizeTransform(frame, layer.stabilize);
 
-  const pulse = interpolate(frame % 60, [0, 30, 60], [1, 1.04, 1]);
-  const size = 220 * pulse;
+  const pulse =
+    layer.animation === "none"
+      ? 1
+      : interpolate(frame % 60, [0, 30, 60], [1, 1.02, 1]);
+  const size = 220 * (layer.transform.scale || 1) * pulse;
   const fill = layer.fill ?? "#6366f1";
-  const stroke = layer.stroke;
+  const stroke = layer.stroke ?? "transparent";
   const strokeWidth = layer.strokeWidth ?? 0;
 
   const common = { fill, stroke, strokeWidth };
@@ -42,18 +48,38 @@ export function ShapeLayer({ layer }: { layer: Layer }) {
       case "triangle":
         return <Triangle length={size} direction="up" {...common} />;
       case "star":
-        return <Star innerRadius={size / 4} outerRadius={size / 2} points={5} {...common} />;
+        return (
+          <Star
+            innerRadius={size / 4}
+            outerRadius={size / 2}
+            points={5}
+            {...common}
+          />
+        );
       case "polygon":
         return <Polygon points={6} radius={size / 2} {...common} />;
       case "heart":
         return <Heart height={size} {...common} />;
       case "pie":
-        return <Pie radius={size / 2} progress={interpolate(frame % 90, [0, 90], [0, 1])} {...common} />;
+        return (
+          <Pie
+            radius={size / 2}
+            progress={interpolate(frame % 90, [0, 90], [0, 1])}
+            {...common}
+          />
+        );
       case "arrow":
         return <Arrow direction="right" length={size} {...common} />;
       case "rect":
       default:
-        return <Rect width={size * 1.4} height={size} cornerRadius={20} {...common} />;
+        return (
+          <Rect
+            width={size * 1.4}
+            height={size}
+            cornerRadius={20}
+            {...common}
+          />
+        );
     }
   })();
 
@@ -63,8 +89,10 @@ export function ShapeLayer({ layer }: { layer: Layer }) {
         justifyContent: "center",
         alignItems: "center",
         opacity: animated.opacity,
-        transform: animated.transform,
+        transform: [animated.transform, stab].filter(Boolean).join(" "),
         filter: filtersToCss(layer.filters, layer.transform.blur),
+        mixBlendMode: layer.blendMode ?? "normal",
+        ...maskStyle,
       }}
     >
       {shape}

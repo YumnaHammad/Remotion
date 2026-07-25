@@ -1,3 +1,34 @@
+import type {
+  AudioTools,
+  BackgroundReplace,
+  BlendMode,
+  CollageCell,
+  EnhanceSettings,
+  LayerMask,
+  OverlaySettings,
+  PatternType,
+  StabilizeSettings,
+  VoiceEffects,
+} from "./editing-tools";
+
+export type {
+  AudioTools,
+  BackgroundReplace,
+  BlendMode,
+  CollageCell,
+  CollageLayoutId,
+  EnhanceSettings,
+  LayerEditingTools,
+  LayerMask,
+  MaskShape,
+  OverlaySettings,
+  PatternType,
+  SceneEditingTools,
+  StabilizeSettings,
+  VoiceEffectPreset,
+  VoiceEffects,
+} from "./editing-tools";
+
 export type AspectRatio = "16:9" | "9:16" | "1:1" | "4:5";
 export type ExportFormat = "mp4" | "webm" | "gif";
 export type ExportQuality = "720p" | "1080p" | "2k" | "4k";
@@ -14,7 +45,10 @@ export type LayerType =
   | "lottie"
   | "three"
   | "gif"
-  | "noise";
+  | "noise"
+  | "pattern"
+  | "collage"
+  | "sticker";
 
 export type ShapeKind =
   | "rect"
@@ -68,7 +102,11 @@ export type TransitionType =
   | "camera"
   | "flip"
   | "cinematic"
-  | "none";
+  | "none"
+  | "dissolve"
+  | "crossfade"
+  | "push"
+  | "cube";
 
 export interface TransformProps {
   x: number;
@@ -113,6 +151,8 @@ export interface Layer {
   stroke?: string;
   strokeWidth?: number;
   captionWords?: CaptionWord[];
+  /** Remotion Caption[] from Whisper / @remotion/captions */
+  captions?: TimedCaption[];
   // media controls
   objectFit?: "cover" | "contain" | "fill";
   playbackRate?: number;
@@ -127,12 +167,40 @@ export interface Layer {
   motionBlurSamples?: number;
   // lottie
   lottieSrc?: string;
+  // advanced editing tools
+  reverse?: boolean;
+  blendMode?: BlendMode;
+  mask?: LayerMask;
+  backgroundReplace?: BackgroundReplace;
+  enhance?: EnhanceSettings;
+  stabilize?: StabilizeSettings;
+  voiceEffects?: VoiceEffects;
+  audioTools?: AudioTools;
+  overlay?: OverlaySettings;
+  pattern?: PatternType;
+  stickerId?: string;
+  brollTag?: string;
+  isBroll?: boolean;
+  collageLayout?: string;
+  /** @deprecated use collageSources length */
+  collageCells?: number;
+  /** Media URLs for each collage cell */
+  collageSources?: CollageCell[];
 }
 
 export interface CaptionWord {
   text: string;
   startFrame: number;
   endFrame: number;
+}
+
+/** Word-level caption token compatible with @remotion/captions Caption */
+export interface TimedCaption {
+  text: string;
+  startMs: number;
+  endMs: number;
+  timestampMs: number | null;
+  confidence: number | null;
 }
 
 export interface Track {
@@ -154,6 +222,8 @@ export interface Scene {
   transition: TransitionType;
   transitionDuration: number;
   background: string;
+  /** Optional full-bleed background image URL */
+  backgroundImage?: string;
 }
 
 export interface CompositionSettings {

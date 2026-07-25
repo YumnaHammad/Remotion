@@ -111,6 +111,24 @@ export function ScenesPanel() {
           </div>
 
           <div className="space-y-1">
+            <Label className="text-[10px] text-white/50">Background image URL</Label>
+            <Input
+              value={scene.backgroundImage ?? ""}
+              placeholder="https://… or leave empty"
+              onChange={(e) =>
+                updateScene(scene.id, {
+                  backgroundImage: e.target.value.trim() || undefined,
+                })
+              }
+              className="h-7 border-white/10 bg-white/5 text-xs text-white"
+            />
+            <p className="text-[9px] text-white/35">
+              Scene backdrop (always behind all layers). Or add an Image layer
+              and click <span className="text-white/60">Send to back</span>.
+            </p>
+          </div>
+
+          <div className="space-y-1">
             <Label className="text-[10px] text-white/50">Transition out</Label>
             <Select
               value={scene.transition}

@@ -332,9 +332,10 @@ export const MOCK_TEMPLATES: Template[] = [
 ];
 
 export const SAMPLE_VIDEO =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-export const SAMPLE_AUDIO = "https://remotion.media/lofi.mp3";
-export const SAMPLE_IMAGE = "https://picsum.photos/seed/lumen/1920/1080";
+  "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=1920&q=80";
+export const SAMPLE_AUDIO = "https://remotion.media/audio.mp3";
+export const SAMPLE_IMAGE =
+  "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?auto=format&fit=crop&w=1920&q=80";
 export const SAMPLE_GIF =
   "https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif";
 

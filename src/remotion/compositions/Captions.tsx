@@ -4,8 +4,12 @@ import {
   createTikTokStyleCaptions,
   type Caption,
 } from "@remotion/captions";
+import type { TransformProps } from "@/types";
 
 export type CaptionTheme = "default" | "neon" | "minimal" | "karaoke";
+
+/** Default bottom padding for captions (composition px). Used by canvas overlay too. */
+export const CAPTION_BOTTOM_PAD = 140;
 
 const SAMPLE_CAPTIONS: Caption[] = [
   { text: "Create", startMs: 0, endMs: 500, timestampMs: 250, confidence: 1 },
@@ -16,13 +20,37 @@ const SAMPLE_CAPTIONS: Caption[] = [
   { text: "AI", startMs: 2500, endMs: 3200, timestampMs: 2850, confidence: 1 },
 ];
 
+const DEFAULT_TRANSFORM: TransformProps = {
+  x: 0,
+  y: 0,
+  scale: 1,
+  rotation: 0,
+  opacity: 1,
+  blur: 0,
+};
+
 export const CaptionRenderer: React.FC<{
-  captions?: Caption[];
+  captions?: Caption[] | null;
   theme?: CaptionTheme;
   combineMs?: number;
-}> = ({ captions = SAMPLE_CAPTIONS, theme = "neon", combineMs = 1200 }) => {
+  useSampleFallback?: boolean;
+  transform?: TransformProps;
+}> = ({
+  captions: captionsProp,
+  theme = "neon",
+  combineMs = 1200,
+  useSampleFallback = true,
+  transform = DEFAULT_TRANSFORM,
+}) => {
+  const captions =
+    captionsProp && captionsProp.length > 0
+      ? captionsProp
+      : useSampleFallback
+        ? SAMPLE_CAPTIONS
+        : null;
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  if (!captions) return null;
   const nowMs = (frame / fps) * 1000;
 
   const { pages } = useMemo(
@@ -48,9 +76,16 @@ export const CaptionRenderer: React.FC<{
           ? "rgba(0,0,0,0.8)"
           : "rgba(0,0,0,0.65)";
 
+  const { x, y, scale, rotation, opacity, blur } = transform;
+
   return (
     <AbsoluteFill
-      style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 140 }}
+      style={{
+        justifyContent: "flex-end",
+        alignItems: "center",
+        paddingBottom: CAPTION_BOTTOM_PAD,
+        pointerEvents: "none",
+      }}
     >
       <div
         style={{
@@ -62,6 +97,10 @@ export const CaptionRenderer: React.FC<{
           background: bg,
           padding: theme === "minimal" ? 0 : "16px 28px",
           borderRadius: 18,
+          opacity,
+          filter: blur > 0 ? `blur(${blur}px)` : undefined,
+          transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rotation}deg)`,
+          transformOrigin: "center center",
         }}
       >
         {page.tokens.map((token, i) => {

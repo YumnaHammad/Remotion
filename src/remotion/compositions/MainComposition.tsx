@@ -1,6 +1,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import {
   AbsoluteFill,
+  Img,
   Sequence,
   useCurrentFrame,
   useVideoConfig,
@@ -12,7 +13,9 @@ import { TransitionOverlay } from "../components/TransitionOverlay";
 import { ShapeLayer } from "../components/ShapeLayer";
 import { ParticleField } from "../components/ParticleField";
 import { MediaLayer } from "../components/MediaLayer";
+import { CollageLayer } from "../components/CollageLayer";
 import { NoiseBackground } from "../components/NoiseBackground";
+import { PatternOverlay } from "../components/PatternOverlay";
 import { CaptionRenderer } from "./Captions";
 
 /** One broken media/shape must not blank the entire Player. */
@@ -60,6 +63,8 @@ function LayerRenderer({
       return <ShapeLayer layer={layer} />;
     case "noise":
       return <NoiseBackground layer={layer} />;
+    case "pattern":
+      return <PatternOverlay pattern={layer.pattern ?? "dots"} opacity={layer.transform.opacity} />;
     case "solid":
       return (
         <AbsoluteFill
@@ -70,13 +75,22 @@ function LayerRenderer({
         />
       );
     case "caption":
-      return <CaptionRenderer theme="neon" />;
+      return (
+        <CaptionRenderer
+          theme="neon"
+          captions={layer.captions}
+          transform={layer.transform}
+        />
+      );
     case "image":
     case "video":
     case "audio":
     case "gif":
     case "lottie":
+    case "sticker":
       return <MediaLayer layer={layer} gain={gain} />;
+    case "collage":
+      return <CollageLayer layer={layer} />;
     default:
       return null;
   }
@@ -98,6 +112,18 @@ function SceneBackground({ scene, isLast }: { scene: Scene; isLast: boolean }) {
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ backgroundColor: scene.background || "#0b0c0f" }}>
+      {scene.backgroundImage ? (
+        <AbsoluteFill>
+          <Img
+            src={scene.backgroundImage}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </AbsoluteFill>
+      ) : null}
       <ParticleField density={12} />
       {!isLast && scene.transition !== "none" && scene.transitionDuration > 0 && (
         <Sequence

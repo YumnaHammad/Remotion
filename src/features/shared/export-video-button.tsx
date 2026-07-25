@@ -24,6 +24,7 @@ interface ExportVideoButtonProps {
   projectName: string;
   compositionId: string;
   inputProps: Record<string, unknown>;
+  aspectRatio?: "16:9" | "9:16" | "1:1" | "4:5";
   trigger?: React.ReactNode;
 }
 
@@ -36,6 +37,7 @@ export function ExportVideoButton({
   projectName,
   compositionId,
   inputProps,
+  aspectRatio = "16:9",
   trigger,
 }: ExportVideoButtonProps) {
   const addRender = useProjectStore((s) => s.addRender);
@@ -63,7 +65,7 @@ export function ExportVideoButton({
       progress: 0,
       format,
       quality,
-      aspectRatio: "16:9",
+      aspectRatio,
       createdAt: new Date().toISOString(),
     });
 

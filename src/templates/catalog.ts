@@ -67,6 +67,8 @@ const REGISTRY_DIMS: Record<
   SaasDemo: { width: 1920, height: 1080, fps: 30, durationInFrames: 300, aspectRatio: "16:9" },
   DataSlideshow: { width: 1920, height: 1080, fps: 30, durationInFrames: 300, aspectRatio: "16:9" },
   LongFormVideo: { width: 1920, height: 1080, fps: 30, durationInFrames: 3600, aspectRatio: "16:9" },
+  AutomatedVideo: { width: 1920, height: 1080, fps: 30, durationInFrames: 900, aspectRatio: "16:9" },
+  CharacterMapVideo: { width: 1080, height: 1920, fps: 30, durationInFrames: 150, aspectRatio: "9:16" },
   ...REMOTION_OFFICIAL_DIMS,
 };
 

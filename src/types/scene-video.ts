@@ -1,4 +1,5 @@
 import type { AnimationPreset } from "@/types";
+import type { SceneEditingTools } from "@/types/editing-tools";
 
 /** Scene types supported by the multi-scene long-form engine. */
 export type SceneType =
@@ -40,6 +41,8 @@ export interface VideoScene {
   durationInFrames: number;
   /** CSS color or gradient token */
   background?: string;
+  /** Per-scene editing tools (overlay, patterns, speed, etc.) */
+  editing?: SceneEditingTools;
 }
 
 /** Props for LongFormVideo and DataLongFormVideo compositions. */

@@ -10,24 +10,35 @@ import { RightPanel } from "@/components/editor/right-panel";
 import { PreviewPlayer } from "@/components/editor/preview-player";
 import { TransportBar } from "@/components/editor/transport-bar";
 import { Timeline } from "@/components/editor/timeline";
+import { CaptionSpeakOnPlay } from "@/components/editor/caption-speak-on-play";
+import { EditorGuide } from "@/components/editor/editor-guide";
 
 export function EditorWorkspace({ projectId }: { projectId: string }) {
   const loadProject = useEditorStore((s) => s.loadProject);
-  const storeProject = useProjectStore((s) =>
-    s.projects.find((p) => p.id === projectId)
-  );
+  const migrateBrokenMedia = useEditorStore((s) => s.migrateBrokenMedia);
+  const speakCaptionsOnPlay = useEditorStore((s) => s.speakCaptionsOnPlay);
 
+  // Load once per projectId only. Do NOT depend on storeProject — autosave
+  // writes back to the project store and would re-trigger loadProject, which
+  // cleared selection and hid Tools/Masking after ~1.5s.
   useEffect(() => {
+    const fromStore = useProjectStore
+      .getState()
+      .projects.find((p) => p.id === projectId);
     const project =
-      storeProject ??
+      fromStore ??
       MOCK_PROJECTS.find((p) => p.id === projectId) ??
       MOCK_PROJECTS[0];
     loadProject(project);
-  }, [projectId, storeProject, loadProject]);
+    // Repair broken sample CDNs (lofi 404, BigBuckBunny 403) on open
+    queueMicrotask(() => migrateBrokenMedia());
+  }, [projectId, loadProject, migrateBrokenMedia]);
 
   return (
     <div className="editor-surface flex h-screen flex-col overflow-hidden">
       <EditorTopBar />
+      <EditorGuide />
+      <CaptionSpeakOnPlay enabled={speakCaptionsOnPlay} />
       <div className="flex min-h-0 flex-1">
         <LeftPanel />
         <div className="flex min-w-0 flex-1 flex-col">

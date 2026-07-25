@@ -15,8 +15,10 @@ export interface AudioTrack {
   premium?: boolean;
 }
 
-/** Remotion-hosted assets — reliable for preview + MP4 export. */
+/** Remotion-hosted assets that still return 200 (lofi.mp3 is 404). */
 const R = "https://remotion.media";
+const MUSIC = `${R}/audio.mp3`;
+const VOICE = `${R}/dialogue.wav`;
 
 export const AUDIO_CATEGORIES: { id: AudioCategory; label: string }[] = [
   { id: "corporate", label: "Corporate music" },
@@ -32,14 +34,14 @@ export const AUDIO_LIBRARY: AudioTrack[] = [
     name: "Focus Forward",
     category: "corporate",
     duration: "2:30",
-    previewUrl: `${R}/lofi.mp3`,
+    previewUrl: MUSIC,
   },
   {
     id: "corp-rise",
     name: "Steady Rise",
     category: "corporate",
     duration: "3:00",
-    previewUrl: `${R}/audio.mp3`,
+    previewUrl: MUSIC,
     premium: true,
   },
   {
@@ -55,28 +57,28 @@ export const AUDIO_LIBRARY: AudioTrack[] = [
     name: "Soft Reveal",
     category: "cinematic",
     duration: "2:10",
-    previewUrl: `${R}/dialogue.wav`,
+    previewUrl: VOICE,
   },
   {
     id: "social-upbeat",
     name: "Upbeat Pop",
     category: "social",
     duration: "1:30",
-    previewUrl: `${R}/lofi.mp3`,
+    previewUrl: MUSIC,
   },
   {
     id: "social-lofi",
     name: "Lo-fi Groove",
     category: "social",
     duration: "2:00",
-    previewUrl: `${R}/lofi.mp3`,
+    previewUrl: MUSIC,
   },
   {
     id: "pod-calm",
     name: "Calm Conversation",
     category: "podcast",
     duration: "4:00",
-    previewUrl: `${R}/dialogue.wav`,
+    previewUrl: VOICE,
   },
   {
     id: "pod-warm",

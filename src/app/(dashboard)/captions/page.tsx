@@ -28,7 +28,7 @@ export default function CaptionsPage() {
   return (
     <LabShell
       title="Caption Studio"
-      description="TikTok / karaoke captions with word highlighting via @remotion/captions."
+      description="TikTok / karaoke captions via @remotion/captions, with local faster-whisper or whisper.cpp transcription."
       icon={Captions}
       component={CaptionDemo}
       durationInFrames={150}
@@ -40,7 +40,15 @@ export default function CaptionsPage() {
           <li>Token-level highlight timing</li>
           <li>Themes: neon · karaoke · minimal · default</li>
           <li>Add caption layers from the editor Text tab</li>
-          <li>SRT import/export ready for pipeline extension</li>
+          <li>
+            faster-whisper:{" "}
+            <code className="text-xs">npm run faster-whisper:install</code>
+          </li>
+          <li>
+            whisper.cpp fallback:{" "}
+            <code className="text-xs">npm run whisper:install</code>
+          </li>
+          <li>Toggle engine in the editor Text tab before Transcribe audio</li>
         </ul>
       }
     />
