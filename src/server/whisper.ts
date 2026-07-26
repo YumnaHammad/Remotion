@@ -23,7 +23,13 @@ export function getWhisperDir(): string {
   );
 }
 
+import os from "node:os";
+
 export function getWhisperTmpDir(): string {
+  const onServerless = process.env.VERCEL === "1" || process.platform !== "win32";
+  if (onServerless) {
+    return path.join(os.tmpdir(), "whisper");
+  }
   return path.join(process.cwd(), "tmp", "whisper");
 }
 
