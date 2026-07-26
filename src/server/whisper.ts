@@ -192,7 +192,8 @@ export async function downloadSourceToTemp(sourceUrl: string): Promise<string> {
 }
 
 async function downloadYoutubeAudioViaCobalt(sourceUrl: string, dest: string): Promise<void> {
-  const res = await fetch("https://api.cobalt.tools/api/json", {
+  // Try Cobalt v10 schema first (standard for api.cobalt.tools)
+  let res = await fetch("https://api.cobalt.tools/api/json", {
     method: "POST",
     headers: {
       "Accept": "application/json",
@@ -200,12 +201,28 @@ async function downloadYoutubeAudioViaCobalt(sourceUrl: string, dest: string): P
     },
     body: JSON.stringify({
       url: sourceUrl,
-      isAudioOnly: true,
-      aFormat: "mp3",
       downloadMode: "audio",
       audioFormat: "mp3"
     })
   });
+
+  // If 400 Bad Request (AJV validation error), fall back to older v7/v8 schema
+  if (res.status === 400) {
+    console.warn("[whisper] Cobalt v10 request failed (400), trying older Cobalt schema...");
+    res = await fetch("https://api.cobalt.tools/api/json", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        url: sourceUrl,
+        isAudioOnly: true,
+        aFormat: "mp3"
+      })
+    });
+  }
+
   if (!res.ok) {
     throw new Error(`Cobalt API failed with status ${res.status}`);
   }
