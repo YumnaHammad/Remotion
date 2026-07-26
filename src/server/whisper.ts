@@ -271,14 +271,11 @@ async function geminiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
             },
           },
           {
-            text: "Transcribe the audio exactly. Return a JSON array of words under the key 'words'. Each item in 'words' must be an object with: 'word' (string, the exact spoken word), 'startMs' (integer, start time of this word in milliseconds), and 'endMs' (integer, end time of this word in milliseconds). Return ONLY valid JSON.",
+            text: "Transcribe the audio exactly. Output the words with their millisecond timestamps in a compact pipe-delimited format. Each line must be exactly: word|startMs|endMs. Example:\nhello|100|400\nworld|400|800\nOutput ONLY the lines of text. Do not wrap in markdown blocks, do not write anything else.",
           },
         ],
       },
     ],
-    config: {
-      responseMimeType: "application/json",
-    },
   });
 
   const text = response.text?.trim();
@@ -286,21 +283,35 @@ async function geminiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
     throw new Error("Gemini returned an empty transcription response.");
   }
 
-  const parsed = JSON.parse(text) as {
-    words?: { word: string; startMs: number; endMs: number }[];
-  };
+  const captions: Caption[] = [];
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const cleanLine = line.trim();
+    if (!cleanLine || cleanLine.startsWith("```")) continue;
 
-  if (!parsed.words || parsed.words.length === 0) {
-    throw new Error("Gemini transcript did not return any word-level timings.");
+    const parts = cleanLine.split("|");
+    if (parts.length >= 3) {
+      const word = parts[0]!.trim();
+      const startMs = parseInt(parts[1]!.trim(), 10);
+      const endMs = parseInt(parts[2]!.trim(), 10);
+
+      if (word && !isNaN(startMs) && !isNaN(endMs)) {
+        captions.push({
+          text: word,
+          startMs,
+          endMs,
+          timestampMs: Math.round((startMs + endMs) / 2),
+          confidence: 1,
+        });
+      }
+    }
   }
 
-  return parsed.words.map((w) => ({
-    text: w.word,
-    startMs: w.startMs,
-    endMs: w.endMs,
-    timestampMs: Math.round((w.startMs + w.endMs) / 2),
-    confidence: 1,
-  }));
+  if (captions.length === 0) {
+    throw new Error("Gemini transcript did not return any word-level timings in the expected format.");
+  }
+
+  return captions;
 }
 
 export async function openaiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
