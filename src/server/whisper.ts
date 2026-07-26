@@ -192,83 +192,53 @@ export async function downloadSourceToTemp(sourceUrl: string): Promise<string> {
 }
 
 async function downloadYoutubeAudioViaCobalt(sourceUrl: string, dest: string): Promise<void> {
-  const instances = [
-    "https://api.cobalt.tools/api/json",
-    "https://co.wuk.sh/api/json",
-    "https://cobalt.api.ryder.lol/api/json",
-    "https://api.cobalt.run/api/json"
-  ];
+  // Try Cobalt v10 schema first (standard for api.cobalt.tools)
+  let res = await fetch("https://api.cobalt.tools/api/json", {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      url: sourceUrl,
+      downloadMode: "audio",
+      audioFormat: "mp3"
+    })
+  });
 
-  let lastError: any = new Error("No Cobalt instances tried");
-
-  for (const baseUrl of instances) {
-    try {
-      console.log(`[whisper] Trying Cobalt instance: ${baseUrl}`);
-      const headers = {
+  // If 400 Bad Request (AJV validation error), fall back to older v7/v8 schema
+  if (res.status === 400) {
+    console.warn("[whisper] Cobalt v10 request failed (400), trying older Cobalt schema...");
+    res = await fetch("https://api.cobalt.tools/api/json", {
+      method: "POST",
+      headers: {
         "Accept": "application/json",
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Origin": "https://cobalt.tools",
-        "Referer": "https://cobalt.tools/"
-      };
-
-      // Try Cobalt v10 schema first
-      let res = await fetch(baseUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          url: sourceUrl,
-          downloadMode: "audio",
-          audioFormat: "mp3"
-        })
-      });
-
-      // If 400 Bad Request (AJV validation error), fall back to older v7/v8 schema
-      if (res.status === 400) {
-        res = await fetch(baseUrl, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            url: sourceUrl,
-            isAudioOnly: true,
-            aFormat: "mp3"
-          })
-        });
-      }
-
-      if (!res.ok) {
-        throw new Error(`Instance failed with status ${res.status}`);
-      }
-
-      const data = (await res.json()) as { status: string; url?: string; text?: string };
-      if (data.status === "error") {
-        throw new Error(data.text ?? "Download failed");
-      }
-      if (!data.url) {
-        throw new Error("No URL returned");
-      }
-
-      // Fetch the actual audio file
-      const audioRes = await fetch(data.url, {
-        headers: {
-          "User-Agent": headers["User-Agent"]
-        }
-      });
-      if (!audioRes.ok) {
-        throw new Error(`Failed to download audio from stream URL: ${data.url}`);
-      }
-
-      const buf = Buffer.from(await audioRes.arrayBuffer());
-      await fs.writeFile(dest, buf);
-      console.log(`[whisper] Cobalt successfully fetched audio from: ${baseUrl}`);
-      return;
-    } catch (err: any) {
-      console.warn(`[whisper] Cobalt instance ${baseUrl} failed:`, err.message);
-      lastError = err;
-    }
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        url: sourceUrl,
+        isAudioOnly: true,
+        aFormat: "mp3"
+      })
+    });
   }
 
-  throw new Error(`All Cobalt instances failed. Last error: ${lastError.message}`);
+  if (!res.ok) {
+    throw new Error(`Cobalt API failed with status ${res.status}`);
+  }
+  const data = (await res.json()) as { status: string; url?: string; text?: string };
+  if (data.status === "error") {
+    throw new Error(data.text ?? "Cobalt download failed");
+  }
+  if (!data.url) {
+    throw new Error("No download URL returned from Cobalt");
+  }
+  const audioRes = await fetch(data.url);
+  if (!audioRes.ok) {
+    throw new Error(`Failed to download audio from Cobalt URL: ${data.url}`);
+  }
+  const buf = Buffer.from(await audioRes.arrayBuffer());
+  await fs.writeFile(dest, buf);
 }
 
 async function geminiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
