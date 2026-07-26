@@ -105,8 +105,9 @@ export async function transcribeMediaStructured(
       const captions = await openaiWhisperTranscribe(inputPath);
       return structureFromCaptions(captions, "whisper-cpp");
     } catch (openaiErr: any) {
+      const msg = err instanceof Error ? err.message : String(err);
       throw new Error(
-        `Local whisper.cpp failed (${err.message}) and OpenAI cloud fallback failed: ${openaiErr.message}`
+        `Local whisper.cpp failed (${msg}) and OpenAI cloud fallback failed: ${openaiErr.message}`
       );
     }
   }
