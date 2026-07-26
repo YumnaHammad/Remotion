@@ -24,6 +24,7 @@ import { CaptionListEditor } from "./caption-list-editor";
 import { EditingToolsPanel } from "@/features/editor-tools/editing-tools-panel";
 import {
   captionsDurationInFrames,
+  transcribeFromFile,
   transcribeFromSourceUrl,
 } from "@/lib/transcribe-client";
 import {
@@ -135,7 +136,13 @@ export function RightPanel() {
     setTranscribing(true);
     const toastId = toast.loading("Transcribing audio…");
     try {
-      const result = await transcribeFromSourceUrl(src);
+      // Blob URLs only exist in this browser session; the server can't fetch
+      // them, so re-read the blob here and upload the bytes instead.
+      const result = src.startsWith("blob:")
+        ? await transcribeFromFile(
+            new File([await (await fetch(src)).blob()], "clip")
+          )
+        : await transcribeFromSourceUrl(src);
       if (!result.ok) {
         toast.error(result.error, { id: toastId });
         return;

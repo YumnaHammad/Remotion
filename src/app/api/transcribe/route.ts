@@ -9,7 +9,7 @@ import {
 } from "@/server/whisper";
 import {
   getTranscriptionStatus,
-  transcribeMediaToCaptions,
+  transcribeMediaStructured,
 } from "@/server/transcription-service";
 
 export const runtime = "nodejs";
@@ -19,6 +19,7 @@ const JsonBodySchema = z.object({
   inputPath: z.string().optional(),
   sourceUrl: z.string().url().optional(),
   engine: z.enum(["whisper-cpp", "faster-whisper"]).optional(),
+  language: z.string().min(2).max(8).optional(),
 });
 
 async function cleanup(filePath: string | null) {
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
     const contentType = req.headers.get("content-type") ?? "";
     let mediaPath: string;
     let engine: "whisper-cpp" | "faster-whisper" | undefined;
+    let language: string | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const form = await req.formData();
@@ -45,6 +47,10 @@ export async function POST(req: Request) {
       const engineField = form.get("engine");
       if (engineField === "whisper-cpp" || engineField === "faster-whisper") {
         engine = engineField;
+      }
+      const languageField = form.get("language");
+      if (typeof languageField === "string" && languageField.length >= 2) {
+        language = languageField;
       }
       if (!(file instanceof File)) {
         return NextResponse.json(
@@ -66,6 +72,7 @@ export async function POST(req: Request) {
     } else {
       const body = JsonBodySchema.parse(await req.json());
       engine = body.engine;
+      language = body.language;
       if (body.inputPath) {
         mediaPath = resolveSafeInputPath(body.inputPath);
       } else if (body.sourceUrl) {
@@ -82,11 +89,19 @@ export async function POST(req: Request) {
       }
     }
 
-    const result = await transcribeMediaToCaptions(mediaPath, engine);
+    const result = await transcribeMediaStructured(mediaPath, engine, {
+      language,
+    });
     return NextResponse.json({
       ok: true,
-      captions: result.captions,
       engine: result.engine,
+      model: result.model,
+      media: result.media,
+      language: result.language,
+      languageProbability: result.languageProbability,
+      text: result.text,
+      segments: result.segments,
+      captions: result.captions,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Transcription failed";

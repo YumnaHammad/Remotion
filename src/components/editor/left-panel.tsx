@@ -33,7 +33,12 @@ import {
   SAMPLE_VIDEO,
   SAMPLE_AUDIO,
 } from "@/data/mock";
-import { DEFAULT_FILTERS, type Layer, type ShapeKind } from "@/types";
+import {
+  DEFAULT_FILTERS,
+  type Layer,
+  type ShapeKind,
+  type TimedCaption,
+} from "@/types";
 import {
   BROLL_LIBRARY,
   COLLAGE_LAYOUTS,
@@ -43,9 +48,11 @@ import {
 } from "@/data/creative-library";
 import {
   captionsDurationInFrames,
+  transcribeFromFile,
   transcribeFromSourceUrl,
 } from "@/lib/transcribe-client";
 import { TranscriptionEngineToggle } from "@/features/shared/transcription-engine-toggle";
+import { blobToWavFile, pickRecorderMimeType } from "@/lib/record-audio";
 import {
   Tooltip,
   TooltipContent,
@@ -87,6 +94,8 @@ function makeLayer(
   };
 }
 
+type VoiceMode = "voice-captions" | "captions-only";
+
 const SHAPES: ShapeKind[] = [
   "rect",
   "circle",
@@ -117,6 +126,7 @@ export function LeftPanel() {
   const setLeftTab = useEditorStore((s) => s.setLeftTab);
   const addLayer = useEditorStore((s) => s.addLayer);
   const updateLayer = useEditorStore((s) => s.updateLayer);
+  const removeLayers = useEditorStore((s) => s.removeLayers);
   const applyTemplate = useEditorStore((s) => s.applyTemplate);
   const currentFrame = useEditorStore((s) => s.currentFrame);
   const project = useEditorStore((s) => s.project);
@@ -124,7 +134,17 @@ export function LeftPanel() {
   const uploadedAssets = useAssetStore((s) => s.assets);
   const addAsset = useAssetStore((s) => s.addAsset);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const transcribeInputRef = useRef<HTMLInputElement>(null);
   const [transcribing, setTranscribing] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordStartRef = useRef(0);
+  const [voiceMode, setVoiceModeState] = useState<VoiceMode>("voice-captions");
+  const voiceModeRef = useRef<VoiceMode>("voice-captions");
+  const setVoiceMode = (mode: VoiceMode) => {
+    voiceModeRef.current = mode;
+    setVoiceModeState(mode);
+  };
 
   const add = (layer: Layer) => {
     addLayer(layer);
@@ -146,61 +166,241 @@ export function LeftPanel() {
     return first?.src ? { src: first.src, layer: first } : null;
   };
 
+  const applyCaptions = (captions: TimedCaption[], anchorFrame: number) => {
+    const durationInFrames = captionsDurationInFrames(
+      captions,
+      project.settings.fps
+    );
+    // Reuse the selected caption layer, or failing that any caption layer —
+    // adding a fresh layer per transcription stacks them and every word
+    // renders twice on screen.
+    const selectedCaption = project.layers.find(
+      (l) => l.id === selectedLayerIds[0] && l.type === "caption"
+    );
+    const captionTarget =
+      selectedCaption ?? project.layers.find((l) => l.type === "caption");
+
+    // Stale transcription layers from before this reuse logic (or from other
+    // panels) still render their own words on top — clear them out.
+    const staleCaptions = project.layers.filter(
+      (l) =>
+        l.type === "caption" &&
+        l.name === "Whisper Captions" &&
+        l.id !== captionTarget?.id
+    );
+    if (staleCaptions.length) {
+      removeLayers(staleCaptions.map((l) => l.id));
+    }
+
+    if (captionTarget) {
+      updateLayer(captionTarget.id, {
+        captions,
+        durationInFrames,
+        startFrame: anchorFrame,
+      });
+    } else {
+      addLayer(
+        makeLayer({
+          type: "caption",
+          name: "Whisper Captions",
+          trackId: "t-tx1",
+          startFrame: anchorFrame,
+          durationInFrames,
+          captions,
+          animation: "none",
+        })
+      );
+    }
+  };
+
   const transcribeAudio = async () => {
     const media = findMediaSource();
     if (!media) {
-      toast.error("First add a video or music clip, then try again");
+      // No clip on the timeline yet — let the user pick one; we add it to the
+      // timeline and transcribe it in one go.
+      toast.info("Pick a video or audio file with speech");
+      transcribeInputRef.current?.click();
       return;
     }
     setTranscribing(true);
     const toastId = toast.loading("Listening to your audio and writing captions…");
     try {
-      const result = await transcribeFromSourceUrl(media.src);
+      // Blob URLs only exist in this browser session; the server can't fetch
+      // them, so re-read the blob here and upload the bytes instead.
+      const result = media.src.startsWith("blob:")
+        ? await transcribeFromFile(
+            new File(
+              [await (await fetch(media.src)).blob()],
+              media.layer?.name ?? "clip"
+            )
+          )
+        : await transcribeFromSourceUrl(media.src);
       if (!result.ok) {
         toast.error(result.error, { id: toastId });
         return;
       }
-      const durationInFrames = captionsDurationInFrames(
-        result.captions,
-        project.settings.fps
-      );
-      const existingCaption = project.layers.find(
-        (l) =>
-          l.type === "caption" &&
-          (selectedLayerIds.includes(l.id) || l.id === selectedLayerIds[0])
-      );
-      const captionTarget =
-        selectedLayerIds[0] &&
-        project.layers.find((l) => l.id === selectedLayerIds[0])?.type ===
-          "caption"
-          ? project.layers.find((l) => l.id === selectedLayerIds[0])
-          : existingCaption;
-
-      if (captionTarget) {
-        updateLayer(captionTarget.id, {
-          captions: result.captions,
-          durationInFrames,
-          startFrame: media.layer?.startFrame ?? currentFrame,
-        });
-      } else {
-        addLayer(
-          makeLayer({
-            type: "caption",
-            name: "Whisper Captions",
-            trackId: "t-tx1",
-            startFrame: media.layer?.startFrame ?? currentFrame,
-            durationInFrames,
-            captions: result.captions,
-            animation: "none",
-          })
+      if (result.captions.length === 0) {
+        toast.warning(
+          "No speech found in that clip — check it has a clear voice",
+          { id: toastId }
         );
+        return;
       }
+      applyCaptions(result.captions, media.layer?.startFrame ?? currentFrame);
       toast.success(
         `Done — ${result.captions.length} words turned into captions`,
         { id: toastId }
       );
     } finally {
       setTranscribing(false);
+    }
+  };
+
+  const mediaDurationInFrames = (
+    url: string,
+    kind: "audio" | "video"
+  ): Promise<number> =>
+    new Promise((resolve) => {
+      const el = document.createElement(kind);
+      el.preload = "metadata";
+      el.onloadedmetadata = () =>
+        resolve(
+          Number.isFinite(el.duration) && el.duration > 0
+            ? Math.ceil(el.duration * project.settings.fps)
+            : 90
+        );
+      el.onerror = () => resolve(90);
+      el.src = url;
+    });
+
+  const transcribePickedFile = async (
+    file: File,
+    knownDurationSec?: number,
+    mode: VoiceMode = "voice-captions"
+  ) => {
+    const kind = file.type.startsWith("audio") ? "audio" : "video";
+    const asset = assetFromFile(file);
+    addAsset(asset);
+
+    // MediaRecorder blobs report Infinity duration in Chromium, so mic
+    // recordings pass the elapsed time in explicitly.
+    const durationInFrames = knownDurationSec
+      ? Math.ceil(knownDurationSec * project.settings.fps)
+      : await mediaDurationInFrames(asset.url, kind);
+
+    // Start after whatever already sits on the target track — overlapping
+    // clips all play at once, which sounds like echoing / repeated words.
+    const trackId = kind === "audio" ? "t-a1" : "t-v1";
+    const trackEnd = project.layers
+      .filter((l) => l.trackId === trackId)
+      .reduce((end, l) => Math.max(end, l.startFrame + l.durationInFrames), 0);
+    const anchorFrame =
+      mode === "captions-only"
+        ? currentFrame
+        : Math.max(currentFrame, trackEnd);
+
+    if (mode === "voice-captions") {
+      addLayer(
+        makeLayer({
+          type: kind,
+          name: file.name,
+          trackId,
+          startFrame: anchorFrame,
+          durationInFrames,
+          src: asset.url,
+          objectFit: "cover",
+          volume: 1,
+          playbackRate: 1,
+          animation: "none",
+        })
+      );
+    }
+
+    setTranscribing(true);
+    const toastId = toast.loading(
+      `Added “${file.name}” — listening and writing captions…`
+    );
+    try {
+      const result = await transcribeFromFile(file);
+      if (!result.ok) {
+        toast.error(result.error, { id: toastId });
+        return;
+      }
+      if (result.captions.length === 0) {
+        toast.warning(
+          "No speech detected — speak closer to the microphone and try again",
+          { id: toastId }
+        );
+        return;
+      }
+      applyCaptions(result.captions, anchorFrame);
+      toast.success(
+        `Done — ${result.captions.length} words turned into captions`,
+        { id: toastId }
+      );
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
+  const toggleRecording = async () => {
+    if (recording) {
+      recorderRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      const recorder = new MediaRecorder(stream, {
+        mimeType: pickRecorderMimeType(),
+        audioBitsPerSecond: 128000,
+      });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setRecording(false);
+        const elapsedSec = (Date.now() - recordStartRef.current) / 1000;
+        if (elapsedSec < 0.5 || chunks.length === 0) {
+          toast.error("Recording was too short — hold on a bit longer");
+          return;
+        }
+        const blob = new Blob(chunks, {
+          type: recorder.mimeType || "audio/webm",
+        });
+        const stamp = Date.now();
+        try {
+          // Re-encode as WAV: recorder blobs aren't seekable and report no
+          // duration, which makes timeline playback stutter.
+          const { file, durationSec } = await blobToWavFile(
+            blob,
+            `voice-note-${stamp}.wav`
+          );
+          void transcribePickedFile(file, durationSec, voiceModeRef.current);
+        } catch {
+          const file = new File([blob], `voice-note-${stamp}.webm`, {
+            type: blob.type,
+          });
+          void transcribePickedFile(file, elapsedSec, voiceModeRef.current);
+        }
+      };
+      recorderRef.current = recorder;
+      recordStartRef.current = Date.now();
+      recorder.start(250);
+      setRecording(true);
+      toast.info("Recording… click again to stop");
+    } catch {
+      toast.error(
+        "Microphone access was blocked — allow it in your browser and try again"
+      );
     }
   };
 
@@ -322,6 +522,17 @@ export function LeftPanel() {
                   <Captions className="mr-2 h-4 w-4 text-emerald-400" />
                   Word-by-word captions
                 </Button>
+                <input
+                  ref={transcribeInputRef}
+                  type="file"
+                  accept="video/*,audio/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void transcribePickedFile(file);
+                    e.target.value = "";
+                  }}
+                />
                 <Button
                   variant="outline"
                   disabled={transcribing}
@@ -331,6 +542,50 @@ export function LeftPanel() {
                   <Mic className="mr-2 h-4 w-4 text-amber-400" />
                   {transcribing ? "Listening…" : "Turn speech into captions"}
                 </Button>
+                <Button
+                  variant="outline"
+                  disabled={transcribing}
+                  className={cn(
+                    "h-auto w-full justify-start border-white/10 bg-white/5 py-3 text-white hover:bg-white/10",
+                    recording &&
+                      "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
+                  )}
+                  onClick={() => void toggleRecording()}
+                >
+                  <Mic
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      recording ? "animate-pulse text-red-400" : "text-red-400"
+                    )}
+                  />
+                  {recording ? "Stop recording" : "Record voice → captions"}
+                </Button>
+                <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+                  {(
+                    [
+                      { id: "voice-captions", label: "Voice + captions" },
+                      { id: "captions-only", label: "Captions only" },
+                    ] as const
+                  ).map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setVoiceMode(m.id)}
+                      className={cn(
+                        "flex-1 rounded-md px-2 py-1.5 text-[11px] transition",
+                        voiceMode === m.id
+                          ? "bg-primary/25 text-white"
+                          : "text-white/50 hover:bg-white/5"
+                      )}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="px-0.5 text-[10px] leading-snug text-white/35">
+                  Voice + captions keeps your recording on the Audio track.
+                  Captions only writes the words but leaves the audio out.
+                </p>
                 <TranscriptionEngineToggle className="border-white/10 bg-white/5" />
               </>
             )}

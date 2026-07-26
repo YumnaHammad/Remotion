@@ -2,7 +2,9 @@ import type { Caption } from "@remotion/captions";
 import {
   isFasterWhisperAvailable,
   resolveTranscriptionEngine,
-  transcribeWithFasterWhisper,
+  transcribeStructuredWithFasterWhisper,
+  type FasterWhisperOptions,
+  type StructuredTranscript,
   type TranscriptionEngine,
 } from "@/server/faster-whisper";
 import {
@@ -10,7 +12,7 @@ import {
   transcribeToCaptions as transcribeWithWhisperCpp,
 } from "@/server/whisper";
 
-export type { TranscriptionEngine };
+export type { StructuredTranscript, TranscriptionEngine };
 
 export async function getTranscriptionStatus(): Promise<{
   whisperCpp: boolean;
@@ -24,38 +26,61 @@ export async function getTranscriptionStatus(): Promise<{
   };
 }
 
-export async function transcribeMediaToCaptions(
+/** Wrap plain captions in the structured-transcript shape (whisper.cpp path). */
+function structureFromCaptions(captions: Caption[]): StructuredTranscript {
+  return {
+    engine: "whisper-cpp",
+    model: null,
+    media: null,
+    language: null,
+    languageProbability: null,
+    text: captions.map((c) => c.text).join(" "),
+    segments: [],
+    captions,
+  };
+}
+
+/**
+ * Transcribe an audio or video file into a structured transcript
+ * (full text, timed segments with word-level timestamps, detected language,
+ * and Remotion-compatible captions). Standalone entry point for the
+ * automation pipeline and AI modules.
+ */
+export async function transcribeMediaStructured(
   inputPath: string,
-  engine?: TranscriptionEngine
-): Promise<{ captions: Caption[]; engine: TranscriptionEngine }> {
+  engine?: TranscriptionEngine,
+  options: FasterWhisperOptions = {}
+): Promise<StructuredTranscript> {
   const selected = resolveTranscriptionEngine(engine);
 
   if (selected === "faster-whisper") {
-    const available = await isFasterWhisperAvailable();
-    if (!available) {
-      if (isWhisperInstalled()) {
-        const captions = await transcribeWithWhisperCpp(inputPath);
-        return { captions, engine: "whisper-cpp" };
-      }
-      throw new Error(
-        "faster-whisper is not installed. Run: pip install faster-whisper (or npm run whisper:install for whisper.cpp fallback)"
-      );
+    if (await isFasterWhisperAvailable()) {
+      return transcribeStructuredWithFasterWhisper(inputPath, options);
     }
-    const captions = await transcribeWithFasterWhisper(inputPath);
-    return { captions, engine: "faster-whisper" };
+    if (isWhisperInstalled()) {
+      return structureFromCaptions(await transcribeWithWhisperCpp(inputPath));
+    }
+    throw new Error(
+      "faster-whisper is not installed. Run: pip install faster-whisper (or npm run whisper:install for whisper.cpp fallback)"
+    );
   }
 
   if (!isWhisperInstalled()) {
-    const fwAvailable = await isFasterWhisperAvailable();
-    if (fwAvailable) {
-      const captions = await transcribeWithFasterWhisper(inputPath);
-      return { captions, engine: "faster-whisper" };
+    if (await isFasterWhisperAvailable()) {
+      return transcribeStructuredWithFasterWhisper(inputPath, options);
     }
     throw new Error(
       "Whisper.cpp is not installed. Run `npm run whisper:install` or install faster-whisper with pip."
     );
   }
 
-  const captions = await transcribeWithWhisperCpp(inputPath);
-  return { captions, engine: "whisper-cpp" };
+  return structureFromCaptions(await transcribeWithWhisperCpp(inputPath));
+}
+
+export async function transcribeMediaToCaptions(
+  inputPath: string,
+  engine?: TranscriptionEngine
+): Promise<{ captions: Caption[]; engine: TranscriptionEngine }> {
+  const result = await transcribeMediaStructured(inputPath, engine);
+  return { captions: result.captions, engine: result.engine };
 }
