@@ -51,7 +51,6 @@ import {
   transcribeFromFile,
   transcribeFromSourceUrl,
 } from "@/lib/transcribe-client";
-import { TranscriptionEngineToggle } from "@/features/shared/transcription-engine-toggle";
 import { blobToWavFile, pickRecorderMimeType } from "@/lib/record-audio";
 import {
   Tooltip,
@@ -461,67 +460,56 @@ export function LeftPanel() {
           <div className="space-y-2 p-3">
             {leftTab === "text" && (
               <>
-                <p className="pb-1 text-[11px] text-white/40">
-                  Tap a style to put words on your video
+                <p className="px-0.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                  Add text
                 </p>
-                {["Title", "Subtitle", "Caption", "Neon Headline"].map(
-                  (label) => {
-                    const layer = makeLayer({
-                      type: "text",
-                      name: label,
-                      trackId: "t-tx1",
-                      startFrame: currentFrame,
-                      text: label === "Neon Headline" ? "GLOW UP" : label,
-                      textStyle: {
-                        fontFamily: "Inter",
-                        fontSize: label === "Title" ? 72 : 36,
-                        fontWeight: 700,
-                        color:
-                          label === "Neon Headline" ? "#22d3ee" : "#ffffff",
-                        align: "center",
-                        lineHeight: 1.2,
-                        letterSpacing: 0,
-                        neon: label === "Neon Headline",
-                        gradient:
-                          label === "Title"
-                            ? "linear-gradient(135deg,#fff,#a5b4fc)"
-                            : undefined,
-                      },
-                      animation: label === "Caption" ? "typewriter" : "fade",
-                    });
-                    return (
-                      <Button
-                        key={label}
-                        variant="outline"
-                        className="h-auto w-full justify-start border-white/10 bg-white/5 py-3 text-left text-white hover:bg-white/10"
-                        {...layerDragProps(layer)}
-                        onClick={() => add(layer)}
-                      >
-                        <Type className="mr-2 h-4 w-4 text-primary" />
-                        {label}
-                      </Button>
-                    );
-                  }
-                )}
-                <Button
-                  variant="outline"
-                  className="h-auto w-full justify-start border-white/10 bg-white/5 py-3 text-white hover:bg-white/10"
-                  onClick={() =>
-                    add(
-                      makeLayer({
-                        type: "caption",
-                        name: "Captions",
+                <div className="grid grid-cols-2 gap-2">
+                  {["Title", "Subtitle", "Caption", "Neon Headline"].map(
+                    (label) => {
+                      const layer = makeLayer({
+                        type: "text",
+                        name: label,
                         trackId: "t-tx1",
                         startFrame: currentFrame,
-                        durationInFrames: 100,
-                        animation: "none",
-                      })
-                    )
-                  }
-                >
-                  <Captions className="mr-2 h-4 w-4 text-emerald-400" />
-                  Word-by-word captions
-                </Button>
+                        text: label === "Neon Headline" ? "GLOW UP" : label,
+                        textStyle: {
+                          fontFamily: "Inter",
+                          fontSize: label === "Title" ? 72 : 36,
+                          fontWeight: 700,
+                          color:
+                            label === "Neon Headline" ? "#22d3ee" : "#ffffff",
+                          align: "center",
+                          lineHeight: 1.2,
+                          letterSpacing: 0,
+                          neon: label === "Neon Headline",
+                          gradient:
+                            label === "Title"
+                              ? "linear-gradient(135deg,#fff,#a5b4fc)"
+                              : undefined,
+                        },
+                        animation: label === "Caption" ? "typewriter" : "fade",
+                      });
+                      return (
+                        <Button
+                          key={label}
+                          variant="outline"
+                          className="h-auto w-full flex-col gap-1.5 border-white/10 bg-white/5 py-3 text-white hover:bg-white/10"
+                          {...layerDragProps(layer)}
+                          onClick={() => add(layer)}
+                        >
+                          <Type className="h-4 w-4 text-primary" />
+                          <span className="text-[11px] leading-none">
+                            {label === "Neon Headline" ? "Neon" : label}
+                          </span>
+                        </Button>
+                      );
+                    }
+                  )}
+                </div>
+
+                <p className="px-0.5 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                  Captions from speech
+                </p>
                 <input
                   ref={transcribeInputRef}
                   type="file"
@@ -535,12 +523,14 @@ export function LeftPanel() {
                 />
                 <Button
                   variant="outline"
-                  disabled={transcribing}
-                  className="h-auto w-full justify-start border-white/10 bg-white/5 py-3 text-white hover:bg-white/10"
+                  disabled={transcribing || recording}
+                  className="h-auto w-full justify-start border-primary/30 bg-primary/15 py-3 text-white hover:bg-primary/25"
                   onClick={() => void transcribeAudio()}
                 >
-                  <Mic className="mr-2 h-4 w-4 text-amber-400" />
-                  {transcribing ? "Listening…" : "Turn speech into captions"}
+                  <Captions className="mr-2 h-4 w-4 text-primary" />
+                  {transcribing
+                    ? "Writing your captions…"
+                    : "Captions from video or audio"}
                 </Button>
                 <Button
                   variant="outline"
@@ -554,16 +544,16 @@ export function LeftPanel() {
                 >
                   <Mic
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      recording ? "animate-pulse text-red-400" : "text-red-400"
+                      "mr-2 h-4 w-4 text-red-400",
+                      recording && "animate-pulse"
                     )}
                   />
-                  {recording ? "Stop recording" : "Record voice → captions"}
+                  {recording ? "Stop recording" : "Record my voice"}
                 </Button>
                 <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
                   {(
                     [
-                      { id: "voice-captions", label: "Voice + captions" },
+                      { id: "voice-captions", label: "Keep my voice" },
                       { id: "captions-only", label: "Captions only" },
                     ] as const
                   ).map((m) => (
@@ -582,11 +572,25 @@ export function LeftPanel() {
                     </button>
                   ))}
                 </div>
-                <p className="px-0.5 text-[10px] leading-snug text-white/35">
-                  Voice + captions keeps your recording on the Audio track.
-                  Captions only writes the words but leaves the audio out.
-                </p>
-                <TranscriptionEngineToggle className="border-white/10 bg-white/5" />
+                <Button
+                  variant="ghost"
+                  className="h-auto w-full justify-start py-2 text-[11px] text-white/50 hover:bg-white/5 hover:text-white/80"
+                  onClick={() =>
+                    add(
+                      makeLayer({
+                        type: "caption",
+                        name: "Captions",
+                        trackId: "t-tx1",
+                        startFrame: currentFrame,
+                        durationInFrames: 100,
+                        animation: "none",
+                      })
+                    )
+                  }
+                >
+                  <Captions className="mr-2 h-3.5 w-3.5 text-emerald-400" />
+                  Empty captions — type them yourself
+                </Button>
               </>
             )}
 
