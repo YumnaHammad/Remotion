@@ -53,28 +53,50 @@ export const CaptionRenderer: React.FC<{
   if (!captions) return null;
   const nowMs = (frame / fps) * 1000;
 
-  const { pages } = useMemo(
-    () =>
-      createTikTokStyleCaptions({
-        captions,
-        combineTokensWithinMilliseconds: combineMs,
-      }),
-    [captions, combineMs]
+  // 1. Find the active sentence caption item
+  const activeCaption = captions.find(
+    (c) => nowMs >= c.startMs && nowMs < c.endMs
   );
+  if (!activeCaption) return null;
 
-  const page = pages.find(
-    (p) => nowMs >= p.startMs && nowMs < p.startMs + p.durationMs
-  );
-  if (!page) return null;
+  // 2. Parse active sentence into words and calculate timings
+  const words = activeCaption.text.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return null;
+
+  const sentenceDuration = activeCaption.endMs - activeCaption.startMs;
+  const wordDuration = sentenceDuration / words.length;
+
+  const wordsWithTiming = words.map((word, index) => {
+    const startMs = activeCaption.startMs + index * wordDuration;
+    const endMs = startMs + wordDuration;
+    return {
+      text: word,
+      startMs,
+      endMs,
+      active: nowMs >= startMs && nowMs < endMs,
+      passed: nowMs >= endMs,
+    };
+  });
+
+  // 3. Group words into lines of max 5 words
+  const WORDS_PER_LINE = 5;
+  const wordPages: typeof wordsWithTiming[] = [];
+  for (let i = 0; i < wordsWithTiming.length; i += WORDS_PER_LINE) {
+    wordPages.push(wordsWithTiming.slice(i, i + WORDS_PER_LINE));
+  }
+
+  // 4. Find the active page of words
+  const activePage =
+    wordPages.find((page) =>
+      page.some((word) => nowMs >= word.startMs && nowMs < word.endMs)
+    ) || wordPages[0]!;
 
   const bg =
     theme === "neon"
-      ? "rgba(99,102,241,0.85)"
+      ? "rgba(10,10,18,0.78)"
       : theme === "minimal"
         ? "transparent"
-        : theme === "karaoke"
-          ? "rgba(0,0,0,0.8)"
-          : "rgba(0,0,0,0.65)";
+        : "rgba(0,0,0,0.65)";
 
   const { x, y, scale, rotation, opacity, blur } = transform;
 
@@ -92,45 +114,44 @@ export const CaptionRenderer: React.FC<{
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
-          gap: 10,
-          maxWidth: "82%",
+          gap: "10px 18px",
+          maxWidth: "80%",
           background: bg,
-          padding: theme === "minimal" ? 0 : "16px 28px",
-          borderRadius: 18,
+          padding: theme === "minimal" ? 0 : "12px 24px",
+          borderRadius: 16,
+          boxShadow: theme === "minimal" ? "none" : "0 10px 30px rgba(0,0,0,0.35)",
+          border: theme === "minimal" ? "none" : "1px solid rgba(255,255,255,0.08)",
           opacity,
           filter: blur > 0 ? `blur(${blur}px)` : undefined,
           transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rotation}deg)`,
           transformOrigin: "center center",
         }}
       >
-        {page.tokens.map((token, i) => {
-          const active = nowMs >= token.fromMs && nowMs < token.toMs;
-          const passed = nowMs >= token.toMs;
-          return (
-            <span
-              key={`${token.text}-${i}`}
-              style={{
-                fontSize: 46,
-                fontWeight: 800,
-                transform: active ? "scale(1.1)" : "scale(1)",
-                transition: "transform 0.1s",
-                color: active
-                  ? theme === "neon"
-                    ? "#fbbf24"
-                    : "#22d3ee"
-                  : passed
-                    ? "#ffffff"
-                    : "rgba(255,255,255,0.45)",
-                textShadow:
-                  theme === "neon" && active
-                    ? "0 0 24px #fbbf24"
-                    : "0 2px 10px rgba(0,0,0,0.5)",
-              }}
-            >
-              {token.text}
-            </span>
-          );
-        })}
+        {activePage.map((word, i) => (
+          <span
+            key={`${word.text}-${i}`}
+            style={{
+              fontSize: 34,
+              fontWeight: 800,
+              letterSpacing: "-0.015em",
+              transform: word.active ? "scale(1.1)" : "scale(1)",
+              transition: "transform 0.08s ease-out",
+              color: word.active
+                ? theme === "neon"
+                  ? "#fbbf24" // neon yellow
+                  : "#22d3ee" // cyan
+                : word.passed
+                  ? "rgba(255,255,255,0.85)"
+                  : "rgba(255,255,255,0.4)",
+              textShadow:
+                theme === "neon" && word.active
+                  ? "0 0 16px rgba(251,191,36,0.5)"
+                  : "0 2px 8px rgba(0,0,0,0.4)",
+            }}
+          >
+            {word.text}
+          </span>
+        ))}
       </div>
     </AbsoluteFill>
   );

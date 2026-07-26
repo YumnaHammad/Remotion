@@ -262,13 +262,21 @@ export function LeftPanel() {
     new Promise((resolve) => {
       const el = document.createElement(kind);
       el.preload = "metadata";
-      el.onloadedmetadata = () =>
+      const timer = setTimeout(() => {
+        resolve(150);
+      }, 1000);
+      el.onloadedmetadata = () => {
+        clearTimeout(timer);
         resolve(
           Number.isFinite(el.duration) && el.duration > 0
             ? Math.ceil(el.duration * project.settings.fps)
-            : 90
+            : 150
         );
-      el.onerror = () => resolve(90);
+      };
+      el.onerror = () => {
+        clearTimeout(timer);
+        resolve(150);
+      };
       el.src = url;
     });
 
@@ -704,7 +712,10 @@ export function LeftPanel() {
                 <button
                   type="button"
                   className="flex w-full items-center gap-2 text-left transition hover:opacity-90"
-                  onClick={() =>
+                  onClick={async () => {
+                    const duration = (m.type === "audio" || m.type === "video")
+                      ? await mediaDurationInFrames(m.url, m.type)
+                      : 90;
                     add(
                       makeLayer({
                         type:
@@ -721,15 +732,15 @@ export function LeftPanel() {
                             ? "t-a1"
                             : "t-v1",
                         startFrame: currentFrame,
-                        durationInFrames: 90,
+                        durationInFrames: duration,
                         src: m.url,
                         objectFit: "cover",
                         volume: 1,
                         playbackRate: 1,
                         animation: "none",
                       })
-                    )
-                  }
+                    );
+                  }}
                 >
                   <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/10">
                     {m.type === "audio" ? (

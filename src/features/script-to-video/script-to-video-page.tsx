@@ -13,9 +13,14 @@ import {
   Download,
   Share2,
   RefreshCw,
+  Upload,
+  Mic,
+  Link2,
 } from "lucide-react";
+import { blobToWavFile, pickRecorderMimeType } from "@/lib/record-audio";
+import { transcribeFromFile, transcribeFromSourceUrl } from "@/lib/transcribe-client";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -35,7 +40,7 @@ import { createProjectFromEditRecipe } from "@/utils/video-project-factory";
 import { localBreakdown } from "@/lib/pipeline/local-breakdown";
 import {
   buildAutomatedVideoInputProps,
-  fetchCaptionVoiceoverUrl,
+  fetchCaptionVoiceover,
   resolveEditRecipeLocal,
 } from "@/lib/pipeline/local-resolver";
 import type { PipelinePreferences } from "@/lib/pipeline/pipeline-preferences";
@@ -131,6 +136,19 @@ export function ScriptToVideoFeature() {
   const [veoProgressLabel, setVeoProgressLabel] = useState("");
   const veoAbortRef = useRef<AbortController | null>(null);
 
+  // Microphone recording & Raw footage transcription states/refs
+  const [recording, setRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [transcribingMedia, setTranscribingMedia] = useState(false);
+  const [transcriptionProgress, setTranscriptionProgress] = useState(0);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [mediaUrl, setMediaUrl] = useState("");
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordIntervalRef = useRef<any>(null);
+  const recordStartRef = useRef<number>(0);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const scriptParam = searchParams.get("script");
     const ratioParam = searchParams.get("aspectRatio");
@@ -143,6 +161,168 @@ export function ScriptToVideoFeature() {
       setAspectRatio(ratioParam);
     }
   }, [searchParams]);
+
+  const startProgressTimer = () => {
+    setTranscriptionProgress(0);
+    const interval = setInterval(() => {
+      setTranscriptionProgress((prev) => {
+        if (prev < 30) return prev + 5;
+        if (prev < 70) return prev + 3;
+        if (prev < 95) return prev + 1;
+        return prev;
+      });
+    }, 400);
+    return interval;
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      const recorder = new MediaRecorder(stream, {
+        mimeType: pickRecorderMimeType(),
+        audioBitsPerSecond: 128000,
+      });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setRecording(false);
+        if (recordIntervalRef.current) clearInterval(recordIntervalRef.current);
+        const elapsedSec = (Date.now() - recordStartRef.current) / 1000;
+        if (elapsedSec < 0.5 || chunks.length === 0) {
+          toast.error("Recording was too short — hold on a bit longer");
+          return;
+        }
+        const blob = new Blob(chunks, {
+          type: recorder.mimeType || "audio/webm",
+        });
+        const stamp = Date.now();
+        setTranscribingMedia(true);
+        const progressInterval = startProgressTimer();
+        const toastId = toast.loading("Processing recording and extracting speech...");
+        try {
+          let file: File;
+          try {
+            const wav = await blobToWavFile(blob, `voice-script-${stamp}.wav`);
+            file = wav.file;
+          } catch {
+            file = new File([blob], `voice-script-${stamp}.webm`, { type: blob.type });
+          }
+          const result = await transcribeFromFile(file, "faster-whisper");
+          if (!result.ok) {
+            toast.error(result.error, { id: toastId });
+            return;
+          }
+          const text = result.text ?? result.captions.map((c: any) => c.text).join(" ");
+          if (!text.trim()) {
+            toast.warning("No speech detected. Speak closer to the microphone.", { id: toastId });
+            return;
+          }
+          setScript((prev) => (prev ? prev + "\n" + text : text));
+          toast.success("Recording transcribed successfully!", { id: toastId });
+        } catch (err) {
+          toast.error("Transcription failed", { id: toastId });
+        } finally {
+          clearInterval(progressInterval);
+          setTranscriptionProgress(100);
+          setTimeout(() => {
+            setTranscriptionProgress(0);
+            setTranscribingMedia(false);
+          }, 500);
+        }
+      };
+      mediaRecorderRef.current = recorder;
+      recordStartRef.current = Date.now();
+      setRecordingDuration(0);
+      recorder.start(250);
+      setRecording(true);
+      recordIntervalRef.current = setInterval(() => {
+        setRecordingDuration(Math.round((Date.now() - recordStartRef.current) / 1000));
+      }, 1000);
+      toast.info("Recording voice... click stop when done");
+    } catch {
+      toast.error("Microphone access was blocked. Please check browser permissions.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const handleUploadTranscribe = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setTranscribingMedia(true);
+    const progressInterval = startProgressTimer();
+    const toastId = toast.loading(`Uploading and transcribing "${file.name}"...`);
+    try {
+      const result = await transcribeFromFile(file, "faster-whisper");
+      if (!result.ok) {
+        toast.error(result.error, { id: toastId });
+        return;
+      }
+      const text = result.text ?? result.captions.map((c: any) => c.text).join(" ");
+      if (!text.trim()) {
+        toast.warning("No speech detected in this media file.", { id: toastId });
+        return;
+      }
+      setScript((prev) => (prev ? prev + "\n" + text : text));
+      toast.success("Media transcribed successfully!", { id: toastId });
+    } catch (err) {
+      toast.error("Transcription failed", { id: toastId });
+    } finally {
+      clearInterval(progressInterval);
+      setTranscriptionProgress(100);
+      setTimeout(() => {
+        setTranscriptionProgress(0);
+        setTranscribingMedia(false);
+      }, 500);
+      e.target.value = "";
+    }
+  };
+
+  const handleUrlTranscribe = async () => {
+    if (!mediaUrl.trim()) return;
+    setTranscribingMedia(true);
+    const progressInterval = startProgressTimer();
+    const toastId = toast.loading(`Processing URL transcription...`);
+    try {
+      const result = await transcribeFromSourceUrl(mediaUrl.trim(), "faster-whisper");
+      if (!result.ok) {
+        toast.error(result.error, { id: toastId });
+        return;
+      }
+      const text = result.text ?? result.captions.map((c: any) => c.text).join(" ");
+      if (!text.trim()) {
+        toast.warning("No speech detected in this media URL.", { id: toastId });
+        return;
+      }
+      setScript((prev) => (prev ? prev + "\n" + text : text));
+      toast.success("Media transcribed successfully!", { id: toastId });
+      setShowUrlInput(false);
+      setMediaUrl("");
+    } catch (err) {
+      toast.error("Transcription failed", { id: toastId });
+    } finally {
+      clearInterval(progressInterval);
+      setTranscriptionProgress(100);
+      setTimeout(() => {
+        setTranscriptionProgress(0);
+        setTranscribingMedia(false);
+      }, 500);
+    }
+  };
 
   const pipelineBody = (): PipelinePreferences => ({
     source: pipelinePrefs.source,
@@ -163,10 +343,13 @@ export function ScriptToVideoFeature() {
       const speakText =
         nextResolved.scenes.map((s) => s.subtitleText).join(" ").trim() ||
         nextResolved.title;
-      const voiceUrl = await fetchCaptionVoiceoverUrl(speakText);
+      const voiceResult = await fetchCaptionVoiceover(speakText);
       return buildAutomatedVideoInputProps(nextResolved, {
         showCaptions: true,
-        voiceoverUrl: voiceUrl ?? nextResolved.voiceoverUrl,
+        voiceoverUrl: voiceResult?.url ?? nextResolved.voiceoverUrl,
+        captions: voiceResult?.captions && voiceResult.captions.length > 0
+          ? voiceResult.captions
+          : nextResolved.captions,
       });
     } finally {
       setVoiceBusy(false);
@@ -484,14 +667,104 @@ export function ScriptToVideoFeature() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-4 rounded-xl border bg-card p-5">
             <div className="space-y-1.5">
-              <Label htmlFor="script">Your script</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="script">Your script</Label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    ref={uploadInputRef}
+                    type="file"
+                    accept="audio/*,video/*"
+                    className="hidden"
+                    onChange={handleUploadTranscribe}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={transcribingMedia || loading}
+                    onClick={() => uploadInputRef.current?.click()}
+                    className="h-8 gap-1.5 text-[11px] font-medium"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Upload Video/Audio
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={recording ? "destructive" : "outline"}
+                    size="sm"
+                    disabled={transcribingMedia || loading}
+                    onClick={recording ? stopRecording : startRecording}
+                    className="h-8 gap-1.5 text-[11px] font-medium"
+                  >
+                    <Mic className={cn("h-3.5 w-3.5", recording && "animate-pulse")} />
+                    {recording ? `Stop (${recordingDuration}s)` : "Record Voice"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={transcribingMedia || loading}
+                    onClick={() => setShowUrlInput((prev) => !prev)}
+                    className={cn("h-8 gap-1.5 text-[11px] font-medium", showUrlInput && "bg-accent")}
+                  >
+                    <Link2 className="h-3.5 w-3.5" />
+                    Paste URL
+                  </Button>
+                </div>
+              </div>
+              {showUrlInput && (
+                <div className="flex items-center gap-1.5 mt-1 pb-1">
+                  <Input
+                    type="text"
+                    placeholder="Enter audio/video URL (e.g., https://example.com/podcast.mp3)"
+                    value={mediaUrl}
+                    onChange={(e) => setMediaUrl(e.target.value)}
+                    disabled={transcribingMedia}
+                    className="h-8 text-xs flex-1 bg-background"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleUrlTranscribe}
+                    disabled={transcribingMedia || !mediaUrl.trim()}
+                    className="h-8 text-xs"
+                  >
+                    Transcribe
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowUrlInput(false);
+                      setMediaUrl("");
+                    }}
+                    className="h-8 text-xs"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
               <Textarea
                 id="script"
                 rows={10}
                 placeholder={EXAMPLE_SCRIPT}
                 value={script}
                 onChange={(e) => setScript(e.target.value)}
+                disabled={transcribingMedia}
               />
+              {transcribingMedia && (
+                <div className="space-y-2 py-1.5">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                      Transcribing media with Faster Whisper...
+                    </span>
+                    <span className="font-semibold">{transcriptionProgress}%</span>
+                  </div>
+                  <Progress value={transcriptionProgress} className="h-1.5 w-full" />
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
                 Use tags like [WHOOSH EFFECT] or [DING EFFECT] for sound cues.
               </p>
