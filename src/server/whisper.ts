@@ -116,9 +116,46 @@ export function resolveSafeInputPath(inputPath: string): string {
   return resolved;
 }
 
+function isYoutubeUrl(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr);
+    return (
+      url.hostname.includes("youtube.com") ||
+      url.hostname.includes("youtu.be") ||
+      url.hostname.includes("youtube-nocookie.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function downloadSourceToTemp(sourceUrl: string): Promise<string> {
   const tmpDir = getWhisperTmpDir();
   await fs.mkdir(tmpDir, { recursive: true });
+
+  if (isYoutubeUrl(sourceUrl)) {
+    const dest = path.join(
+      tmpDir,
+      `download-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.bin`
+    );
+    const python = process.env.PYTHON_PATH ?? "python";
+    const args = [
+      "-m", "yt_dlp",
+      "-f", "ba",
+      "--no-playlist",
+      "-o", dest,
+      sourceUrl
+    ];
+    try {
+      await execFileAsync(python, args, { windowsHide: true, timeout: 120000 });
+      if (existsSync(dest)) {
+        return dest;
+      }
+      throw new Error("yt-dlp completed but output file was not found.");
+    } catch (err: any) {
+      throw new Error(`Failed to download YouTube video audio: ${err.message}`);
+    }
+  }
 
   const url = new URL(sourceUrl);
   const ext = path.extname(url.pathname) || ".bin";

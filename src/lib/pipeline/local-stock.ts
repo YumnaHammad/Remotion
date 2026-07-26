@@ -138,7 +138,7 @@ export const LOCAL_STOCK_LIBRARY: LocalStockClip[] = [
   {
     id: "stock-desert",
     name: "Desert",
-    url: u("photo-1509316785289-5078909980e8"),
+    url: u("photo-1509316975850-ff9c5deb0cd9"),
     kind: "image",
     durationSec: 6,
     tags: ["desert", "sand", "dune", "canyon"],

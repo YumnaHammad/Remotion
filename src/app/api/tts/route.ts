@@ -35,11 +35,29 @@ export async function POST(req: Request) {
       useExternalApis: body.useExternalApis ?? true,
     });
 
+    const finalFile = result.url.endsWith(".wav")
+      ? outputPath.replace(/\.mp3$/i, ".wav")
+      : outputPath;
+
+    let captions: any[] = [];
+    try {
+      const { transcribeMediaToCaptions } = await import(
+        "@/server/transcription-service"
+      );
+      const tx = await transcribeMediaToCaptions(finalFile);
+      if (tx.captions.length) {
+        captions = tx.captions;
+      }
+    } catch (err) {
+      console.error("[tts] Transcription failed for voiceover", err);
+    }
+
     return NextResponse.json({
       ok: true,
       url: result.url,
       mode: result.mode,
       jobId,
+      captions,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "TTS failed";

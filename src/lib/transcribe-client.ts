@@ -3,7 +3,7 @@ import type { TimedCaption } from "@/types";
 export type TranscriptionEngine = "whisper-cpp" | "faster-whisper";
 
 export type TranscribeResult =
-  | { ok: true; captions: TimedCaption[]; engine?: TranscriptionEngine }
+  | { ok: true; captions: TimedCaption[]; engine?: TranscriptionEngine; text?: string }
   | { ok: false; error: string };
 
 const ENGINE_STORAGE_KEY = "framekit-transcription-engine";
@@ -38,6 +38,7 @@ export async function transcribeFromSourceUrl(
       ok?: boolean;
       captions?: TimedCaption[];
       engine?: TranscriptionEngine;
+      text?: string;
       error?: string;
     };
     if (!res.ok || !data.ok || !data.captions) {
@@ -46,7 +47,7 @@ export async function transcribeFromSourceUrl(
         error: data.error ?? `Transcription failed (${res.status})`,
       };
     }
-    return { ok: true, captions: data.captions, engine: data.engine };
+    return { ok: true, captions: data.captions, engine: data.engine, text: data.text };
   } catch (err) {
     return {
       ok: false,
@@ -72,6 +73,7 @@ export async function transcribeFromFile(
       ok?: boolean;
       captions?: TimedCaption[];
       engine?: TranscriptionEngine;
+      text?: string;
       error?: string;
     };
     if (!res.ok || !data.ok || !data.captions) {
@@ -80,7 +82,7 @@ export async function transcribeFromFile(
         error: data.error ?? `Transcription failed (${res.status})`,
       };
     }
-    return { ok: true, captions: data.captions, engine: data.engine };
+    return { ok: true, captions: data.captions, engine: data.engine, text: data.text };
   } catch (err) {
     return {
       ok: false,

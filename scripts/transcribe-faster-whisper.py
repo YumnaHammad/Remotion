@@ -44,6 +44,9 @@ def media_kind(path: str) -> str:
 
 
 def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("media_path", help="Audio or video file to transcribe")
     parser.add_argument(

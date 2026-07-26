@@ -75,7 +75,7 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
       setAccent(p.accent ?? brand.colors.accent);
       setBrandColor(p.brandColor ?? brand.colors.primary);
       setFontFamily(p.fontFamily ?? brand.fontFamily);
-      setMusicUrl(p.musicUrl ?? "");
+      setMusicUrl(p.musicUrl ?? (p as any).backgroundMusicUrl ?? "");
       setScenes(p.scenes ?? []);
       return;
     }
@@ -85,7 +85,7 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
     setAccent(p.accent ?? brand.colors.accent);
     setBrandColor(p.brandColor ?? brand.colors.primary);
     setFontFamily(p.fontFamily ?? brand.fontFamily);
-    setMusicUrl(p.musicUrl ?? "");
+    setMusicUrl(p.musicUrl ?? (p as any).backgroundMusicUrl ?? "");
   }, [project, brand]);
 
   const inputProps = useMemo((): Record<string, unknown> => {
@@ -97,7 +97,12 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
       accent,
       brandColor,
       fontFamily,
-      ...(musicUrl ? { musicUrl } : {}),
+      ...(musicUrl
+        ? {
+            musicUrl,
+            backgroundMusicUrl: musicUrl,
+          }
+        : {}),
       ...(saved && "logoUrl" in saved && saved.logoUrl
         ? { logoUrl: saved.logoUrl }
         : brand.logoUrl

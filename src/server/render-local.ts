@@ -39,6 +39,7 @@ export async function getServeUrl(): Promise<string> {
     entryPoint: path.resolve(process.cwd(), "src/remotion/index-export.ts"),
     webpackOverride,
     enableCaching: false,
+    publicDir: path.resolve(process.cwd(), "public"),
   });
   return cachedServeUrl;
 }

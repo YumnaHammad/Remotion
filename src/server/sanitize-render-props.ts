@@ -25,11 +25,7 @@ const VALID_ANIMATIONS = new Set([
 
 /** Convert site-relative generated asset paths to absolute filesystem paths for Remotion render. */
 function toRenderableMediaUrl(url: string): string {
-  const fixed = rewriteBrokenMediaUrl(url) ?? url;
-  if (fixed.startsWith("/generated-assets/")) {
-    return path.join(process.cwd(), "public", fixed.replace(/^\//, ""));
-  }
-  return fixed;
+  return rewriteBrokenMediaUrl(url) ?? url;
 }
 
 /** Normalize long-form props before Remotion render (API + Vercel). */

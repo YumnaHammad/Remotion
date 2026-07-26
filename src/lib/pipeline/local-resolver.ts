@@ -43,7 +43,7 @@ export function resolveEditRecipeLocal(
 
 export function buildAutomatedVideoInputProps(
   resolved: ResolvedEditRecipe,
-  options?: { showCaptions?: boolean; voiceoverUrl?: string }
+  options?: { showCaptions?: boolean; voiceoverUrl?: string; captions?: any[] }
 ): Record<string, unknown> {
   const showCaptions = options?.showCaptions ?? true;
   return {
@@ -57,7 +57,7 @@ export function buildAutomatedVideoInputProps(
     showCaptions,
     ...(showCaptions
       ? {
-          captions: resolved.captions,
+          captions: options?.captions ?? resolved.captions,
           voiceoverUrl: options?.voiceoverUrl ?? resolved.voiceoverUrl,
         }
       : {
@@ -68,9 +68,9 @@ export function buildAutomatedVideoInputProps(
 }
 
 /** Speak the recipe text when captions are enabled (Windows TTS / OpenAI). */
-export async function fetchCaptionVoiceoverUrl(
+export async function fetchCaptionVoiceover(
   text: string
-): Promise<string | null> {
+): Promise<{ url: string; captions?: any[] } | null> {
   const cleaned = text.replace(/\[[^\]]+\]/g, " ").replace(/\s+/g, " ").trim();
   if (!cleaned) return null;
   try {
@@ -82,8 +82,11 @@ export async function fetchCaptionVoiceoverUrl(
     const data = (await res.json()) as {
       ok?: boolean;
       url?: string;
+      captions?: any[];
     };
-    if (res.ok && data.ok && data.url) return data.url;
+    if (res.ok && data.ok && data.url) {
+      return { url: data.url, captions: data.captions };
+    }
   } catch {
     /* ignore */
   }
