@@ -24,6 +24,7 @@ export function getWhisperDir(): string {
 }
 
 import os from "node:os";
+import { GoogleGenAI } from "@google/genai";
 
 export function getWhisperTmpDir(): string {
   const onServerless = process.env.VERCEL === "1" || process.platform !== "win32";
@@ -200,7 +201,9 @@ async function downloadYoutubeAudioViaCobalt(sourceUrl: string, dest: string): P
     body: JSON.stringify({
       url: sourceUrl,
       isAudioOnly: true,
-      aFormat: "mp3"
+      aFormat: "mp3",
+      downloadMode: "audio",
+      audioFormat: "mp3"
     })
   });
   if (!res.ok) {
@@ -221,60 +224,135 @@ async function downloadYoutubeAudioViaCobalt(sourceUrl: string, dest: string): P
   await fs.writeFile(dest, buf);
 }
 
-export async function openaiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
+async function geminiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
+  const apiKey = process.env.GOOGLE_API_KEY?.trim();
   if (!apiKey) {
-    throw new Error("OpenAI API key (OPENAI_API_KEY) is not set in environment variables.");
+    throw new Error("GOOGLE_API_KEY is not configured.");
   }
 
+  const ai = new GoogleGenAI({ apiKey });
   const fileBuffer = await fs.readFile(inputPath);
-  const filename = path.basename(inputPath);
-  const ext = path.extname(filename).toLowerCase();
-  const supported = [".flac", ".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".ogg", ".wav", ".webm"];
-  const finalFilename = supported.includes(ext) ? filename : "audio.wav";
+  const base64Data = fileBuffer.toString("base64");
 
-  const formData = new FormData();
-  const fileBlob = new Blob([fileBuffer], { type: "audio/mpeg" });
-  formData.append("file", fileBlob, finalFilename);
-  formData.append("model", "whisper-1");
-  formData.append("response_format", "verbose_json");
-  formData.append("timestamp_granularities[]", "word");
+  const ext = path.extname(inputPath).toLowerCase();
+  let mimeType = "audio/mp3";
+  if (ext === ".wav") mimeType = "audio/wav";
+  else if (ext === ".m4a") mimeType = "audio/m4a";
+  else if (ext === ".ogg") mimeType = "audio/ogg";
+  else if (ext === ".webm") mimeType = "audio/webm";
 
-  const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType,
+            },
+          },
+          {
+            text: "Transcribe the audio exactly. Return a JSON array of words under the key 'words'. Each item in 'words' must be an object with: 'word' (string, the exact spoken word), 'startMs' (integer, start time of this word in milliseconds), and 'endMs' (integer, end time of this word in milliseconds). Return ONLY valid JSON.",
+          },
+        ],
+      },
+    ],
+    config: {
+      responseMimeType: "application/json",
     },
-    body: formData,
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`OpenAI Whisper API error (${res.status}): ${errText}`);
+  const text = response.text?.trim();
+  if (!text) {
+    throw new Error("Gemini returned an empty transcription response.");
   }
 
-  const data = (await res.json()) as {
-    text: string;
-    words?: { word: string; start: number; end: number }[];
+  const parsed = JSON.parse(text) as {
+    words?: { word: string; startMs: number; endMs: number }[];
   };
 
-  if (!data.words || data.words.length === 0) {
-    return [
-      {
-        text: data.text,
-        startMs: 0,
-        endMs: 15000,
-        timestampMs: 7500,
-        confidence: 1,
-      },
-    ];
+  if (!parsed.words || parsed.words.length === 0) {
+    throw new Error("Gemini transcript did not return any word-level timings.");
   }
 
-  return data.words.map((w) => ({
+  return parsed.words.map((w) => ({
     text: w.word,
-    startMs: Math.round(w.start * 1000),
-    endMs: Math.round(w.end * 1000),
-    timestampMs: Math.round(((w.start + w.end) / 2) * 1000),
+    startMs: w.startMs,
+    endMs: w.endMs,
+    timestampMs: Math.round((w.startMs + w.endMs) / 2),
     confidence: 1,
   }));
+}
+
+export async function openaiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
+  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
+  const hasGoogle = Boolean(process.env.GOOGLE_API_KEY);
+
+  if (!hasOpenAI && !hasGoogle) {
+    throw new Error("Neither OPENAI_API_KEY nor GOOGLE_API_KEY is set in environment variables.");
+  }
+
+  if (hasOpenAI) {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      const fileBuffer = await fs.readFile(inputPath);
+      const filename = path.basename(inputPath);
+      const ext = path.extname(filename).toLowerCase();
+      const supported = [".flac", ".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".ogg", ".wav", ".webm"];
+      const finalFilename = supported.includes(ext) ? filename : "audio.wav";
+
+      const formData = new FormData();
+      const fileBlob = new Blob([fileBuffer], { type: "audio/mpeg" });
+      formData.append("file", fileBlob, finalFilename);
+      formData.append("model", "whisper-1");
+      formData.append("response_format", "verbose_json");
+      formData.append("timestamp_granularities[]", "word");
+
+      const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as {
+          text: string;
+          words?: { word: string; start: number; end: number }[];
+        };
+
+        if (data.words && data.words.length > 0) {
+          return data.words.map((w) => ({
+            text: w.word,
+            startMs: Math.round(w.start * 1000),
+            endMs: Math.round(w.end * 1000),
+            timestampMs: Math.round(((w.start + w.end) / 2) * 1000),
+            confidence: 1,
+          }));
+        }
+        return [
+          {
+            text: data.text,
+            startMs: 0,
+            endMs: 15000,
+            timestampMs: 7500,
+            confidence: 1,
+          },
+        ];
+      }
+      const errText = await res.text();
+      console.warn(`[whisper] OpenAI cloud transcription failed (${res.status}): ${errText}, trying Gemini fallback...`);
+    } catch (err) {
+      console.warn("[whisper] OpenAI cloud transcription threw error, trying Gemini fallback...", err);
+    }
+  }
+
+  if (hasGoogle) {
+    return await geminiWhisperTranscribe(inputPath);
+  }
+
+  throw new Error("Both OpenAI and Gemini cloud transcription fallbacks failed.");
 }
