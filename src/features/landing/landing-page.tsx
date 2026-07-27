@@ -151,7 +151,7 @@ function LandingNav() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0f1115]/90 backdrop-blur-xl supports-[backdrop-filter]:bg-[#0f1115]/80">
+      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 text-foreground">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:h-16 sm:gap-4 sm:px-6">
           <Link href="/" className="flex min-w-0 items-center gap-2">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0b84f3] text-white shadow-lg shadow-[#0b84f3]/30 sm:h-9 sm:w-9">
@@ -184,12 +184,12 @@ function LandingNav() {
               asChild
               variant="ghost"
               size="sm"
-              className="hidden sm:inline-flex"
+              className="hidden sm:inline-flex text-muted-foreground hover:text-foreground"
             >
               <Link href="/dashboard">Dashboard</Link>
             </Button>
             <Button asChild variant="glow" size="sm" className="hidden min-[480px]:inline-flex">
-              <Link href="/templates">
+              <Link href="/showcase">
                 <span className="hidden sm:inline">Get started</span>
                 <span className="sm:hidden">Start</span>
                 <ArrowRight className="h-4 w-4" />
@@ -198,7 +198,7 @@ function LandingNav() {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="md:hidden"
+              className="md:hidden text-muted-foreground hover:text-foreground"
               onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
             >
@@ -216,7 +216,7 @@ function LandingNav() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm md:hidden"
               onClick={closeMenu}
               aria-label="Close menu"
             />
@@ -225,7 +225,7 @@ function LandingNav() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="fixed inset-y-0 right-0 z-[70] flex w-[min(100vw,320px)] flex-col border-l border-white/10 bg-[#0f1115] p-4 shadow-2xl md:hidden"
+              className="fixed inset-y-0 right-0 z-[70] flex w-[min(100vw,320px)] flex-col border-l border-border bg-background p-4 shadow-2xl md:hidden text-foreground"
             >
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -252,7 +252,7 @@ function LandingNav() {
                     key={link.href}
                     href={link.href}
                     onClick={closeMenu}
-                    className="rounded-lg px-3 py-3 text-base font-medium transition hover:bg-white/5"
+                    className="rounded-lg px-3 py-3 text-base font-medium transition hover:bg-muted"
                   >
                     {link.label}
                   </a>
@@ -261,11 +261,11 @@ function LandingNav() {
 
               <div className="mt-auto flex flex-col gap-2 pt-6">
                 <Button asChild variant="glow" className="w-full rounded-xl">
-                  <Link href="/templates" onClick={closeMenu}>
+                  <Link href="/showcase" onClick={closeMenu}>
                     Get started <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="w-full rounded-xl">
+                <Button asChild variant="outline" className="w-full rounded-xl border-border">
                   <Link href="/dashboard" onClick={closeMenu}>
                     Open dashboard
                   </Link>
@@ -281,10 +281,10 @@ function LandingNav() {
 
 function HeroMockup() {
   return (
-    <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
-      <div className="absolute -inset-2 rounded-3xl bg-[#0b84f3]/15 blur-2xl sm:-inset-4 sm:blur-3xl" />
-      <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[#12141a] shadow-2xl shadow-black/50 sm:rounded-2xl">
-        <div className="flex items-center gap-2 border-b border-white/5 px-3 py-2.5 sm:px-4 sm:py-3">
+    <div className="relative mx-auto w-full max-w-lg lg:max-w-none text-foreground">
+      <div className="absolute -inset-2 rounded-3xl bg-[#0b84f3]/10 blur-2xl sm:-inset-4 sm:blur-3xl" />
+      <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-2xl shadow-black/10 dark:shadow-black/40 sm:rounded-2xl">
+        <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2.5 sm:px-4 sm:py-3 bg-muted/20">
           <div className="flex shrink-0 gap-1.5">
             <span className="h-2 w-2 rounded-full bg-red-500/80 sm:h-2.5 sm:w-2.5" />
             <span className="h-2 w-2 rounded-full bg-amber-500/80 sm:h-2.5 sm:w-2.5" />
@@ -296,14 +296,14 @@ function HeroMockup() {
         </div>
 
         {/* Mobile: horizontal tabs */}
-        <div className="flex gap-1 border-b border-white/5 bg-[#0b0c0f] p-2 sm:hidden">
+        <div className="flex gap-1 border-b border-border/40 bg-muted/30 p-2 sm:hidden">
           {["Templates", "Brand", "Export"].map((item, i) => (
             <div
               key={item}
               className={cn(
                 "flex-1 rounded-md px-2 py-1.5 text-center text-[10px]",
                 i === 0
-                  ? "bg-[#0b84f3]/15 text-[#93c5fd]"
+                  ? "bg-primary/10 text-primary font-medium"
                   : "text-muted-foreground"
               )}
             >
@@ -313,14 +313,14 @@ function HeroMockup() {
         </div>
 
         <div className="grid min-h-[240px] sm:min-h-[320px] sm:grid-cols-[100px_1fr] md:grid-cols-[120px_1fr] lg:min-h-[360px] lg:grid-cols-[140px_1fr]">
-          <div className="hidden space-y-1 border-r border-white/5 bg-[#0b0c0f] p-2 sm:block">
+          <div className="hidden space-y-1 border-r border-border/40 bg-muted/20 p-2 sm:block">
             {["Templates", "Brand", "Export"].map((item, i) => (
               <div
                 key={item}
                 className={cn(
                   "rounded-md px-2 py-2 text-[10px] md:text-[11px]",
                   i === 0
-                    ? "bg-[#0b84f3]/15 text-[#93c5fd]"
+                    ? "bg-primary/10 text-primary font-medium"
                     : "text-muted-foreground"
                 )}
               >
@@ -329,28 +329,28 @@ function HeroMockup() {
             ))}
           </div>
 
-          <div className="flex min-w-0 flex-col p-3 sm:p-4">
+          <div className="flex min-w-0 flex-col p-3 sm:p-4 bg-background/50">
             <div className="mb-2 flex items-center justify-between gap-2 sm:mb-3">
-              <p className="truncate text-xs font-medium">Product Launch</p>
-              <Badge className="shrink-0 bg-[#0b84f3]/90 px-1.5 text-[9px] text-white hover:bg-[#0b84f3]/90 sm:text-[10px]">
+              <p className="truncate text-xs font-semibold">Product Launch</p>
+              <Badge className="shrink-0 bg-[#0b84f3]/95 px-1.5 text-[9px] text-white hover:bg-[#0b84f3]/95 sm:text-[10px]">
                 Live preview
               </Badge>
             </div>
 
-            <div className="relative flex-1 overflow-hidden rounded-lg bg-gradient-to-br from-[#0a0612] via-[#1a1030] to-[#0b1020] sm:rounded-xl">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,#0b84f355,transparent_55%)]" />
+            <div className="relative flex-1 overflow-hidden rounded-lg bg-gradient-to-br from-card via-secondary/15 to-background border border-border/40 sm:rounded-xl">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,#0b84f325,transparent_55%)]" />
               <div className="relative flex h-full min-h-[140px] flex-col items-center justify-center p-4 text-center sm:min-h-[180px] sm:p-6">
-                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-[10px] font-bold sm:mb-3 sm:h-10 sm:w-10 sm:text-xs">
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold sm:mb-3 sm:h-10 sm:w-10 sm:text-xs">
                   FK
                 </div>
-                <p className="font-display text-base font-semibold tracking-tight sm:text-lg">
+                <p className="font-display text-base font-semibold tracking-tight">
                   Ship faster
                 </p>
-                <p className="mt-1 text-[11px] text-white/60 sm:text-xs">
+                <p className="mt-1 text-[11px] text-muted-foreground sm:text-xs">
                   Your product story, on video
                 </p>
                 <motion.div
-                  className="mt-3 flex h-7 w-7 items-center justify-center rounded-full bg-[#0b84f3] shadow-lg shadow-[#0b84f3]/40 sm:mt-4 sm:h-8 sm:w-8"
+                  className="mt-3 flex h-7 w-7 items-center justify-center rounded-full bg-[#0b84f3] shadow-lg shadow-[#0b84f3]/30 sm:mt-4 sm:h-8 sm:w-8"
                   animate={{ scale: [1, 1.08, 1] }}
                   transition={{ repeat: Infinity, duration: 2 }}
                 >
@@ -363,7 +363,7 @@ function HeroMockup() {
               {["Title", "Colors", "Export"].map((label) => (
                 <div
                   key={label}
-                  className="rounded-md border border-white/5 bg-white/[0.03] px-1.5 py-1 text-center text-[9px] text-muted-foreground sm:rounded-lg sm:px-2 sm:py-1.5 sm:text-[10px]"
+                  className="rounded-md border border-border bg-muted/40 px-1.5 py-1 text-center text-[9px] text-muted-foreground sm:rounded-lg sm:px-2 sm:py-1.5 sm:text-[10px]"
                 >
                   {label}
                 </div>
@@ -378,13 +378,13 @@ function HeroMockup() {
 
 export function LandingPage() {
   return (
-    <div className="dark mesh-bg min-h-dvh overflow-x-hidden text-foreground">
+    <div className="mesh-bg min-h-dvh overflow-x-hidden text-foreground bg-background">
       <LandingNav />
 
       <main className="pb-[env(safe-area-inset-bottom)]">
         {/* Hero */}
         <section className="relative overflow-hidden px-4 pb-12 pt-10 sm:pb-16 sm:pt-14 lg:px-6 lg:pb-28 lg:pt-24">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-20%,#0b84f322,transparent)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-20%,#0b84f315,transparent)]" />
           <div className="relative mx-auto grid max-w-6xl items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-16">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -392,7 +392,7 @@ export function LandingPage() {
               transition={{ duration: 0.6 }}
               className="min-w-0 text-center lg:text-left"
             >
-              <Badge className="mb-4 max-w-full whitespace-normal border-[#0b84f3]/30 bg-[#0b84f3]/10 px-2.5 py-1 text-[11px] leading-snug text-[#93c5fd] hover:bg-[#0b84f3]/10 sm:mb-5 sm:text-xs">
+              <Badge className="mb-4 max-w-full whitespace-normal border-[#0b84f3]/20 bg-[#0b84f3]/10 px-2.5 py-1 text-[11px] leading-snug text-primary hover:bg-[#0b84f3]/10 sm:mb-5 sm:text-xs">
                 <Sparkles className="mr-1 inline h-3 w-3 shrink-0" />
                 Long-form · Multi-scene · Data to video
               </Badge>
@@ -412,7 +412,7 @@ export function LandingPage() {
                   size="lg"
                   className="h-11 w-full rounded-xl sm:w-auto"
                 >
-                  <Link href="/templates">
+                  <Link href="/showcase">
                     <Wand2 className="h-4 w-4" /> Start Creating
                   </Link>
                 </Button>
@@ -420,9 +420,9 @@ export function LandingPage() {
                   asChild
                   variant="outline"
                   size="lg"
-                  className="h-11 w-full rounded-xl sm:w-auto"
+                  className="h-11 w-full rounded-xl sm:w-auto border-border"
                 >
-                  <Link href="/templates">
+                  <Link href="/showcase">
                     Explore Templates <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -444,7 +444,7 @@ export function LandingPage() {
         </section>
 
         {/* Trusted by */}
-        <section className="border-b border-white/5 bg-black/15 px-4 py-8 lg:px-6">
+        <section className="border-b border-border bg-muted/20 px-4 py-8 lg:px-6">
           <div className="mx-auto max-w-6xl">
             <p className="mb-6 text-center text-xs uppercase tracking-widest text-muted-foreground">
               Trusted by
@@ -453,7 +453,7 @@ export function LandingPage() {
               {TRUSTED_BY.map((item) => (
                 <div
                   key={item.label}
-                  className="flex flex-col items-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] py-4"
+                  className="flex flex-col items-center gap-2 rounded-xl border border-border/40 bg-card py-4"
                 >
                   <item.icon className="h-5 w-5 text-[#0b84f3]" />
                   <span className="text-sm font-medium">{item.label}</span>
@@ -464,7 +464,7 @@ export function LandingPage() {
         </section>
 
         {/* Stats */}
-        <section className="border-y border-white/5 bg-black/20 px-4 py-8 sm:py-10 lg:px-6">
+        <section className="border-y border-border bg-muted/10 px-4 py-8 sm:py-10 lg:px-6">
           <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
             {STATS.map((stat) => (
               <div key={stat.label} className="text-center">
@@ -483,7 +483,7 @@ export function LandingPage() {
         <section id="features" className="scroll-mt-20 px-4 py-12 sm:py-20 lg:px-6 lg:py-28">
           <div className="mx-auto max-w-6xl">
             <motion.div {...fadeUp} className="mx-auto max-w-2xl text-center">
-              <Badge variant="outline" className="mb-3 border-white/10 sm:mb-4">
+              <Badge variant="outline" className="mb-3 border-border/60 sm:mb-4">
                 <Layers className="mr-1 h-3 w-3" /> Everything you need
               </Badge>
               <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
@@ -504,7 +504,7 @@ export function LandingPage() {
                 >
                   <Link
                     href={feature.href}
-                    className="group flex h-full flex-col rounded-2xl border border-white/8 bg-card/50 p-5 transition hover:border-[#0b84f3]/40 hover:bg-card sm:p-6"
+                    className="group flex h-full flex-col rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm p-5 transition hover:border-[#0b84f3]/40 hover:bg-card sm:p-6"
                   >
                     <div
                       className={cn(
@@ -531,11 +531,11 @@ export function LandingPage() {
         {/* How it works */}
         <section
           id="how-it-works"
-          className="scroll-mt-20 border-t border-white/5 bg-black/25 px-4 py-12 sm:py-20 lg:px-6 lg:py-28"
+          className="scroll-mt-20 border-t border-border bg-muted/10 px-4 py-12 sm:py-20 lg:px-6 lg:py-28"
         >
           <div className="mx-auto max-w-6xl">
             <motion.div {...fadeUp} className="max-w-xl">
-              <Badge variant="outline" className="mb-3 border-white/10 sm:mb-4">
+              <Badge variant="outline" className="mb-3 border-border/60 sm:mb-4">
                 <Zap className="mr-1 h-3 w-3" /> Simple workflow
               </Badge>
               <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
@@ -553,7 +553,7 @@ export function LandingPage() {
                   key={item.step}
                   {...fadeUp}
                   transition={{ ...fadeUp.transition, delay: i * 0.1 }}
-                  className="relative rounded-xl border border-white/5 bg-card/30 p-5 sm:border-0 sm:bg-transparent sm:p-0"
+                  className="relative rounded-xl border border-border/40 bg-card/30 p-5 sm:border-0 sm:bg-transparent sm:p-0"
                 >
                   <p className="font-display text-4xl font-bold text-[#0b84f3]/20 sm:text-5xl">
                     {item.step}
@@ -575,7 +575,7 @@ export function LandingPage() {
                 size="lg"
                 className="h-11 w-full rounded-xl sm:w-auto"
               >
-                <Link href="/templates">Try the workflow</Link>
+                <Link href="/showcase">Try the workflow</Link>
               </Button>
             </motion.div>
           </div>
@@ -586,7 +586,7 @@ export function LandingPage() {
           <div className="mx-auto max-w-6xl">
             <motion.div {...fadeUp} className="flex flex-col gap-4">
               <div>
-                <Badge variant="outline" className="mb-3 border-white/10 sm:mb-4">
+                <Badge variant="outline" className="mb-3 border-border/60 sm:mb-4">
                   <LayoutTemplate className="mr-1 h-3 w-3" /> Template gallery
                 </Badge>
                 <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
@@ -597,8 +597,8 @@ export function LandingPage() {
                   and data-driven analytics — 30 seconds to 5 minutes.
                 </p>
               </div>
-              <Button asChild variant="outline" className="w-full sm:w-auto sm:self-start">
-                <Link href="/templates">
+              <Button asChild variant="outline" className="w-full sm:w-auto sm:self-start border-border">
+                <Link href="/showcase">
                   Browse marketplace <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
@@ -819,7 +819,7 @@ export function LandingPage() {
                 size="lg"
                 className="h-11 w-full rounded-xl sm:w-auto"
               >
-                <Link href="/templates">
+                <Link href="/showcase">
                   <Clapperboard className="h-4 w-4" /> Create free video
                 </Link>
               </Button>
@@ -827,7 +827,7 @@ export function LandingPage() {
                 asChild
                 variant="outline"
                 size="lg"
-                className="h-11 w-full rounded-xl sm:w-auto"
+                className="h-11 w-full rounded-xl sm:w-auto border-border"
               >
                 <Link href="/dashboard">Go to dashboard</Link>
               </Button>
@@ -836,7 +836,7 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-white/5 px-4 py-8 sm:py-10 lg:px-6">
+      <footer className="border-t border-border px-4 py-8 sm:py-10 lg:px-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 text-center sm:flex-row sm:justify-between sm:text-left">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#0b84f3] text-white">
@@ -848,7 +848,7 @@ export function LandingPage() {
             </div>
           </div>
           <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-            <Link href="/templates" className="hover:text-foreground">
+            <Link href="/showcase" className="hover:text-foreground">
               Templates
             </Link>
             <Link href="/brand" className="hover:text-foreground">

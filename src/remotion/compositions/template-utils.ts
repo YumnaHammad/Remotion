@@ -13,6 +13,7 @@ export type MergedTemplateProps = TemplateProps & {
   fontFamily: string;
   logoUrl?: string;
   musicUrl?: string;
+  imageUrl?: string;
 };
 
 /** Merge composition props with font + logo from brand kit. */
@@ -21,6 +22,7 @@ export function mergeTemplateProps(
     fontFamily?: string;
     logoUrl?: string;
     musicUrl?: string;
+    imageUrl?: string;
   }
 ): MergedTemplateProps {
   const merged = { ...templateDefaultProps, ...props };
@@ -31,5 +33,6 @@ export function mergeTemplateProps(
       : DEFAULT_FONT,
     logoUrl: props.logoUrl,
     musicUrl: props.musicUrl,
+    imageUrl: props.imageUrl,
   };
 }

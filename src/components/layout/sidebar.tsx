@@ -74,7 +74,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex h-dvh flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[transform,width] duration-300 ease-out",
+          "fixed inset-y-0 left-0 z-40 flex h-dvh flex-col border-r border-sidebar-border bg-sidebar/70 backdrop-blur-md text-sidebar-foreground transition-[transform,width] duration-300 ease-out",
           "w-[min(280px,85vw)]",
           sidebarCollapsed ? "lg:w-[68px]" : "lg:w-[240px]",
           mobileNavOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
@@ -103,7 +103,7 @@ export function Sidebar() {
             </motion.div>
           )}
         </Link>
-
+ 
         <nav className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain px-2 py-3">
           {NAV_SECTIONS.map((section) => (
             <div key={section.label} className="space-y-0.5">
@@ -118,25 +118,19 @@ export function Sidebar() {
                   item.href === "/dashboard"
                     ? pathname === "/dashboard"
                     : pathname.startsWith(item.href);
-
+ 
                 const link = (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={closeMobile}
                     className={cn(
-                      "group relative flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm transition-colors sm:py-2",
+                      "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-all duration-200 border",
                       active
-                        ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-primary/10 text-primary border-primary/20 shadow-sm shadow-primary/5"
+                        : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground border-transparent"
                     )}
                   >
-                    {active && (
-                      <motion.span
-                        layoutId="nav-active"
-                        className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-primary"
-                      />
-                    )}
                     <Icon className="h-4 w-4 shrink-0" />
                     {showLabels && (
                       <span className="truncate font-medium">{item.label}</span>

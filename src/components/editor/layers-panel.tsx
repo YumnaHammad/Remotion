@@ -243,35 +243,6 @@ export function LayersPanel() {
           );
         })}
       </div>
-
-      {selectedId && (
-        <div className="flex shrink-0 gap-1 border-t border-white/5 px-2 py-1.5">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 flex-1 border-white/10 bg-white/5 text-[10px] text-white hover:bg-white/10"
-            onClick={() => {
-              sendLayerToBack(selectedId);
-              toast.success("Moved behind everything else");
-            }}
-          >
-            <ArrowDownToLine className="mr-1 h-3 w-3" />
-            Send behind
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 flex-1 border-white/10 bg-white/5 text-[10px] text-white hover:bg-white/10"
-            onClick={() => {
-              bringLayerToFront(selectedId);
-              toast.success("Moved to the front");
-            }}
-          >
-            <ArrowUpToLine className="mr-1 h-3 w-3" />
-            Bring forward
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

@@ -43,3 +43,6 @@ next-env.d.ts
 # whisper.cpp (local STT binary + models)
 /whisper.cpp/
 /tmp/whisper/
+
+# local media assets & uploads
+/public/generated-assets/

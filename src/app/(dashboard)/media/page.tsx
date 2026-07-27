@@ -20,16 +20,22 @@ const ICONS = {
 export default function MediaPage() {
   const uploaded = useAssetStore((s) => s.assets);
   const addAsset = useAssetStore((s) => s.addAsset);
+  const uploadFiles = useAssetStore((s) => s.uploadFiles);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const onUpload = (files: FileList | null) => {
-    if (!files) return;
-    let count = 0;
-    for (const file of Array.from(files)) {
-      addAsset(assetFromFile(file));
-      count++;
+  const onUpload = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const toastId = toast.loading("Uploading files...");
+    try {
+      const count = await uploadFiles(files);
+      if (count > 0) {
+        toast.success(`Successfully uploaded ${count} file${count > 1 ? "s" : ""}`, { id: toastId });
+      } else {
+        toast.error("Upload failed", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error uploading files", { id: toastId });
     }
-    if (count) toast.success(`${count} asset${count > 1 ? "s" : ""} uploaded`);
   };
 
   const media = [...uploaded, ...MOCK_MEDIA];

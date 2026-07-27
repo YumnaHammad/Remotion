@@ -30,6 +30,7 @@ export function AudioLibraryFeature() {
   const { brand, updateBrand } = useBrandKit();
   const uploaded = useAssetStore((s) => s.assets);
   const addAsset = useAssetStore((s) => s.addAsset);
+  const uploadFiles = useAssetStore((s) => s.uploadFiles);
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<AudioCategory | "all">("all");
@@ -54,15 +55,19 @@ export function AudioLibraryFeature() {
     if (returnTo) router.push(returnTo);
   };
 
-  const onUpload = (files: FileList | null) => {
-    if (!files?.length) return;
-    let count = 0;
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith("audio")) continue;
-      addAsset(assetFromFile(file));
-      count++;
+  const onUpload = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const toastId = toast.loading("Uploading audio files...");
+    try {
+      const count = await uploadFiles(files);
+      if (count > 0) {
+        toast.success(`Successfully uploaded ${count} audio file${count > 1 ? "s" : ""}`, { id: toastId });
+      } else {
+        toast.error("Upload failed", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error uploading audio", { id: toastId });
     }
-    if (count) toast.success(`${count} audio file${count > 1 ? "s" : ""} uploaded`);
   };
 
   return (

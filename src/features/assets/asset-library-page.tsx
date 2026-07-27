@@ -20,6 +20,7 @@ export function AssetLibraryFeature() {
   const [category, setCategory] = useState<AssetCategory | "all">("all");
   const uploaded = useAssetStore((s) => s.assets);
   const addAsset = useAssetStore((s) => s.addAsset);
+  const uploadFiles = useAssetStore((s) => s.uploadFiles);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(() => {
@@ -35,14 +36,19 @@ export function AssetLibraryFeature() {
 
   const media = [...uploaded, ...MOCK_MEDIA.filter((m) => m.type !== "audio")];
 
-  const onUpload = (files: FileList | null) => {
-    if (!files?.length) return;
-    let n = 0;
-    for (const f of Array.from(files)) {
-      addAsset(assetFromFile(f));
-      n++;
+  const onUpload = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const toastId = toast.loading("Uploading assets...");
+    try {
+      const count = await uploadFiles(files);
+      if (count > 0) {
+        toast.success(`Successfully uploaded ${count} asset${count > 1 ? "s" : ""}`, { id: toastId });
+      } else {
+        toast.error("Upload failed", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error uploading assets", { id: toastId });
     }
-    if (n) toast.success(`${n} asset${n > 1 ? "s" : ""} uploaded`);
   };
 
   return (

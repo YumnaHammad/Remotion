@@ -282,6 +282,21 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
               </>
             )}
 
+            {selected.type === "gallery" && (
+              <div className="space-y-2">
+                <Label>Gallery Images (comma-separated URLs)</Label>
+                <Input
+                  value={selected.images?.join(", ") ?? ""}
+                  onChange={(e) =>
+                    updateScene(selected.id, {
+                      images: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                    })
+                  }
+                  placeholder="https://images.unsplash.com/photo-1, https://images.unsplash.com/photo-2"
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Duration (seconds)</Label>
               <Input

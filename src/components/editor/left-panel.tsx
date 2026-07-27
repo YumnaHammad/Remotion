@@ -133,6 +133,7 @@ export function LeftPanel() {
   const selectedLayerIds = useEditorStore((s) => s.selectedLayerIds);
   const uploadedAssets = useAssetStore((s) => s.assets);
   const addAsset = useAssetStore((s) => s.addAsset);
+  const uploadFiles = useAssetStore((s) => s.uploadFiles);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const transcribeInputRef = useRef<HTMLInputElement>(null);
   const [transcribing, setTranscribing] = useState(false);
@@ -225,16 +226,19 @@ export function LeftPanel() {
     setTranscribing(true);
     const toastId = toast.loading("Listening to your audio and writing captions…");
     try {
-      // Blob URLs only exist in this browser session; the server can't fetch
-      // them, so re-read the blob here and upload the bytes instead.
-      const result = media.src.startsWith("blob:")
+      const isLocal = media.src.startsWith("/") || media.src.startsWith("blob:") || media.src.includes("localhost") || media.src.includes("127.0.0.1");
+      const srcUrl = media.src.startsWith("/")
+        ? window.location.origin + media.src
+        : media.src;
+
+      const result = isLocal
         ? await transcribeFromFile(
             new File(
-              [await (await fetch(media.src)).blob()],
+              [await (await fetch(srcUrl)).blob()],
               media.layer?.name ?? "clip"
             )
           )
-        : await transcribeFromSourceUrl(media.src);
+        : await transcribeFromSourceUrl(srcUrl);
       if (!result.ok) {
         toast.error(result.error, { id: toastId });
         return;
@@ -412,14 +416,19 @@ export function LeftPanel() {
     }
   };
 
-  const onUpload = (files: FileList | null) => {
-    if (!files) return;
-    let count = 0;
-    for (const file of Array.from(files)) {
-      addAsset(assetFromFile(file));
-      count++;
+  const onUpload = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const toastId = toast.loading("Uploading files to server...");
+    try {
+      const count = await uploadFiles(files);
+      if (count > 0) {
+        toast.success(`Successfully uploaded ${count} file${count > 1 ? "s" : ""}`, { id: toastId });
+      } else {
+        toast.error("Upload failed", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Error uploading files", { id: toastId });
     }
-    if (count) toast.success(`${count} file${count > 1 ? "s" : ""} ready to use`);
   };
 
   const assets = [...uploadedAssets, ...MOCK_MEDIA];
@@ -438,10 +447,10 @@ export function LeftPanel() {
                   aria-label={tab.label}
                   onClick={() => setLeftTab(tab.id as typeof leftTab)}
                   className={cn(
-                    "flex h-9 w-9 flex-col items-center justify-center rounded-lg transition",
+                    "flex h-9 w-9 flex-col items-center justify-center rounded-lg transition border",
                     leftTab === tab.id
-                      ? "bg-primary/20 text-primary"
-                      : "text-white/40 hover:bg-white/5 hover:text-white/80"
+                      ? "bg-primary/10 border-primary/20 text-primary"
+                      : "text-white/40 border-transparent hover:bg-white/5 hover:text-white/80"
                   )}
                 >
                   <Icon className="h-4 w-4" />

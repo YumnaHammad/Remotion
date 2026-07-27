@@ -6,21 +6,61 @@ interface AssetState {
   assets: MediaAsset[];
   addAsset: (asset: MediaAsset) => void;
   removeAsset: (id: string) => void;
+  uploadFiles: (files: FileList | null) => Promise<number>;
 }
 
 /**
- * Session-scoped uploaded assets. Not persisted because uploads use
- * `URL.createObjectURL`, which produces blob URLs valid only for the current
- * page session. Swap for real storage (R2/Supabase) later without touching UI.
+ * Uploaded assets synced with public/generated-assets/uploads/ on the server.
+ * This ensures they persist across page reloads and render successfully during video exports.
  */
 export const useAssetStore = create<AssetState>((set) => ({
   assets: [],
   addAsset: (asset) => set((s) => ({ assets: [asset, ...s.assets] })),
   removeAsset: (id) =>
     set((s) => ({ assets: s.assets.filter((a) => a.id !== id) })),
+  uploadFiles: async (files) => {
+    if (!files || !files.length) return 0;
+    let successCount = 0;
+    for (const file of Array.from(files)) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/assets/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.ok && data.url) {
+          const type: MediaAsset["type"] = file.type.startsWith("video")
+            ? "video"
+            : file.type.startsWith("audio")
+              ? "audio"
+              : file.type === "image/gif"
+                ? "gif"
+                : "image";
+
+          const newAsset: MediaAsset = {
+            id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: data.name,
+            type,
+            url: data.url,
+            size: data.size,
+            createdAt: new Date().toISOString(),
+            folder: "Uploads",
+            tags: [],
+          };
+          set((s) => ({ assets: [newAsset, ...s.assets] }));
+          successCount++;
+        }
+      } catch (err) {
+        console.error("Upload failed for", file.name, err);
+      }
+    }
+    return successCount;
+  },
 }));
 
-/** Build a MediaAsset (with a blob URL) from an uploaded File. */
+/** Build a MediaAsset (with a blob URL fallback) from an uploaded File. */
 export function assetFromFile(file: File): MediaAsset {
   const type: MediaAsset["type"] = file.type.startsWith("video")
     ? "video"
@@ -34,7 +74,7 @@ export function assetFromFile(file: File): MediaAsset {
     id: genId("m"),
     name: file.name,
     type,
-    url: URL.createObjectURL(file),
+    url: typeof window !== "undefined" ? URL.createObjectURL(file) : "",
     size: file.size,
     createdAt: new Date().toISOString(),
     folder: "Uploads",
