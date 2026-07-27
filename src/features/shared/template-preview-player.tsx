@@ -12,6 +12,7 @@ export interface TemplatePreviewPlayerProps {
   width?: number;
   height?: number;
   fps?: number;
+  playerRef?: React.RefObject<any>;
 }
 
 /** Inner player — loaded client-only via next/dynamic to avoid Turbopack SSR issues. */
@@ -23,6 +24,7 @@ export function TemplatePreviewPlayer({
   width: widthOverride,
   height: heightOverride,
   fps: fpsOverride,
+  playerRef,
 }: TemplatePreviewPlayerProps) {
   const Component = getCompositionComponent(compositionId);
   const dims = getCompositionDimensions(compositionId);
@@ -43,6 +45,7 @@ export function TemplatePreviewPlayer({
       }}
     >
       <Player
+        ref={playerRef}
         component={Component}
         inputProps={inputProps}
         durationInFrames={durationInFrames}

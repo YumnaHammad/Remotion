@@ -30,30 +30,63 @@ export const useAssetStore = create<AssetState>((set) => ({
           body: formData,
         });
         const data = await res.json();
-        if (data.ok && data.url) {
-          const type: MediaAsset["type"] = file.type.startsWith("video")
-            ? "video"
-            : file.type.startsWith("audio")
-              ? "audio"
-              : file.type === "image/gif"
-                ? "gif"
-                : "image";
+        
+        let url = "";
+        let name = file.name;
+        let size = file.size;
 
-          const newAsset: MediaAsset = {
-            id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            name: data.name,
-            type,
-            url: data.url,
-            size: data.size,
-            createdAt: new Date().toISOString(),
-            folder: "Uploads",
-            tags: [],
-          };
-          set((s) => ({ assets: [newAsset, ...s.assets] }));
-          successCount++;
+        if (data.ok && data.url) {
+          url = data.url;
+          name = data.name;
+          size = data.size;
+        } else {
+          // Fallback to client-side Blob URL if server upload fails (e.g. read-only filesystem on Vercel)
+          url = URL.createObjectURL(file);
+          console.warn("[assets] Server upload failed, falling back to local Blob URL for", file.name);
         }
+
+        const type: MediaAsset["type"] = file.type.startsWith("video")
+          ? "video"
+          : file.type.startsWith("audio")
+            ? "audio"
+            : file.type === "image/gif"
+              ? "gif"
+              : "image";
+
+        const newAsset: MediaAsset = {
+          id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name,
+          type,
+          url,
+          size,
+          createdAt: new Date().toISOString(),
+          folder: "Uploads",
+          tags: [],
+        };
+        set((s) => ({ assets: [newAsset, ...s.assets] }));
+        successCount++;
       } catch (err) {
-        console.error("Upload failed for", file.name, err);
+        console.error("Upload server request failed, using local Blob URL fallback for", file.name, err);
+        const type: MediaAsset["type"] = file.type.startsWith("video")
+          ? "video"
+          : file.type.startsWith("audio")
+            ? "audio"
+            : file.type === "image/gif"
+              ? "gif"
+              : "image";
+
+        const newAsset: MediaAsset = {
+          id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: file.name,
+          type,
+          url: URL.createObjectURL(file),
+          size: file.size,
+          createdAt: new Date().toISOString(),
+          folder: "Uploads",
+          tags: [],
+        };
+        set((s) => ({ assets: [newAsset, ...s.assets] }));
+        successCount++;
       }
     }
     return successCount;

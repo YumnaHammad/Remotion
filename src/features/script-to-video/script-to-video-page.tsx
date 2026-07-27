@@ -148,6 +148,7 @@ export function ScriptToVideoFeature() {
   const recordIntervalRef = useRef<any>(null);
   const recordStartRef = useRef<number>(0);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  const playerRef = useRef<any>(null);
 
   useEffect(() => {
     const scriptParam = searchParams.get("script");
@@ -338,6 +339,15 @@ export function ScriptToVideoFeature() {
         showCaptions: false,
       });
     }
+
+    if (pipelinePrefs.source === "client") {
+      return buildAutomatedVideoInputProps(nextResolved, {
+        showCaptions: true,
+        voiceoverUrl: "",
+        captions: nextResolved.captions,
+      });
+    }
+
     setVoiceBusy(true);
     try {
       const speakText =
@@ -1047,6 +1057,7 @@ export function ScriptToVideoFeature() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="overflow-hidden rounded-xl border bg-black">
             <TemplatePreview
+              playerRef={playerRef}
               compositionId="AutomatedVideo"
               inputProps={previewProps}
               durationInFrames={durationInFrames}
@@ -1055,6 +1066,14 @@ export function ScriptToVideoFeature() {
               fps={30}
               className="w-full"
             />
+            {pipelinePrefs.source === "client" && (
+              <LocalSpeechPreview
+                playerRef={playerRef}
+                enabled={showCaptions}
+                captions={previewProps.captions as any[]}
+                fps={30}
+              />
+            )}
           </div>
 
           <div className="space-y-4">
@@ -1118,4 +1137,87 @@ export function ScriptToVideoFeature() {
       )}
     </div>
   );
+}
+
+function LocalSpeechPreview({
+  playerRef,
+  enabled,
+  captions,
+  fps = 30,
+}: {
+  playerRef: React.RefObject<any>;
+  enabled: boolean;
+  captions?: any[];
+  fps?: number;
+}) {
+  const spokenClipRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined" || !window.speechSynthesis || !playerRef.current) {
+      return;
+    }
+
+    const player = playerRef.current;
+
+    const handleFrameChange = (e: CustomEvent<{ frame: number }>) => {
+      const frame = e.detail.frame;
+      const isPlaying = player.isPlaying();
+      
+      if (!isPlaying) {
+        window.speechSynthesis.cancel();
+        spokenClipRef.current = null;
+        return;
+      }
+
+      const timeMs = (frame / fps) * 1000;
+
+      // Find active caption segment
+      const activeIndex = captions?.findIndex((c) => {
+        return timeMs >= c.startMs && timeMs < c.endMs;
+      });
+
+      if (activeIndex === undefined || activeIndex === -1) {
+        if (spokenClipRef.current !== null) {
+          window.speechSynthesis.cancel();
+          spokenClipRef.current = null;
+        }
+        return;
+      }
+
+      if (spokenClipRef.current === activeIndex) return;
+
+      window.speechSynthesis.cancel();
+      spokenClipRef.current = activeIndex;
+      const text = captions?.[activeIndex]?.text;
+      if (!text) return;
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1;
+      window.speechSynthesis.speak(utter);
+    };
+
+    const handlePlay = () => {
+      spokenClipRef.current = null;
+    };
+
+    const handlePause = () => {
+      window.speechSynthesis.cancel();
+      spokenClipRef.current = null;
+    };
+
+    player.addEventListener("framechange", handleFrameChange);
+    player.addEventListener("play", handlePlay);
+    player.addEventListener("pause", handlePause);
+
+    return () => {
+      player.removeEventListener("framechange", handleFrameChange);
+      player.removeEventListener("play", handlePlay);
+      player.removeEventListener("pause", handlePause);
+      if (typeof window !== "undefined") {
+        window.speechSynthesis?.cancel();
+      }
+    };
+  }, [enabled, captions, fps, playerRef]);
+
+  return null;
 }

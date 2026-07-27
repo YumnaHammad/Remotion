@@ -70,7 +70,7 @@ export function createProjectFromTemplate(
   const now = new Date().toISOString();
 
   if (template.longForm && template.defaultScenes) {
-    const scenes = scenesWithIds(template.defaultScenes);
+    const scenes = scenesWithIds((propsOverrides as any).scenes ?? template.defaultScenes);
     const sceneProps: SceneVideoProps = {
       title: propsOverrides.title ?? template.name,
       subtitle:

@@ -192,53 +192,79 @@ export async function downloadSourceToTemp(sourceUrl: string): Promise<string> {
 }
 
 async function downloadYoutubeAudioViaCobalt(sourceUrl: string, dest: string): Promise<void> {
-  // Try Cobalt v10 schema first (standard for api.cobalt.tools)
-  let res = await fetch("https://api.cobalt.tools/api/json", {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      url: sourceUrl,
-      downloadMode: "audio",
-      audioFormat: "mp3"
-    })
-  });
+  const COBALT_MIRRORS = [
+    "https://api.cobalt.tools",
+    "https://cobalt.sh123.top",
+    "https://cobalt.api.ryzetech.live",
+  ];
 
-  // If 400 Bad Request (AJV validation error), fall back to older v7/v8 schema
-  if (res.status === 400) {
-    console.warn("[whisper] Cobalt v10 request failed (400), trying older Cobalt schema...");
-    res = await fetch("https://api.cobalt.tools/api/json", {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        url: sourceUrl,
-        isAudioOnly: true,
-        aFormat: "mp3"
-      })
-    });
+  let lastError: Error | null = null;
+
+  for (const mirror of COBALT_MIRRORS) {
+    try {
+      console.log(`[whisper] Trying Cobalt download via mirror: ${mirror}`);
+      const endpoint = `${mirror}/api/json`;
+      
+      // Try newer v10 schema
+      let res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          url: sourceUrl,
+          downloadMode: "audio",
+          audioFormat: "mp3"
+        })
+      });
+
+      // If 400 Bad Request, fall back to older v7/v8 schema
+      if (res.status === 400) {
+        console.warn(`[whisper] Cobalt v10 failed on ${mirror} (400), trying v7/v8 older schema...`);
+        res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            url: sourceUrl,
+            isAudioOnly: true,
+            aFormat: "mp3"
+          })
+        });
+      }
+
+      if (!res.ok) {
+        throw new Error(`Status ${res.status}`);
+      }
+
+      const data = (await res.json()) as { status: string; url?: string; text?: string };
+      if (data.status === "error") {
+        throw new Error(data.text ?? "Cobalt reports error status");
+      }
+      if (!data.url) {
+        throw new Error("No download URL in response");
+      }
+
+      // Download the resolved audio file
+      const audioRes = await fetch(data.url);
+      if (!audioRes.ok) {
+        throw new Error(`Failed to download audio bytes: status ${audioRes.status}`);
+      }
+
+      const buf = Buffer.from(await audioRes.arrayBuffer());
+      await fs.writeFile(dest, buf);
+      console.log(`[whisper] Cobalt download succeeded via: ${mirror}`);
+      return; // Succeeded!
+    } catch (err: any) {
+      console.warn(`[whisper] Cobalt mirror ${mirror} failed: ${err.message}`);
+      lastError = err;
+    }
   }
 
-  if (!res.ok) {
-    throw new Error(`Cobalt API failed with status ${res.status}`);
-  }
-  const data = (await res.json()) as { status: string; url?: string; text?: string };
-  if (data.status === "error") {
-    throw new Error(data.text ?? "Cobalt download failed");
-  }
-  if (!data.url) {
-    throw new Error("No download URL returned from Cobalt");
-  }
-  const audioRes = await fetch(data.url);
-  if (!audioRes.ok) {
-    throw new Error(`Failed to download audio from Cobalt URL: ${data.url}`);
-  }
-  const buf = Buffer.from(await audioRes.arrayBuffer());
-  await fs.writeFile(dest, buf);
+  throw new Error(`All Cobalt API mirrors failed. Last error: ${lastError?.message ?? "unknown"}`);
 }
 
 async function geminiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
