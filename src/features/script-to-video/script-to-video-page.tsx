@@ -1159,8 +1159,8 @@ function LocalSpeechPreview({
 
     const player = playerRef.current;
 
-    const handleFrameChange = (e: CustomEvent<{ frame: number }>) => {
-      const frame = e.detail.frame;
+    const handleFrameUpdate = () => {
+      const frame = player.getCurrentFrame();
       const isPlaying = player.isPlaying();
       
       if (!isPlaying) {
@@ -1205,12 +1205,12 @@ function LocalSpeechPreview({
       spokenClipRef.current = null;
     };
 
-    player.addEventListener("framechange", handleFrameChange);
+    player.addEventListener("frameupdate", handleFrameUpdate);
     player.addEventListener("play", handlePlay);
     player.addEventListener("pause", handlePause);
 
     return () => {
-      player.removeEventListener("framechange", handleFrameChange);
+      player.removeEventListener("frameupdate", handleFrameUpdate);
       player.removeEventListener("play", handlePlay);
       player.removeEventListener("pause", handlePause);
       if (typeof window !== "undefined") {
