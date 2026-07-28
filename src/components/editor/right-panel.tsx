@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowDownToLine, ArrowUpToLine, Mic } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowDownToLine, ArrowUpToLine, Mic, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ANIMATION_PRESETS, TRANSITION_TYPES } from "@/lib/constants";
 import { useEditorStore } from "@/stores/editor-store";
@@ -50,6 +50,16 @@ const FILTER_CONFIG: {
   { key: "sepia", label: "Sepia", min: 0, max: 100, unit: "%" },
 ];
 
+const DEFAULT_TEXT_STYLE = {
+  fontFamily: "Inter",
+  fontSize: 48,
+  fontWeight: 700,
+  color: "#ffffff",
+  align: "center" as const,
+  lineHeight: 1.2,
+  letterSpacing: 0,
+};
+
 export function RightPanel() {
   const project = useEditorStore((s) => s.project);
   const selectedLayerIds = useEditorStore((s) => s.selectedLayerIds);
@@ -58,6 +68,7 @@ export function RightPanel() {
   const addLayer = useEditorStore((s) => s.addLayer);
   const sendLayerToBack = useEditorStore((s) => s.sendLayerToBack);
   const bringLayerToFront = useEditorStore((s) => s.bringLayerToFront);
+  const removeLayers = useEditorStore((s) => s.removeLayers);
   const setLayerAnimation = useEditorStore((s) => s.setLayerAnimation);
   const setSceneTransition = useEditorStore((s) => s.setSceneTransition);
   const speakCaptionsOnPlay = useEditorStore((s) => s.speakCaptionsOnPlay);
@@ -66,6 +77,13 @@ export function RightPanel() {
   const [tab, setTab] = useState("properties");
 
   const currentFrame = useEditorStore((s) => s.currentFrame);
+
+  const selectedLayerId = selectedLayerIds[0];
+  useEffect(() => {
+    if (selectedLayerId) {
+      setTab("properties");
+    }
+  }, [selectedLayerId]);
 
   const layer = project.layers.find((l) => l.id === selectedLayerIds[0]);
   const scene =
@@ -77,8 +95,14 @@ export function RightPanel() {
 
   const selectHint = (
     <div className="space-y-3 p-4">
-      <div className="rounded-lg border border-dashed border-white/15 bg-white/[0.03] p-3 text-center">
-        <p className="text-sm font-medium text-white/80">Nothing selected</p>
+      <div
+        style={{
+          backgroundColor: "rgba(255, 255, 255, 0.03)",
+          borderColor: "rgba(255, 255, 255, 0.12)",
+        }}
+        className="rounded-lg border border-dashed p-3 text-center"
+      >
+        <p className="text-sm font-medium text-white/90">Nothing selected</p>
         <p className="mt-1 text-[11px] leading-relaxed text-white/45">
           Click a piece above (or on the timeline) to change its text, size,
           color, or timing.
@@ -244,48 +268,222 @@ export function RightPanel() {
                   />
                 </div>
 
-                {layer.type === "text" && (
+                {(layer.type === "text" || layer.type === "caption") && (
                   <>
+                    {layer.type === "text" && (
+                      <div className="space-y-1.5">
+                        <Label className="text-white/60">Text</Label>
+                        <Input
+                          value={layer.text ?? ""}
+                          onChange={(e) =>
+                            updateLayer(layer.id, { text: e.target.value })
+                          }
+                          className="border-white/10 bg-white/5 text-white"
+                        />
+                      </div>
+                    )}
+                    
                     <div className="space-y-1.5">
-                      <Label className="text-white/60">Text</Label>
-                      <Input
-                        value={layer.text ?? ""}
-                        onChange={(e) =>
-                          updateLayer(layer.id, { text: e.target.value })
+                      <Label className="text-white/60">Font Family</Label>
+                      <Select
+                        value={layer.textStyle?.fontFamily ?? "Inter"}
+                        onValueChange={(fontFamily) =>
+                          updateLayer(layer.id, {
+                            textStyle: {
+                              ...DEFAULT_TEXT_STYLE,
+                              ...layer.textStyle,
+                              fontFamily,
+                            },
+                          })
                         }
-                        className="border-white/10 bg-white/5 text-white"
-                      />
+                      >
+                        <SelectTrigger className="border-white/10 bg-white/5 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["Inter", "Outfit", "Roboto", "Arial", "Impact", "Georgia"].map((f) => (
+                            <SelectItem key={f} value={f}>
+                              {f}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
+
                     <div className="space-y-1.5">
                       <Label className="text-white/60">
-                        Font size · {layer.textStyle?.fontSize ?? 48}
+                        Font size · {layer.textStyle?.fontSize ?? (layer.type === "caption" ? 34 : 48)}
                       </Label>
                       <Slider
-                        value={[layer.textStyle?.fontSize ?? 48]}
+                        value={[layer.textStyle?.fontSize ?? (layer.type === "caption" ? 34 : 48)]}
                         min={12}
                         max={160}
                         step={1}
                         onValueChange={([fontSize]) =>
                           updateLayer(layer.id, {
-                            textStyle: { ...layer.textStyle!, fontSize },
+                            textStyle: {
+                              ...DEFAULT_TEXT_STYLE,
+                              ...layer.textStyle,
+                              fontSize,
+                            },
                           })
                         }
                       />
                     </div>
+
                     <div className="space-y-1.5">
-                      <Label className="text-white/60">Color</Label>
+                      <Label className="text-white/60">Text Color</Label>
                       <Input
                         type="color"
                         value={layer.textStyle?.color ?? "#ffffff"}
                         onChange={(e) =>
                           updateLayer(layer.id, {
                             textStyle: {
-                              ...layer.textStyle!,
+                              ...DEFAULT_TEXT_STYLE,
+                              ...layer.textStyle,
                               color: e.target.value,
                             },
                           })
                         }
                         className="h-9 border-white/10 bg-white/5 p-1"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-white/60">Font Weight</Label>
+                      <Select
+                        value={String(layer.textStyle?.fontWeight ?? 700)}
+                        onValueChange={(val) =>
+                          updateLayer(layer.id, {
+                            textStyle: {
+                              ...DEFAULT_TEXT_STYLE,
+                              ...layer.textStyle,
+                              fontWeight: Number(val),
+                            },
+                          })
+                        }
+                      >
+                        <SelectTrigger className="border-white/10 bg-white/5 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="400">400 · Normal</SelectItem>
+                          <SelectItem value="700">700 · Bold</SelectItem>
+                          <SelectItem value="800">800 · Extra Bold</SelectItem>
+                          <SelectItem value="900">900 · Black</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {layer.type === "caption" && (
+                      <div className="space-y-1.5">
+                        <Label className="text-white/60">Caption Theme</Label>
+                        <Select
+                          value={layer.textStyle?.gradient ?? "neon"}
+                          onValueChange={(themeVal) =>
+                            updateLayer(layer.id, {
+                              textStyle: {
+                                ...DEFAULT_TEXT_STYLE,
+                                ...layer.textStyle,
+                                gradient: themeVal,
+                              },
+                            })
+                          }
+                        >
+                          <SelectTrigger className="border-white/10 bg-white/5 text-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="neon">Neon (Yellow/Cyan shine)</SelectItem>
+                            <SelectItem value="minimal">Minimal (No background)</SelectItem>
+                            <SelectItem value="default">Default (Dark background box)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <Label className="text-white/60">Alignment</Label>
+                      <Select
+                        value={layer.textStyle?.align ?? "center"}
+                        onValueChange={(align) =>
+                          updateLayer(layer.id, {
+                            textStyle: {
+                              ...DEFAULT_TEXT_STYLE,
+                              ...layer.textStyle,
+                              align: align as "left" | "center" | "right",
+                            },
+                          })
+                        }
+                      >
+                        <SelectTrigger className="border-white/10 bg-white/5 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="left">Left</SelectItem>
+                          <SelectItem value="center">Center</SelectItem>
+                          <SelectItem value="right">Right</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-white/60">
+                        Line height · {layer.textStyle?.lineHeight ?? 1.2}
+                      </Label>
+                      <Slider
+                        value={[layer.textStyle?.lineHeight ?? 1.2]}
+                        min={0.8}
+                        max={2.5}
+                        step={0.05}
+                        onValueChange={([lineHeight]) =>
+                          updateLayer(layer.id, {
+                            textStyle: {
+                              ...DEFAULT_TEXT_STYLE,
+                              ...layer.textStyle,
+                              lineHeight,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-white/60">
+                        Letter spacing · {layer.textStyle?.letterSpacing ?? 0}px
+                      </Label>
+                      <Slider
+                        value={[layer.textStyle?.letterSpacing ?? 0]}
+                        min={-10}
+                        max={30}
+                        step={1}
+                        onValueChange={([letterSpacing]) =>
+                          updateLayer(layer.id, {
+                            textStyle: {
+                              ...DEFAULT_TEXT_STYLE,
+                              ...layer.textStyle,
+                              letterSpacing,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 rounded border border-white/10 bg-white/5 px-2 py-1.5">
+                      <div>
+                        <Label className="text-xs text-white/70">Neon Glow</Label>
+                        <p className="text-[9px] text-white/40">Apply bright neon shadow glow</p>
+                      </div>
+                      <Switch
+                        checked={!!layer.textStyle?.neon}
+                        onCheckedChange={(neon) =>
+                          updateLayer(layer.id, {
+                            textStyle: {
+                              ...DEFAULT_TEXT_STYLE,
+                              ...layer.textStyle,
+                              neon,
+                            },
+                          })
+                        }
                       />
                     </div>
                   </>
@@ -683,14 +881,37 @@ export function RightPanel() {
                     }
                   />
                 </div>
+
+                <div className="border-t border-white/10 pt-4 mt-4">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      removeLayers([layer.id]);
+                      toast.success(`Removed layer: ${layer.name}`);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete Piece
+                  </Button>
+                </div>
               </TabsContent>
 
               <TabsContent value="tools" className="space-y-3 px-2 pb-4">
-                <LayerMaskControls layer={layer} onUpdate={updateLayer} />
-                <EditingToolsPanel
-                  layer={layer}
-                  onUpdateLayer={updateLayer}
-                />
+                {layer.type !== "caption" && layer.type !== "audio" ? (
+                  <>
+                    <LayerMaskControls layer={layer} onUpdate={updateLayer} />
+                    <EditingToolsPanel
+                      layer={layer}
+                      onUpdateLayer={updateLayer}
+                    />
+                  </>
+                ) : (
+                  <p className="p-4 text-center text-xs text-white/40">
+                    No fix/masking tools available for this layer type.
+                  </p>
+                )}
               </TabsContent>
 
               <TabsContent value="animation" className="space-y-4 px-3 pb-4">
@@ -731,77 +952,87 @@ export function RightPanel() {
               </TabsContent>
 
               <TabsContent value="effects" className="space-y-4 px-3 pb-4">
-                <LayerMaskControls layer={layer} onUpdate={updateLayer} />
+                {layer.type !== "audio" ? (
+                  <>
+                    {layer.type !== "caption" && (
+                      <LayerMaskControls layer={layer} onUpdate={updateLayer} />
+                    )}
 
-                <div className="space-y-1.5">
-                  <Label className="text-white/60">
-                    Blur · {layer.transform.blur}px
-                  </Label>
-                  <Slider
-                    value={[layer.transform.blur]}
-                    min={0}
-                    max={40}
-                    step={1}
-                    onValueChange={([blur]) =>
-                      updateLayer(layer.id, {
-                        transform: { ...layer.transform, blur },
-                      })
-                    }
-                  />
-                </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-white/60">
+                        Blur · {layer.transform.blur}px
+                      </Label>
+                      <Slider
+                        value={[layer.transform.blur]}
+                        min={0}
+                        max={40}
+                        step={1}
+                        onValueChange={([blur]) =>
+                          updateLayer(layer.id, {
+                            transform: { ...layer.transform, blur },
+                          })
+                        }
+                      />
+                    </div>
 
-                <div className="space-y-3 rounded-lg border border-white/10 bg-white/5 p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                    Color filters
-                  </p>
-                  {FILTER_CONFIG.map((f) => {
-                    const filters = layer.filters ?? DEFAULT_FILTERS;
-                    return (
-                      <div key={f.key} className="space-y-1.5">
-                        <Label className="text-white/60">
-                          {f.label} · {filters[f.key]}
-                          {f.unit}
-                        </Label>
-                        <Slider
-                          value={[filters[f.key]]}
-                          min={f.min}
-                          max={f.max}
-                          step={1}
-                          onValueChange={([v]) =>
-                            updateLayer(layer.id, {
-                              filters: { ...filters, [f.key]: v },
-                            })
+                    <div className="space-y-3 rounded-lg border border-white/10 bg-white/5 p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
+                        Color filters
+                      </p>
+                      {FILTER_CONFIG.map((f) => {
+                        const filters = layer.filters ?? DEFAULT_FILTERS;
+                        return (
+                          <div key={f.key} className="space-y-1.5">
+                            <Label className="text-white/60">
+                              {f.label} · {filters[f.key]}
+                              {f.unit}
+                            </Label>
+                            <Slider
+                              value={[filters[f.key]]}
+                              min={f.min}
+                              max={f.max}
+                              step={1}
+                              onValueChange={([v]) =>
+                                updateLayer(layer.id, {
+                                  filters: { ...filters, [f.key]: v },
+                                })
+                              }
+                            />
+                          </div>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        className="text-[11px] text-primary hover:underline"
+                        onClick={() =>
+                          updateLayer(layer.id, { filters: { ...DEFAULT_FILTERS } })
+                        }
+                      >
+                        Reset filters
+                      </button>
+                    </div>
+
+                    {(layer.type === "video" || layer.type === "image") && (
+                      <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
+                        <div>
+                          <Label className="text-white/70">Motion blur</Label>
+                          <p className="text-[10px] text-white/40">
+                            @remotion/motion-blur
+                          </p>
+                        </div>
+                        <Switch
+                          checked={!!layer.motionBlur}
+                          onCheckedChange={(motionBlur) =>
+                            updateLayer(layer.id, { motionBlur })
                           }
                         />
                       </div>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    className="text-[11px] text-primary hover:underline"
-                    onClick={() =>
-                      updateLayer(layer.id, { filters: { ...DEFAULT_FILTERS } })
-                    }
-                  >
-                    Reset filters
-                  </button>
-                </div>
-
-                {(layer.type === "video" || layer.type === "image") && (
-                  <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
-                    <div>
-                      <Label className="text-white/70">Motion blur</Label>
-                      <p className="text-[10px] text-white/40">
-                        @remotion/motion-blur
-                      </p>
-                    </div>
-                    <Switch
-                      checked={!!layer.motionBlur}
-                      onCheckedChange={(motionBlur) =>
-                        updateLayer(layer.id, { motionBlur })
-                      }
-                    />
-                  </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="p-4 text-center text-xs text-white/40">
+                    No visual effects available for audio layers.
+                  </p>
                 )}
 
                 {scene && (

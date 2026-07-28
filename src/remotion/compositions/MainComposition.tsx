@@ -77,9 +77,10 @@ function LayerRenderer({
     case "caption":
       return (
         <CaptionRenderer
-          theme="neon"
+          theme={(layer.textStyle?.gradient as any) ?? "neon"}
           captions={layer.captions}
           transform={layer.transform}
+          textStyle={layer.textStyle}
         />
       );
     case "image":

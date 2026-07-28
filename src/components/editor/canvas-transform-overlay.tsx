@@ -212,12 +212,7 @@ export function CanvasTransformOverlay({
         return (
           <div
             key={layer.id}
-            className={cn(
-              "absolute border-2 transition-colors",
-              isSelected
-                ? "border-primary bg-primary/10"
-                : "border-white/30 bg-white/5 hover:border-white/60"
-            )}
+            className="absolute border-2 transition-colors hover:border-white/80"
             style={{
               left: rect.left,
               top: rect.top,
@@ -225,6 +220,8 @@ export function CanvasTransformOverlay({
               height: rect.height,
               transform: `rotate(${layer.transform.rotation}deg)`,
               transformOrigin: "center center",
+              backgroundColor: isSelected ? "rgba(11, 132, 243, 0.08)" : "rgba(255, 255, 255, 0.02)",
+              borderColor: isSelected ? "#0b84f3" : "rgba(255, 255, 255, 0.2)",
             }}
             onPointerDown={(e) =>
               startDrag(e, layer, "move", rect.centerX, rect.centerY)

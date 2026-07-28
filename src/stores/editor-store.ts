@@ -67,6 +67,7 @@ interface EditorState {
 
   // history-tracked mutations
   updateLayer: (id: string, patch: Partial<Layer>) => void;
+  setLayers: (layers: Layer[]) => void;
   addLayer: (layer: Layer) => void;
   removeLayers: (ids: string[]) => void;
   setLayerAnimation: (id: string, animation: AnimationPreset) => void;
@@ -218,6 +219,12 @@ export const useEditorStore = create<EditorState>((set, get) => {
       commit((p) => ({
         ...p,
         layers: p.layers.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+      })),
+
+    setLayers: (layers) =>
+      commit((p) => ({
+        ...p,
+        layers,
       })),
 
     addLayer: (layer) =>

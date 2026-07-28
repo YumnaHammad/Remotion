@@ -83,3 +83,112 @@ export function speakCaptionsInBrowser(
     window.speechSynthesis.cancel();
   };
 }
+
+export function formatCentisecondTimestamp(ms: number): string {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  const centiseconds = Math.floor((ms % 1000) / 10);
+  return `[${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(centiseconds).padStart(2, "0")}]`;
+}
+
+export function captionsToTimestampedScript(captions: TimedCaption[] | undefined): string {
+  if (!captions?.length) return "";
+  
+  const segments: { startMs: number; text: string }[] = [];
+  let currentWords: string[] = [];
+  let currentStart = captions[0]!.startMs;
+  
+  for (let i = 0; i < captions.length; i++) {
+    const c = captions[i]!;
+    currentWords.push(c.text);
+    const hasPunctuation = /[.!?]/.test(c.text);
+    const next = captions[i + 1];
+    const hasGap = next ? (next.startMs - c.endMs > 600) : false;
+    
+    if (currentWords.length >= 8 || hasPunctuation || hasGap || i === captions.length - 1) {
+      segments.push({
+        startMs: currentStart,
+        text: currentWords.join(" "),
+      });
+      currentWords = [];
+      if (next) {
+        currentStart = next.startMs;
+      }
+    }
+  }
+  
+  return segments
+    .map((seg) => `${formatCentisecondTimestamp(seg.startMs)} ${seg.text}`)
+    .join("\n");
+}
+
+export function timestampedScriptToCaptions(script: string, defaultMsPerWord = 320): TimedCaption[] {
+  const regex = /\[(\d{1,2}):(\d{2})(?:\.(\d{2,3}))?\]/;
+  const lines = script.split("\n");
+  const segments: { startMs: number; text: string }[] = [];
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    const match = regex.exec(trimmed);
+    if (match) {
+      const minutes = parseInt(match[1]!, 10);
+      const seconds = parseInt(match[2]!, 10);
+      let ms = 0;
+      if (match[3]) {
+        if (match[3].length === 2) {
+          ms = parseInt(match[3]!, 10) * 10;
+        } else {
+          ms = parseInt(match[3]!, 10);
+        }
+      }
+      const startMs = (minutes * 60 + seconds) * 1000 + ms;
+      const text = trimmed.replace(regex, "").trim();
+      segments.push({ startMs, text });
+    } else {
+      if (segments.length > 0) {
+        segments[segments.length - 1]!.text += " " + trimmed;
+      } else {
+        segments.push({ startMs: 0, text: trimmed });
+      }
+    }
+  }
+  
+  segments.sort((a, b) => a.startMs - b.startMs);
+  if (!segments.length) return [];
+  
+  const captions: TimedCaption[] = [];
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i]!;
+    const nextSeg = segments[i + 1];
+    
+    const words = seg.text.split(/\s+/).filter(Boolean);
+    if (!words.length) continue;
+    
+    const segStart = seg.startMs;
+    let segEnd = segStart + words.length * defaultMsPerWord;
+    if (nextSeg) {
+      segEnd = Math.min(nextSeg.startMs - 40, segStart + words.length * defaultMsPerWord);
+      if (segEnd <= segStart) {
+        segEnd = nextSeg.startMs - 10;
+      }
+    }
+    
+    const duration = segEnd - segStart;
+    const wordDuration = duration / words.length;
+    
+    words.forEach((word, index) => {
+      const wordStart = Math.round(segStart + index * wordDuration);
+      const wordEnd = Math.round(wordStart + wordDuration - 10);
+      captions.push({
+        text: word,
+        startMs: wordStart,
+        endMs: wordEnd,
+        timestampMs: Math.round((wordStart + wordEnd) / 2),
+        confidence: 1,
+      });
+    });
+  }
+  return captions;
+}

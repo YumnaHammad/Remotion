@@ -111,6 +111,12 @@ export async function breakdownScript(
   aspectRatio: EditRecipeAspectRatio = "16:9",
   options?: PipelineRequestOptions
 ): Promise<{ recipe: EditRecipe; mode: "local" | "external" }> {
+  // If the script contains timestamps, bypass LLM to preserve exact timeline mappings
+  const hasTimestamps = script.match(/\[\d{1,2}:\d{2}/);
+  if (hasTimestamps) {
+    return { recipe: localBreakdown(script, aspectRatio), mode: "local" };
+  }
+
   const useExternal = resolveUseExternalApis(options);
 
   if (useExternal && process.env.OPENAI_API_KEY) {

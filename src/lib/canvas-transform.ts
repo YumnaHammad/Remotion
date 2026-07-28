@@ -9,7 +9,6 @@ const SPATIAL_TYPES = new Set([
   "sticker",
   "shape",
   "collage",
-  "solid",
 ]);
 
 export function isSpatialLayer(layer: Layer): boolean {
