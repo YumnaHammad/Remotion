@@ -159,7 +159,18 @@ export async function downloadSourceToTemp(sourceUrl: string): Promise<string> {
       }
       throw new Error("yt-dlp completed but output file was not found.");
     } catch (err: any) {
-      throw new Error(`Failed to download YouTube video audio: ${err.message}`);
+      console.warn(`[whisper] Local python yt-dlp failed (${err.message}), trying Cobalt fallback...`);
+      try {
+        await downloadYoutubeAudioViaCobalt(sourceUrl, dest);
+        if (existsSync(dest)) {
+          return dest;
+        }
+      } catch (cobaltErr: any) {
+        console.error("[whisper] Cobalt fallback also failed:", cobaltErr);
+        throw new Error(
+          `Failed to download YouTube video audio. Python yt-dlp failed (${err.message}) and Cobalt API fallback failed (${cobaltErr.message}).`
+        );
+      }
     }
   }
 
@@ -177,4 +188,93 @@ export async function downloadSourceToTemp(sourceUrl: string): Promise<string> {
   const buf = Buffer.from(await res.arrayBuffer());
   await fs.writeFile(dest, buf);
   return dest;
+}
+
+async function downloadYoutubeAudioViaCobalt(sourceUrl: string, dest: string): Promise<void> {
+  const res = await fetch("https://api.cobalt.tools/api/json", {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      url: sourceUrl,
+      isAudioOnly: true,
+      aFormat: "mp3"
+    })
+  });
+  if (!res.ok) {
+    throw new Error(`Cobalt API failed with status ${res.status}`);
+  }
+  const data = (await res.json()) as { status: string; url?: string; text?: string };
+  if (data.status === "error") {
+    throw new Error(data.text ?? "Cobalt download failed");
+  }
+  if (!data.url) {
+    throw new Error("No download URL returned from Cobalt");
+  }
+  const audioRes = await fetch(data.url);
+  if (!audioRes.ok) {
+    throw new Error(`Failed to download audio from Cobalt URL: ${data.url}`);
+  }
+  const buf = Buffer.from(await audioRes.arrayBuffer());
+  await fs.writeFile(dest, buf);
+}
+
+export async function openaiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OpenAI API key (OPENAI_API_KEY) is not set in environment variables.");
+  }
+
+  const fileBuffer = await fs.readFile(inputPath);
+  const filename = path.basename(inputPath);
+  const ext = path.extname(filename).toLowerCase();
+  const supported = [".flac", ".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".ogg", ".wav", ".webm"];
+  const finalFilename = supported.includes(ext) ? filename : "audio.wav";
+
+  const formData = new FormData();
+  const fileBlob = new Blob([fileBuffer], { type: "audio/mpeg" });
+  formData.append("file", fileBlob, finalFilename);
+  formData.append("model", "whisper-1");
+  formData.append("response_format", "verbose_json");
+  formData.append("timestamp_granularities[]", "word");
+
+  const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`OpenAI Whisper API error (${res.status}): ${errText}`);
+  }
+
+  const data = (await res.json()) as {
+    text: string;
+    words?: { word: string; start: number; end: number }[];
+  };
+
+  if (!data.words || data.words.length === 0) {
+    return [
+      {
+        text: data.text,
+        startMs: 0,
+        endMs: 15000,
+        timestampMs: 7500,
+        confidence: 1,
+      },
+    ];
+  }
+
+  return data.words.map((w) => ({
+    text: w.word,
+    startMs: Math.round(w.start * 1000),
+    endMs: Math.round(w.end * 1000),
+    timestampMs: Math.round(((w.start + w.end) / 2) * 1000),
+    confidence: 1,
+  }));
 }

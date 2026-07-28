@@ -20,6 +20,42 @@ export function saveTranscriptionEngine(engine: TranscriptionEngine): void {
   localStorage.setItem(ENGINE_STORAGE_KEY, engine);
 }
 
+async function parseResponse(res: Response): Promise<TranscribeResult> {
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    try {
+      const data = await res.json() as {
+        ok?: boolean;
+        captions?: TimedCaption[];
+        engine?: TranscriptionEngine;
+        text?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.ok || !data.captions) {
+        return {
+          ok: false,
+          error: data.error ?? `Transcription failed (${res.status})`,
+        };
+      }
+      return { ok: true, captions: data.captions, engine: data.engine, text: data.text };
+    } catch {
+      return { ok: false, error: `Invalid JSON response from server (${res.status})` };
+    }
+  } else {
+    const text = await res.text();
+    if (res.status === 413) {
+      return {
+        ok: false,
+        error: "File is too large for Vercel serverless functions (max upload is 4.5 MB). Please use a YouTube/Direct URL, or run the project locally.",
+      };
+    }
+    return {
+      ok: false,
+      error: text.slice(0, 120) || `Server returned error status ${res.status}`,
+    };
+  }
+}
+
 /** Call transcription API with optional engine selection. */
 export async function transcribeFromSourceUrl(
   sourceUrl: string,
@@ -34,20 +70,7 @@ export async function transcribeFromSourceUrl(
         engine: engine ?? loadTranscriptionEngine(),
       }),
     });
-    const data = (await res.json()) as {
-      ok?: boolean;
-      captions?: TimedCaption[];
-      engine?: TranscriptionEngine;
-      text?: string;
-      error?: string;
-    };
-    if (!res.ok || !data.ok || !data.captions) {
-      return {
-        ok: false,
-        error: data.error ?? `Transcription failed (${res.status})`,
-      };
-    }
-    return { ok: true, captions: data.captions, engine: data.engine, text: data.text };
+    return await parseResponse(res);
   } catch (err) {
     return {
       ok: false,
@@ -69,20 +92,7 @@ export async function transcribeFromFile(
       method: "POST",
       body: form,
     });
-    const data = (await res.json()) as {
-      ok?: boolean;
-      captions?: TimedCaption[];
-      engine?: TranscriptionEngine;
-      text?: string;
-      error?: string;
-    };
-    if (!res.ok || !data.ok || !data.captions) {
-      return {
-        ok: false,
-        error: data.error ?? `Transcription failed (${res.status})`,
-      };
-    }
-    return { ok: true, captions: data.captions, engine: data.engine, text: data.text };
+    return await parseResponse(res);
   } catch (err) {
     return {
       ok: false,

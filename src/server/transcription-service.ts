@@ -10,6 +10,7 @@ import {
 import {
   isWhisperInstalled,
   transcribeToCaptions as transcribeWithWhisperCpp,
+  openaiWhisperTranscribe,
 } from "@/server/whisper";
 
 export type { StructuredTranscript, TranscriptionEngine };
@@ -27,9 +28,9 @@ export async function getTranscriptionStatus(): Promise<{
 }
 
 /** Wrap plain captions in the structured-transcript shape (whisper.cpp path). */
-function structureFromCaptions(captions: Caption[]): StructuredTranscript {
+function structureFromCaptions(captions: Caption[], engine: TranscriptionEngine = "whisper-cpp"): StructuredTranscript {
   return {
-    engine: "whisper-cpp",
+    engine,
     model: null,
     media: null,
     language: null,
@@ -55,26 +56,60 @@ export async function transcribeMediaStructured(
 
   if (selected === "faster-whisper") {
     if (await isFasterWhisperAvailable()) {
-      return transcribeStructuredWithFasterWhisper(inputPath, options);
+      try {
+        return await transcribeStructuredWithFasterWhisper(inputPath, options);
+      } catch (err) {
+        console.warn("[transcribe] Local faster-whisper run failed, trying OpenAI fallback...", err);
+      }
     }
     if (isWhisperInstalled()) {
-      return structureFromCaptions(await transcribeWithWhisperCpp(inputPath));
+      try {
+        return structureFromCaptions(await transcribeWithWhisperCpp(inputPath));
+      } catch (err) {
+        console.warn("[transcribe] Local whisper.cpp run failed, trying OpenAI fallback...", err);
+      }
     }
-    throw new Error(
-      "faster-whisper is not installed. Run: pip install faster-whisper (or npm run whisper:install for whisper.cpp fallback)"
-    );
+    try {
+      const captions = await openaiWhisperTranscribe(inputPath);
+      return structureFromCaptions(captions, "faster-whisper");
+    } catch (openaiErr: any) {
+      throw new Error(
+        `All transcription engines failed. Local faster-whisper and whisper-cpp are not installed, and OpenAI cloud fallback failed: ${openaiErr.message}`
+      );
+    }
   }
 
   if (!isWhisperInstalled()) {
     if (await isFasterWhisperAvailable()) {
-      return transcribeStructuredWithFasterWhisper(inputPath, options);
+      try {
+        return await transcribeStructuredWithFasterWhisper(inputPath, options);
+      } catch (err) {
+        console.warn("[transcribe] Local faster-whisper failed, trying OpenAI fallback...", err);
+      }
     }
-    throw new Error(
-      "Whisper.cpp is not installed. Run `npm run whisper:install` or install faster-whisper with pip."
-    );
+    try {
+      const captions = await openaiWhisperTranscribe(inputPath);
+      return structureFromCaptions(captions, "whisper-cpp");
+    } catch (openaiErr: any) {
+      throw new Error(
+        `All transcription engines failed. whisper.cpp is not installed, and OpenAI cloud fallback failed: ${openaiErr.message}`
+      );
+    }
   }
 
-  return structureFromCaptions(await transcribeWithWhisperCpp(inputPath));
+  try {
+    return structureFromCaptions(await transcribeWithWhisperCpp(inputPath));
+  } catch (err) {
+    console.warn("[transcribe] Local whisper.cpp failed, trying OpenAI fallback...", err);
+    try {
+      const captions = await openaiWhisperTranscribe(inputPath);
+      return structureFromCaptions(captions, "whisper-cpp");
+    } catch (openaiErr: any) {
+      throw new Error(
+        `Local whisper.cpp failed (${err.message}) and OpenAI cloud fallback failed: ${openaiErr.message}`
+      );
+    }
+  }
 }
 
 export async function transcribeMediaToCaptions(
