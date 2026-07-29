@@ -147,14 +147,14 @@ export function EditingToolsPanel({
   return (
     <div className="space-y-4 px-1 pb-4">
       {/* 1. Primary Settings Card */}
-      <div className="space-y-3 rounded-xl border border-white/5 bg-black/10 p-3 shadow-sm">
+      <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-3 shadow-sm">
         {(sceneMode || isAudio) && (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/40">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               <Mic className="h-3.5 w-3.5" /> Speech & Voice
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-white/60">Voice effect</Label>
+              <Label className="text-xs text-muted-foreground">Voice effect</Label>
               <Select
                 value={voice.preset}
                 onValueChange={(preset) => {
@@ -178,7 +178,7 @@ export function EditingToolsPanel({
                   }
                 }}
               >
-                <SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="h-8 text-xs bg-background border-input text-foreground">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -194,14 +194,14 @@ export function EditingToolsPanel({
         )}
 
         {(sceneMode || isVideo) && (
-          <div className="space-y-3 pt-3.5 border-t border-white/5 mt-3.5">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/40">
+          <div className="space-y-3 pt-3.5 border-t border-border mt-3.5">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               <Film className="h-3.5 w-3.5" /> Background & Pace
             </div>
 
             {sceneMode && (
               <div className="space-y-1">
-                <Label className="text-xs text-white/60">
+                <Label className="text-xs text-muted-foreground">
                   Scene speed · {(sceneEditing?.speed ?? 1).toFixed(2)}×
                 </Label>
                 <Slider
@@ -215,7 +215,7 @@ export function EditingToolsPanel({
             )}
 
             <div className="space-y-1">
-              <Label className="text-xs text-white/60">Background style</Label>
+              <Label className="text-xs text-muted-foreground">Background style</Label>
               <Select
                 value={bg?.mode ?? "none"}
                 onValueChange={(mode) => {
@@ -231,7 +231,7 @@ export function EditingToolsPanel({
                     : patch({ backgroundReplace: next });
                 }}
               >
-                <SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="h-8 text-xs bg-background border-input text-foreground">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -246,7 +246,7 @@ export function EditingToolsPanel({
 
             {(bg?.mode === "solid" || bg?.mode === "chroma") && (
               <div className="space-y-1">
-                <Label className="text-xs text-white/60">Background color</Label>
+                <Label className="text-xs text-muted-foreground">Background color</Label>
                 <Input
                   type="color"
                   value={bg.color ?? bg.chromaColor ?? "#00ff00"}
@@ -261,14 +261,14 @@ export function EditingToolsPanel({
                       ? patchScene({ backgroundReplace: next })
                       : patch({ backgroundReplace: next });
                   }}
-                  className="h-8 border-white/10 bg-white/5 p-1"
+                  className="h-8 border-input bg-background p-1 text-foreground"
                 />
               </div>
             )}
 
             {bg?.mode === "blur" && (
               <div className="space-y-1">
-                <Label className="text-xs text-white/60">
+                <Label className="text-xs text-muted-foreground">
                   Blur amount · {bg.blurAmount ?? 16}px
                 </Label>
                 <Slider
@@ -309,21 +309,21 @@ export function EditingToolsPanel({
       </div>
 
       {/* 2. Advanced VFX & Collapsible Filters */}
-      <details className="group border border-white/5 rounded-xl bg-black/20 overflow-hidden">
-        <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-xs font-semibold text-white/50 hover:bg-white/5 hover:text-white transition select-none">
+      <details className="group border border-border rounded-xl bg-muted/20 overflow-hidden">
+        <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition select-none">
           <span className="flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
             Advanced VFX & Filters
           </span>
           <ChevronDown className="h-4 w-4 transition duration-200 group-open:rotate-180" />
         </summary>
-        <div className="border-t border-white/5 p-3.5 space-y-4">
+        <div className="border-t border-border p-3.5 space-y-4">
           {/* Audio filters (silence cut, denoise, normalize) */}
           {!sceneMode && isAudio && (
-            <div className="space-y-3.5 border-b border-white/5 pb-3.5">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-white/40">Audio FX</div>
+            <div className="space-y-3.5 border-b border-border pb-3.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audio FX</div>
               <div className="flex items-center justify-between">
-                <Label className="text-xs text-white/60">Silence cut</Label>
+                <Label className="text-xs text-muted-foreground">Silence cut</Label>
                 <Switch
                   checked={audioTools.silenceCut}
                   onCheckedChange={(silenceCut) =>
@@ -332,7 +332,7 @@ export function EditingToolsPanel({
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-white/60">
+                <Label className="text-xs text-muted-foreground">
                   Threshold · {audioTools.silenceThresholdDb} dB
                 </Label>
                 <Slider
@@ -348,13 +348,13 @@ export function EditingToolsPanel({
               <Button
                 size="sm"
                 variant="outline"
-                className="w-full h-8 text-xs border-white/10 bg-white/5 text-white hover:bg-white/10"
+                className="w-full h-8 text-xs border-border bg-background text-foreground hover:bg-muted"
                 onClick={runSilenceCut}
               >
-                <Scissors className="mr-1.5 h-3.5 w-3.5 text-sky-400" /> Detect & cut silence
+                <Scissors className="mr-1.5 h-3.5 w-3.5 text-sky-500" /> Detect & cut silence
               </Button>
               <div className="space-y-1">
-                <Label className="text-xs text-white/60">
+                <Label className="text-xs text-muted-foreground">
                   Denoise · {audioTools.denoise}%
                 </Label>
                 <Slider
@@ -371,7 +371,7 @@ export function EditingToolsPanel({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label className="text-xs text-white/60">Normalize volume</Label>
+                <Label className="text-xs text-muted-foreground">Normalize volume</Label>
                 <Switch
                   checked={audioTools.normalize}
                   onCheckedChange={(normalize) =>
@@ -384,19 +384,19 @@ export function EditingToolsPanel({
 
           {/* Video FX (reverse, playbackRate, mask, stabilize) */}
           {(sceneMode || isVideo) && (
-            <div className="space-y-3.5 border-b border-white/5 pb-3.5">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-white/40">Video FX</div>
+            <div className="space-y-3.5 border-b border-border pb-3.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Video FX</div>
               {!sceneMode && isVideo && (
                 <>
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs text-white/60">Reverse playback</Label>
+                    <Label className="text-xs text-muted-foreground">Reverse playback</Label>
                     <Switch
                       checked={!!layer?.reverse}
                       onCheckedChange={(reverse) => patch({ reverse })}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs text-white/60">
+                    <Label className="text-xs text-muted-foreground">
                       Speed · {(layer?.playbackRate ?? 1).toFixed(2)}×
                     </Label>
                     <Slider
@@ -413,14 +413,14 @@ export function EditingToolsPanel({
               {!sceneMode && (
                 <>
                   <div className="space-y-1">
-                    <Label className="text-xs text-white/60">Mask shape</Label>
+                    <Label className="text-xs text-muted-foreground">Mask shape</Label>
                     <Select
                       value={mask.shape}
                       onValueChange={(shape) =>
                         patch({ mask: { ...mask, shape: shape as MaskShape } })
                       }
                     >
-                      <SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-white">
+                      <SelectTrigger className="h-8 text-xs bg-background border-input text-foreground">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -444,7 +444,7 @@ export function EditingToolsPanel({
                   {mask.shape !== "none" && (
                     <>
                       <div className="space-y-1">
-                        <Label className="text-xs text-white/60">
+                        <Label className="text-xs text-muted-foreground">
                           Mask feather · {mask.feather}
                         </Label>
                         <Slider
@@ -458,7 +458,7 @@ export function EditingToolsPanel({
                         />
                       </div>
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs text-white/60">Invert mask</Label>
+                        <Label className="text-xs text-muted-foreground">Invert mask</Label>
                         <Switch
                           checked={!!mask.invert}
                           onCheckedChange={(invert) =>
@@ -470,7 +470,7 @@ export function EditingToolsPanel({
                   )}
 
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs text-white/60">Stabilize</Label>
+                    <Label className="text-xs text-muted-foreground">Stabilize</Label>
                     <Switch
                       checked={!!stabilize.enabled}
                       onCheckedChange={(enabled) =>
@@ -480,7 +480,7 @@ export function EditingToolsPanel({
                   </div>
                   {stabilize.enabled && (
                     <div className="space-y-1">
-                      <Label className="text-xs text-white/60">
+                      <Label className="text-xs text-muted-foreground">
                         Stabilize strength · {stabilize.strength}
                       </Label>
                       <Slider
@@ -500,7 +500,7 @@ export function EditingToolsPanel({
               )}
 
               <div className="flex items-center justify-between">
-                <Label className="text-xs text-white/60">Color overlay</Label>
+                <Label className="text-xs text-muted-foreground">Color overlay</Label>
                 <Switch
                   checked={
                     layer?.overlay?.enabled ??
@@ -518,9 +518,9 @@ export function EditingToolsPanel({
 
           {/* Creative controls (blendMode, enhance, volume) */}
           <div className="space-y-3.5">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-white/40">Creative Filters</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Creative Filters</div>
             <div className="space-y-1">
-              <Label className="text-xs text-white/60">Blend / transition mode</Label>
+              <Label className="text-xs text-muted-foreground">Blend / transition mode</Label>
               <Select
                 value={layer?.blendMode ?? sceneEditing?.blendMode ?? "normal"}
                 onValueChange={(blendMode) => {
@@ -529,7 +529,7 @@ export function EditingToolsPanel({
                     : patch({ blendMode: blendMode as BlendMode });
                 }}
               >
-                <SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="h-8 text-xs bg-background border-input text-foreground">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -549,10 +549,10 @@ export function EditingToolsPanel({
                     key={fx.id}
                     size="sm"
                     variant="outline"
-                    className="h-auto py-1.5 text-[10px] border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    className="h-auto py-1.5 text-[10px] border-border bg-background text-foreground hover:bg-muted"
                     onClick={() => applyEffectPreset(fx.id)}
                   >
-                    <Wand2 className="mr-1 h-3 w-3 text-sky-400" />
+                    <Wand2 className="mr-1 h-3 w-3 text-sky-500" />
                     {fx.name}
                   </Button>
                 ))}
@@ -560,8 +560,8 @@ export function EditingToolsPanel({
             )}
 
             <div className="space-y-2">
-              <Label className="flex items-center gap-1 text-xs text-white/60">
-                <Zap className="h-3 w-3 text-amber-400" /> Enhance Sliders
+              <Label className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Zap className="h-3 w-3 text-amber-500" /> Enhance Sliders
               </Label>
               {(
                 [
@@ -572,7 +572,7 @@ export function EditingToolsPanel({
                 ] as const
               ).map(([key, label, min, max]) => (
                 <div key={key} className="space-y-0.5">
-                  <Label className="text-[10px] text-white/40">
+                  <Label className="text-[10px] text-muted-foreground">
                     {label} · {enhance[key]}
                   </Label>
                   <Slider
@@ -592,9 +592,9 @@ export function EditingToolsPanel({
             </div>
 
             {!sceneMode && layer && (
-              <div className="space-y-1 border-t border-white/5 pt-3.5 mt-3.5">
-                <Label className="flex items-center gap-1 text-xs text-white/60">
-                  <Volume2 className="h-3 w-3 text-sky-400" /> Volume ·{" "}
+              <div className="space-y-1 border-t border-border pt-3.5 mt-3.5">
+                <Label className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Volume2 className="h-3 w-3 text-sky-500" /> Volume ·{" "}
                   {Math.round((layer.volume ?? 1) * 100)}%
                 </Label>
                 <Slider

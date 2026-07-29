@@ -28,6 +28,7 @@ import {
 import type { SceneType, VideoScene } from "@/types/scene-video";
 import { totalSceneDuration, formatDurationFromFrames } from "@/types/scene-video";
 import { EditingToolsPanel } from "@/features/editor-tools/editing-tools-panel";
+import { normalizeMediaUrl } from "@/components/shared/file-uploader";
 
 const SCENE_TYPES: SceneType[] = [
   "intro",
@@ -78,16 +79,16 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-black/25 border border-white/5 p-4 rounded-xl shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/40 border border-border p-4 rounded-xl shadow-sm">
         <div>
-          <h3 className="text-sm font-semibold text-white/95">Scene Breakdown</h3>
-          <p className="text-[11px] text-white/40">
+          <h3 className="text-sm font-semibold text-foreground">Scene Breakdown</h3>
+          <p className="text-[11px] text-muted-foreground">
             {scenes.length} scenes · {formatDurationFromFrames(total, fps)} total duration
           </p>
         </div>
         <Select onValueChange={(v) => addScene(v as SceneType)}>
-          <SelectTrigger className="w-[150px] h-8.5 bg-white/5 border-white/10 text-xs text-white">
-            <Plus className="mr-1.5 h-3.5 w-3.5 text-sky-400" />
+          <SelectTrigger className="w-[150px] h-8.5 bg-background border-input text-xs text-foreground">
+            <Plus className="mr-1.5 h-3.5 w-3.5 text-primary" />
             <SelectValue placeholder="Add scene" />
           </SelectTrigger>
           <SelectContent>
@@ -101,7 +102,7 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[210px_1fr]">
-        <ul className="max-h-96 space-y-1.5 overflow-y-auto rounded-xl border border-white/5 bg-black/20 p-2 scrollbar-thin">
+        <ul className="max-h-96 space-y-1.5 overflow-y-auto rounded-xl border border-border bg-muted/20 p-2 scrollbar-thin">
           {scenes.map((scene, i) => {
             const isSelected = selected?.id === scene.id;
             return (
@@ -111,12 +112,12 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
                   onClick={() => setSelectedId(scene.id)}
                   className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2.5 text-left text-xs transition duration-200 border ${
                     isSelected
-                      ? "bg-sky-500/10 border-sky-500/35 text-white font-medium shadow-inner"
-                      : "border-transparent text-white/60 hover:bg-white/5 hover:text-white"
+                      ? "bg-primary/10 border-primary/30 text-primary font-medium shadow-inner"
+                      : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
-                  <span className="text-[10px] text-white/35 font-mono">{i + 1}</span>
-                  <Badge variant="outline" className={`text-[9px] uppercase tracking-wide py-0 px-1 border-white/10 bg-white/5 ${isSelected ? "text-sky-300 border-sky-500/20" : "text-white/50"}`}>
+                  <span className="text-[10px] text-muted-foreground font-mono">{i + 1}</span>
+                  <Badge variant="outline" className={`text-[9px] uppercase tracking-wide py-0 px-1 border-border bg-muted ${isSelected ? "text-primary border-primary/20 bg-primary/5" : "text-muted-foreground/75"}`}>
                     {SCENE_TYPE_LABELS[scene.type]}
                   </Badge>
                   <span className="truncate flex-1 font-medium">{scene.title || "Untitled Scene"}</span>
@@ -127,15 +128,15 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
         </ul>
 
         {selected && (
-          <div className="space-y-4 rounded-xl border border-white/5 bg-black/10 p-5 shadow-sm">
+          <div className="space-y-4 rounded-xl border border-border bg-card/60 p-5 shadow-sm">
             {/* Scene Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
-              <span className="text-xs font-semibold text-white/80">Edit Scene Properties</span>
-              <div className="flex flex-wrap gap-1.5 p-1 bg-black/25 rounded-lg border border-white/5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+              <span className="text-xs font-semibold text-foreground">Edit Scene Properties</span>
+              <div className="flex flex-wrap gap-1.5 p-1 bg-muted rounded-lg border border-border">
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/5"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-background"
                   onClick={() => {
                     const i = scenes.findIndex((s) => s.id === selected.id);
                     move(i, -1);
@@ -147,7 +148,7 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/5"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-background"
                   onClick={() => {
                     const i = scenes.findIndex((s) => s.id === selected.id);
                     move(i, 1);
@@ -156,11 +157,11 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
                 >
                   <ChevronDown className="h-4 w-4" />
                 </Button>
-                <div className="h-4 w-px bg-white/10 self-center my-0.5 mx-1" />
+                <div className="h-4 w-px bg-border self-center my-0.5 mx-1" />
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 px-2 text-[10px] text-white/70 hover:text-white hover:bg-white/5 font-semibold"
+                  className="h-7 px-2 text-[10px] text-muted-foreground hover:text-foreground hover:bg-background font-semibold"
                   onClick={() => {
                     const dup = duplicateScene(selected);
                     const i = scenes.findIndex((s) => s.id === selected.id);
@@ -170,12 +171,12 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
                     setSelectedId(dup.id);
                   }}
                 >
-                  <Copy className="mr-1 h-3.5 w-3.5 text-sky-400" /> Duplicate
+                  <Copy className="mr-1 h-3.5 w-3.5 text-primary" /> Duplicate
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 px-2 text-[10px] text-white/50 hover:text-rose-400 hover:bg-rose-500/10 font-semibold"
+                  className="h-7 px-2 text-[10px] text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 font-semibold"
                   disabled={scenes.length <= 1}
                   onClick={() => remove(selected.id)}
                 >
@@ -187,12 +188,12 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
             {/* Scene settings */}
             <div className="grid gap-3.5 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/60">Type</Label>
+                <Label className="text-xs text-muted-foreground">Type</Label>
                 <Select
                   value={selected.type}
                   onValueChange={(v) => updateScene(selected.id, { type: v as SceneType })}
                 >
-                  <SelectTrigger className="h-8.5 text-xs bg-white/5 border-white/10 text-white">
+                  <SelectTrigger className="h-8.5 text-xs bg-background border-input text-foreground">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -205,7 +206,7 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/60">Animation</Label>
+                <Label className="text-xs text-muted-foreground">Animation</Label>
                 <Select
                   value={selected.animation}
                   onValueChange={(v) =>
@@ -214,7 +215,7 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
                     })
                   }
                 >
-                  <SelectTrigger className="h-8.5 text-xs bg-white/5 border-white/10 text-white">
+                  <SelectTrigger className="h-8.5 text-xs bg-background border-input text-foreground">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -229,11 +230,11 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/60">Title</Label>
+              <Label className="text-xs text-muted-foreground">Title</Label>
               <Input
                 value={selected.title}
                 onChange={(e) => updateScene(selected.id, { title: e.target.value })}
-                className="h-9 bg-white/5 border-white/10 text-xs text-white"
+                className="h-9 bg-background border-input text-xs text-foreground"
               />
             </div>
 
@@ -242,20 +243,20 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
               selected.type === "outro") && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-white/60">Subtitle</Label>
+                  <Label className="text-xs text-muted-foreground">Subtitle</Label>
                   <Input
                     value={selected.subtitle ?? ""}
                     onChange={(e) => updateScene(selected.id, { subtitle: e.target.value })}
-                    className="h-9 bg-white/5 border-white/10 text-xs text-white"
+                    className="h-9 bg-background border-input text-xs text-foreground"
                   />
                 </div>
                 {selected.type === "content" && (
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-white/60">Body Text</Label>
+                    <Label className="text-xs text-muted-foreground">Body Text</Label>
                     <Input
                       value={selected.body ?? ""}
                       onChange={(e) => updateScene(selected.id, { body: e.target.value })}
-                      className="h-9 bg-white/5 border-white/10 text-xs text-white"
+                      className="h-9 bg-background border-input text-xs text-foreground"
                     />
                   </div>
                 )}
@@ -265,19 +266,19 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
             {selected.type === "stats" && (
               <div className="grid gap-3.5 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-white/60">Stat value</Label>
+                  <Label className="text-xs text-muted-foreground">Stat value</Label>
                   <Input
                     value={selected.statValue ?? ""}
                     onChange={(e) => updateScene(selected.id, { statValue: e.target.value })}
-                    className="h-9 bg-white/5 border-white/10 text-xs text-white"
+                    className="h-9 bg-background border-input text-xs text-foreground"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-white/60">Stat label</Label>
+                  <Label className="text-xs text-muted-foreground">Stat label</Label>
                   <Input
                     value={selected.statLabel ?? ""}
                     onChange={(e) => updateScene(selected.id, { statLabel: e.target.value })}
-                    className="h-9 bg-white/5 border-white/10 text-xs text-white"
+                    className="h-9 bg-background border-input text-xs text-foreground"
                   />
                 </div>
               </div>
@@ -286,19 +287,19 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
             {selected.type === "quote" && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-white/60">Quote Text</Label>
+                  <Label className="text-xs text-muted-foreground">Quote Text</Label>
                   <Input
                     value={selected.quote ?? ""}
                     onChange={(e) => updateScene(selected.id, { quote: e.target.value })}
-                    className="h-9 bg-white/5 border-white/10 text-xs text-white"
+                    className="h-9 bg-background border-input text-xs text-foreground"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-white/60">Author</Label>
+                  <Label className="text-xs text-muted-foreground">Author</Label>
                   <Input
                     value={selected.author ?? ""}
                     onChange={(e) => updateScene(selected.id, { author: e.target.value })}
-                    className="h-9 bg-white/5 border-white/10 text-xs text-white"
+                    className="h-9 bg-background border-input text-xs text-foreground"
                   />
                 </div>
               </>
@@ -306,22 +307,22 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
 
             {selected.type === "gallery" && (
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/60">Gallery Images (comma-separated URLs)</Label>
+                <Label className="text-xs text-muted-foreground">Gallery Images (comma-separated URLs)</Label>
                 <Input
                   value={selected.images?.join(", ") ?? ""}
                   onChange={(e) =>
                     updateScene(selected.id, {
-                      images: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                      images: e.target.value.split(",").map((s) => normalizeMediaUrl(s.trim())).filter(Boolean),
                     })
                   }
                   placeholder="https://images.unsplash.com/photo-1, https://images.unsplash.com/photo-2"
-                  className="h-9 bg-white/5 border-white/10 text-xs text-white placeholder-white/25"
+                  className="h-9 bg-background border-input text-xs text-foreground placeholder-muted-foreground/35"
                 />
               </div>
             )}
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/60">Duration (seconds)</Label>
+              <Label className="text-xs text-muted-foreground">Duration (seconds)</Label>
               <Input
                 type="number"
                 min={1}
@@ -332,12 +333,12 @@ export function SceneEditorPanel({ scenes, onChange, fps = 30 }: SceneEditorPane
                     durationInFrames: Math.max(30, Number(e.target.value) * fps),
                   })
                 }
-                className="h-9 bg-white/5 border-white/10 text-xs text-white"
+                className="h-9 bg-background border-input text-xs text-foreground"
               />
             </div>
 
-            <div className="border-t border-white/5 pt-4 mt-4">
-              <h4 className="mb-2 text-xs font-semibold text-white/50 uppercase tracking-wider">Scene editing tools</h4>
+            <div className="border-t border-border pt-4 mt-4">
+              <h4 className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scene editing tools</h4>
               <EditingToolsPanel
                 sceneMode
                 sceneEditing={selected.editing ?? {}}

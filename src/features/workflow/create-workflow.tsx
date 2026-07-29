@@ -154,6 +154,7 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
     : project?.durationInFrames ?? 150;
 
   const applyBrandKit = () => {
+    if (!project) return;
     const synced = syncPropsFromBrand(
       {
         title,

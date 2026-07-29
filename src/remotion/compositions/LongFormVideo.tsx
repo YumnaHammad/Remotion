@@ -181,9 +181,10 @@ function SceneContent({
                   width: 280,
                   height: 180,
                   borderRadius: 16,
-                  background: img.startsWith("http") ? undefined : img,
+                  backgroundColor: img.startsWith("http") ? "transparent" : img,
                   backgroundImage: img.startsWith("http") ? `url(${img})` : undefined,
                   backgroundSize: "cover",
+                  backgroundPosition: "center",
                   boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
                   transform: `translateY(${i * 8}px)`,
                 }}
