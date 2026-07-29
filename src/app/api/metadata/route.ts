@@ -66,17 +66,26 @@ export async function POST(req: Request) {
     const res = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; VideoBot/1.0; +https://remotion.dev)",
-        Accept: "text/html",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
       },
       signal: AbortSignal.timeout(12_000),
     });
 
     if (!res.ok) {
-      return NextResponse.json(
-        { ok: false, error: `Could not fetch URL (${res.status})` },
-        { status: 422 }
-      );
+      const parsedUrl = new URL(url);
+      const fallbackMetadata = {
+        url,
+        title: parsedUrl.hostname.replace("www.", ""),
+        description: `Video script generated from ${parsedUrl.hostname}`,
+        image: undefined,
+        siteName: parsedUrl.hostname,
+      };
+      return NextResponse.json({ ok: true, metadata: fallbackMetadata });
     }
 
     const html = await res.text();
