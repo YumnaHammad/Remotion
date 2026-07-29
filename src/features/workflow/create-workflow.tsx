@@ -176,7 +176,10 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
     setImageUrl((synced as any).imageUrl ?? "");
     setLogoUrl(synced.logoUrl ?? "");
     updateProject(projectId, {
-      props: synced,
+      props: {
+        ...project.props,
+        ...synced,
+      },
     });
     toast.success("Brand kit applied to this video");
   };
@@ -323,21 +326,21 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
           )}
 
           {(step === 3 || step === 4) && (
-            <section className="space-y-4 rounded-xl border border-white/5 bg-black/35 backdrop-blur p-5 shadow-lg">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-white/80">
+            <section className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
                   Step {step} · {step === 3 ? "Edit Template" : "Preview Canvas"}
                 </h2>
-                <div className="flex gap-1.5 p-1 bg-black/20 rounded-lg border border-white/5">
+                <div className="flex gap-1 p-0.5 bg-muted rounded-lg border border-border">
                   {(["general", "scenes", "audio"] as const).map((tab) => (
                     <button
                       key={tab}
                       type="button"
                       onClick={() => setActiveEditTab(tab)}
-                      className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider transition ${
+                      className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider transition ${
                         activeEditTab === tab
-                          ? "bg-primary/20 text-white shadow-inner"
-                          : "text-white/40 hover:text-white"
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {tab === "general" ? "Brand" : tab === "scenes" ? "Scenes" : "Audio"}
@@ -349,31 +352,31 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
               {activeEditTab === "general" && (
                 <div className="space-y-4 animate-fadeIn">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-white/60">Title</Label>
+                    <Label className="text-xs text-muted-foreground font-medium">Title</Label>
                     <Input
                       value={title}
                       onChange={(e) => {
                         setTitle(e.target.value);
                         updateProjectProps({ title: e.target.value });
                       }}
-                      className="bg-white/5 border-white/10 text-xs text-white"
+                      className="bg-background border-input text-xs text-foreground"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-white/60">Subtitle</Label>
+                    <Label className="text-xs text-muted-foreground font-medium">Subtitle</Label>
                     <Input
                       value={subtitle}
                       onChange={(e) => {
                         setSubtitle(e.target.value);
                         updateProjectProps({ subtitle: e.target.value });
                       }}
-                      className="bg-white/5 border-white/10 text-xs text-white"
+                      className="bg-background border-input text-xs text-foreground"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3.5">
                     <div className="space-y-1.5">
-                      <Label className="text-xs text-white/60">Accent color</Label>
+                      <Label className="text-xs text-muted-foreground font-medium">Accent color</Label>
                       <input
                         type="color"
                         value={accent}
@@ -381,11 +384,11 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
                           setAccent(e.target.value);
                           updateProjectProps({ accent: e.target.value });
                         }}
-                        className="h-10 w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 p-1.5"
+                        className="h-9 w-full cursor-pointer rounded-lg border border-input bg-background p-1"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs text-white/60">Brand color</Label>
+                      <Label className="text-xs text-muted-foreground font-medium">Brand color</Label>
                       <input
                         type="color"
                         value={brandColor}
@@ -393,13 +396,13 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
                           setBrandColor(e.target.value);
                           updateProjectProps({ brandColor: e.target.value });
                         }}
-                        className="h-10 w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 p-1.5"
+                        className="h-9 w-full cursor-pointer rounded-lg border border-input bg-background p-1"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-white/60">Font</Label>
+                    <Label className="text-xs text-muted-foreground font-medium">Font</Label>
                     <Select
                       value={fontFamily}
                       onValueChange={(val) => {
@@ -407,7 +410,7 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
                         updateProjectProps({ fontFamily: val });
                       }}
                     >
-                      <SelectTrigger className="bg-white/5 border-white/10 text-xs text-white">
+                      <SelectTrigger className="bg-background border-input text-xs text-foreground h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -451,7 +454,7 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
                         }}
                         placeholderUrl="Paste image URL..."
                       />
-                      <p className="text-[10px] text-white/35">
+                      <p className="text-[10px] text-muted-foreground">
                         This template uses a single slide. Upload an image above to customize the background.
                       </p>
                     </div>
@@ -461,8 +464,8 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
 
               {activeEditTab === "audio" && (
                 <div className="space-y-4 animate-fadeIn">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-white/60 font-semibold mb-1">Background Music</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground font-medium">Background Music Presets</Label>
                     <MusicPicker
                       value={musicUrl}
                       onChange={(val) => {
@@ -471,18 +474,33 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
                       }}
                     />
                   </div>
+                  <div className="relative flex py-1 items-center">
+                    <div className="flex-grow border-t border-border"></div>
+                    <span className="flex-shrink mx-4 text-[9px] text-muted-foreground uppercase font-bold tracking-wider">OR</span>
+                    <div className="flex-grow border-t border-border"></div>
+                  </div>
+                  <FileUploader
+                    label="Upload Custom Audio"
+                    accept="audio/*"
+                    value={musicUrl}
+                    onChange={(url) => {
+                      setMusicUrl(url);
+                      updateProjectProps({ musicUrl: url });
+                    }}
+                    placeholderUrl="Paste direct audio URL..."
+                  />
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2.5 pt-3.5 border-t border-white/5 mt-3.5">
-                <Button variant="outline" className="text-xs border-white/10 bg-white/5 text-white hover:bg-white/10 h-9 animate-none" onClick={applyBrandKit}>
+              <div className="flex flex-wrap gap-2 pt-3.5 border-t border-border mt-3.5">
+                <Button variant="outline" className="text-xs border-border bg-background hover:bg-muted text-foreground h-9 animate-none" onClick={applyBrandKit}>
                   Apply brand kit
                 </Button>
-                <Button variant="outline" className="text-xs border-white/10 bg-white/5 text-white hover:bg-white/10 h-9" onClick={save}>
-                  <Save className="mr-1.5 h-4 w-4 text-sky-400" /> Save
+                <Button variant="outline" className="text-xs border-border bg-background hover:bg-muted text-foreground h-9" onClick={save}>
+                  <Save className="mr-1.5 h-4 w-4 text-primary" /> Save
                 </Button>
                 <Button className="text-xs h-9 font-semibold" onClick={() => setStep(4)}>Preview</Button>
-                <Button variant="secondary" className="text-xs h-9 font-semibold" onClick={() => setStep(5)}>
+                <Button variant="secondary" className="text-xs h-9 font-semibold text-foreground" onClick={() => setStep(5)}>
                   Go to export
                 </Button>
               </div>
