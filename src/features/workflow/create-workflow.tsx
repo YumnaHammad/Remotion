@@ -27,6 +27,7 @@ import type { SceneVideoProps } from "@/types/scene-video";
 import { totalSceneDuration } from "@/types/scene-video";
 import { SceneEditorPanel } from "@/features/scene-editor/scene-editor-panel";
 import { MusicPicker } from "@/features/shared/music-picker";
+import { FileUploader } from "@/components/shared/file-uploader";
 import { toast } from "sonner";
 
 const FONTS = ["Inter", "Space Grotesk", "Georgia", "Arial"];
@@ -47,6 +48,7 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
 
   const [hydrated, setHydrated] = useState(false);
   const [step, setStep] = useState(3);
+  const [activeEditTab, setActiveEditTab] = useState<"general" | "scenes" | "audio">("general");
 
   useEffect(() => {
     if (useSimpleVideoStore.persist.hasHydrated()) {
@@ -321,132 +323,166 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
           )}
 
           {(step === 3 || step === 4) && (
-            <section className="space-y-4 rounded-xl border border-border bg-card p-5">
-              <h2 className="font-medium">
-                Step {step} · {step === 3 ? "Edit" : "Preview"}
-              </h2>
-
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input
-                  value={title}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                    updateProjectProps({ title: e.target.value });
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Subtitle</Label>
-                <Input
-                  value={subtitle}
-                  onChange={(e) => {
-                    setSubtitle(e.target.value);
-                    updateProjectProps({ subtitle: e.target.value });
-                  }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Accent color</Label>
-                  <input
-                    type="color"
-                    value={accent}
-                    onChange={(e) => {
-                      setAccent(e.target.value);
-                      updateProjectProps({ accent: e.target.value });
-                    }}
-                    className="h-10 w-full cursor-pointer rounded-lg border"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Brand color</Label>
-                  <input
-                    type="color"
-                    value={brandColor}
-                    onChange={(e) => {
-                      setBrandColor(e.target.value);
-                      updateProjectProps({ brandColor: e.target.value });
-                    }}
-                    className="h-10 w-full cursor-pointer rounded-lg border"
-                  />
+            <section className="space-y-4 rounded-xl border border-white/5 bg-black/35 backdrop-blur p-5 shadow-lg">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-white/80">
+                  Step {step} · {step === 3 ? "Edit Template" : "Preview Canvas"}
+                </h2>
+                <div className="flex gap-1.5 p-1 bg-black/20 rounded-lg border border-white/5">
+                  {(["general", "scenes", "audio"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setActiveEditTab(tab)}
+                      className={`px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider transition ${
+                        activeEditTab === tab
+                          ? "bg-primary/20 text-white shadow-inner"
+                          : "text-white/40 hover:text-white"
+                      }`}
+                    >
+                      {tab === "general" ? "Brand" : tab === "scenes" ? "Scenes" : "Audio"}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Font</Label>
-                <Select
-                  value={fontFamily}
-                  onValueChange={(val) => {
-                    setFontFamily(val);
-                    updateProjectProps({ fontFamily: val });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FONTS.map((f) => (
-                      <SelectItem key={f} value={f}>
-                        {f}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {activeEditTab === "general" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-white/60">Title</Label>
+                    <Input
+                      value={title}
+                      onChange={(e) => {
+                        setTitle(e.target.value);
+                        updateProjectProps({ title: e.target.value });
+                      }}
+                      className="bg-white/5 border-white/10 text-xs text-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-white/60">Subtitle</Label>
+                    <Input
+                      value={subtitle}
+                      onChange={(e) => {
+                        setSubtitle(e.target.value);
+                        updateProjectProps({ subtitle: e.target.value });
+                      }}
+                      className="bg-white/5 border-white/10 text-xs text-white"
+                    />
+                  </div>
 
-              <MusicPicker
-                value={musicUrl}
-                onChange={(val) => {
-                  setMusicUrl(val);
-                  updateProjectProps({ musicUrl: val });
-                }}
-              />
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-white/60">Accent color</Label>
+                      <input
+                        type="color"
+                        value={accent}
+                        onChange={(e) => {
+                          setAccent(e.target.value);
+                          updateProjectProps({ accent: e.target.value });
+                        }}
+                        className="h-10 w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 p-1.5"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-white/60">Brand color</Label>
+                      <input
+                        type="color"
+                        value={brandColor}
+                        onChange={(e) => {
+                          setBrandColor(e.target.value);
+                          updateProjectProps({ brandColor: e.target.value });
+                        }}
+                        className="h-10 w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 p-1.5"
+                      />
+                    </div>
+                  </div>
 
-              {!isLongForm && (
-                <div className="space-y-2">
-                  <Label>Image URL (Optional)</Label>
-                  <Input
-                    value={imageUrl}
-                    onChange={(e) => {
-                      setImageUrl(e.target.value);
-                      updateProjectProps({ imageUrl: e.target.value });
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-white/60">Font</Label>
+                    <Select
+                      value={fontFamily}
+                      onValueChange={(val) => {
+                        setFontFamily(val);
+                        updateProjectProps({ fontFamily: val });
+                      }}
+                    >
+                      <SelectTrigger className="bg-white/5 border-white/10 text-xs text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FONTS.map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {f}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <FileUploader
+                    label="Brand Logo (Optional)"
+                    value={logoUrl}
+                    onChange={(url) => {
+                      setLogoUrl(url);
+                      updateProjectProps({ logoUrl: url });
                     }}
-                    placeholder="https://images.unsplash.com/photo-..."
+                    placeholderUrl="Paste direct logo image URL..."
                   />
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label>Logo URL (Optional)</Label>
-                <Input
-                  value={logoUrl}
-                  onChange={(e) => {
-                    setLogoUrl(e.target.value);
-                    updateProjectProps({ logoUrl: e.target.value });
-                  }}
-                  placeholder="https://example.com/logo.png"
-                />
-              </div>
-
-              {isLongForm && (
-                <SceneEditorPanel
-                  scenes={scenes}
-                  onChange={handleScenesChange}
-                  fps={project.fps}
-                />
+              {activeEditTab === "scenes" && (
+                <div className="space-y-4 animate-fadeIn">
+                  {isLongForm ? (
+                    <SceneEditorPanel
+                      scenes={scenes}
+                      onChange={handleScenesChange}
+                      fps={project.fps}
+                    />
+                  ) : (
+                    <div className="space-y-4">
+                      <FileUploader
+                        label="Slide Background Image"
+                        value={imageUrl}
+                        onChange={(url) => {
+                          setImageUrl(url);
+                          updateProjectProps({ imageUrl: url });
+                        }}
+                        placeholderUrl="Paste image URL..."
+                      />
+                      <p className="text-[10px] text-white/35">
+                        This template uses a single slide. Upload an image above to customize the background.
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
 
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button variant="outline" onClick={applyBrandKit}>
+              {activeEditTab === "audio" && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-white/60 font-semibold mb-1">Background Music</Label>
+                    <MusicPicker
+                      value={musicUrl}
+                      onChange={(val) => {
+                        setMusicUrl(val);
+                        updateProjectProps({ musicUrl: val });
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2.5 pt-3.5 border-t border-white/5 mt-3.5">
+                <Button variant="outline" className="text-xs border-white/10 bg-white/5 text-white hover:bg-white/10 h-9 animate-none" onClick={applyBrandKit}>
                   Apply brand kit
                 </Button>
-                <Button variant="outline" onClick={save}>
-                  <Save className="mr-2 h-4 w-4" /> Save
+                <Button variant="outline" className="text-xs border-white/10 bg-white/5 text-white hover:bg-white/10 h-9" onClick={save}>
+                  <Save className="mr-1.5 h-4 w-4 text-sky-400" /> Save
                 </Button>
-                <Button onClick={() => setStep(4)}>Preview</Button>
-                <Button variant="secondary" onClick={() => setStep(5)}>
+                <Button className="text-xs h-9 font-semibold" onClick={() => setStep(4)}>Preview</Button>
+                <Button variant="secondary" className="text-xs h-9 font-semibold" onClick={() => setStep(5)}>
                   Go to export
                 </Button>
               </div>
