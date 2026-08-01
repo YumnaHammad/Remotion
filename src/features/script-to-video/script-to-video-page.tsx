@@ -37,7 +37,7 @@ import { ExportVideoButton } from "@/features/shared/export-video-button";
 import { useBrandKit } from "@/hooks/use-brand-kit";
 import { useSimpleVideoStore } from "@/stores/simple-video-store";
 import { createProjectFromEditRecipe } from "@/utils/video-project-factory";
-import { localBreakdown } from "@/lib/pipeline/local-breakdown";
+import { localBreakdown, groupCaptionsIntoSegments } from "@/lib/pipeline/local-breakdown";
 import {
   buildAutomatedVideoInputProps,
   fetchCaptionVoiceover,
@@ -103,6 +103,29 @@ function ScriptStepIndicator({ current }: { current: number }) {
   );
 }
 
+function formatTranscriptionText(result: any): string {
+  const segments = result.segments && result.segments.length > 0
+    ? result.segments
+    : (result.captions ? groupCaptionsIntoSegments(result.captions) : []);
+    
+  if (!segments.length) {
+    return result.text || "";
+  }
+
+  return segments.map((seg: any) => {
+    const totalSeconds = seg.startMs / 1000;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    const hundredths = Math.floor((seg.startMs % 1000) / 10);
+    
+    const mm = String(minutes).padStart(2, "0");
+    const ss = String(seconds).padStart(2, "0");
+    const hh = String(hundredths).padStart(2, "0");
+    
+    return `[${mm}:${ss}.${hh}] ${seg.text.trim()}`;
+  }).join("\n");
+}
+
 export function ScriptToVideoFeature() {
   const searchParams = useSearchParams();
   const { brand } = useBrandKit();
@@ -143,6 +166,7 @@ export function ScriptToVideoFeature() {
   const [transcriptionProgress, setTranscriptionProgress] = useState(0);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [mediaUrl, setMediaUrl] = useState("");
+  const [aiImproving, setAiImproving] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordIntervalRef = useRef<any>(null);
@@ -223,12 +247,12 @@ export function ScriptToVideoFeature() {
             toast.error(result.error, { id: toastId });
             return;
           }
-          const text = result.text ?? result.captions.map((c: any) => c.text).join(" ");
-          if (!text.trim()) {
+          const formatted = formatTranscriptionText(result);
+          if (!formatted.trim()) {
             toast.warning("No speech detected. Speak closer to the microphone.", { id: toastId });
             return;
           }
-          setScript((prev) => (prev ? prev + "\n" + text : text));
+          setScript((prev) => (prev ? prev + "\n" + formatted : formatted));
           toast.success("Recording transcribed successfully!", { id: toastId });
         } catch (err) {
           toast.error("Transcription failed", { id: toastId });
@@ -273,12 +297,12 @@ export function ScriptToVideoFeature() {
         toast.error(result.error, { id: toastId });
         return;
       }
-      const text = result.text ?? result.captions.map((c: any) => c.text).join(" ");
-      if (!text.trim()) {
+      const formatted = formatTranscriptionText(result);
+      if (!formatted.trim()) {
         toast.warning("No speech detected in this media file.", { id: toastId });
         return;
       }
-      setScript((prev) => (prev ? prev + "\n" + text : text));
+      setScript((prev) => (prev ? prev + "\n" + formatted : formatted));
       toast.success("Media transcribed successfully!", { id: toastId });
     } catch (err) {
       toast.error("Transcription failed", { id: toastId });
@@ -304,12 +328,12 @@ export function ScriptToVideoFeature() {
         toast.error(result.error, { id: toastId });
         return;
       }
-      const text = result.text ?? result.captions.map((c: any) => c.text).join(" ");
-      if (!text.trim()) {
+      const formatted = formatTranscriptionText(result);
+      if (!formatted.trim()) {
         toast.warning("No speech detected in this media URL.", { id: toastId });
         return;
       }
-      setScript((prev) => (prev ? prev + "\n" + text : text));
+      setScript((prev) => (prev ? prev + "\n" + formatted : formatted));
       toast.success("Media transcribed successfully!", { id: toastId });
       setShowUrlInput(false);
       setMediaUrl("");
@@ -322,6 +346,30 @@ export function ScriptToVideoFeature() {
         setTranscriptionProgress(0);
         setTranscribingMedia(false);
       }, 500);
+    }
+  };
+
+  const handleAiImprove = async () => {
+    if (!script.trim()) return;
+    setAiImproving(true);
+    const toastId = toast.loading("AI is refining grammar, spelling, and removing fillers (timestamps preserved)...");
+    try {
+      const res = await fetch("/api/ai/improve-transcript", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ script }),
+      });
+      const data = await res.json();
+      if (!data.ok || !data.script) {
+        toast.error(data.error ?? "Failed to improve transcript", { id: toastId });
+        return;
+      }
+      setScript(data.script);
+      toast.success("Transcript improved by AI!", { id: toastId });
+    } catch {
+      toast.error("Network error during AI improvement", { id: toastId });
+    } finally {
+      setAiImproving(false);
     }
   };
 
@@ -656,6 +704,7 @@ export function ScriptToVideoFeature() {
     );
     setRecipe({ ...recipe, scenes });
   };
+  const hasTimestamps = !!script.match(/\[\d{1,2}:\d{2}/);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-6">
@@ -755,6 +804,38 @@ export function ScriptToVideoFeature() {
                   </Button>
                 </div>
               )}
+              {hasTimestamps && (
+                <div className="flex flex-col gap-2 p-3.5 rounded-lg border border-primary/20 bg-primary/5 shadow-[0_0_12px_rgba(59,130,246,0.06)] mt-1.5 mb-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-xs font-semibold text-primary">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      Transcript Editor Active
+                    </span>
+                    <Button
+                      type="button"
+                      variant="glow"
+                      size="sm"
+                      disabled={aiImproving || loading}
+                      onClick={handleAiImprove}
+                      className="h-7 text-[11px] gap-1 px-2.5 font-semibold bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+                    >
+                      {aiImproving ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      )}
+                      AI Improve (Grammar Only)
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-normal">
+                    <strong className="text-foreground/90">Option 1 (Manual Edit):</strong> Adjust the text or timestamps manually below. <br />
+                    <strong className="text-foreground/90">Option 2 (AI Improve):</strong> Click the button above to auto-fix spelling, grammar, and remove fillers without changing the meaning.
+                  </p>
+                </div>
+              )}
               <Textarea
                 id="script"
                 rows={10}
@@ -821,7 +902,7 @@ export function ScriptToVideoFeature() {
                 variant="glow"
                 size="sm"
                 onClick={() => void generateWithVeo()}
-                disabled={loading || veoBusy}
+                disabled={loading || veoBusy || aiImproving}
               >
                 {veoBusy ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -834,22 +915,22 @@ export function ScriptToVideoFeature() {
                 variant="outline"
                 size="sm"
                 onClick={runBreakdown}
-                disabled={loading || veoBusy}
+                disabled={loading || veoBusy || aiImproving}
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Wand2 className="h-4 w-4" />
                 )}
-                Remotion breakdown
+                {hasTimestamps ? "Approve & Plan Scenes" : "Remotion breakdown"}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => void generateAll()}
-                disabled={loading || veoBusy}
+                disabled={loading || veoBusy || aiImproving}
               >
-                Remotion 1-click
+                {hasTimestamps ? "Approve & Generate Video" : "Remotion 1-click"}
               </Button>
             </div>
           </div>
@@ -1151,6 +1232,7 @@ function LocalSpeechPreview({
   fps?: number;
 }) {
   const spokenClipRef = useRef<number | null>(null);
+  const lastFrameRef = useRef<number>(0);
 
   useEffect(() => {
     if (!enabled || typeof window === "undefined" || !window.speechSynthesis || !playerRef.current) {
@@ -1162,11 +1244,18 @@ function LocalSpeechPreview({
     const handleFrameUpdate = () => {
       const frame = player.getCurrentFrame();
       const isPlaying = player.isPlaying();
+      const didSeek = Math.abs(frame - lastFrameRef.current) > 4;
+      lastFrameRef.current = frame;
       
       if (!isPlaying) {
         window.speechSynthesis.cancel();
         spokenClipRef.current = null;
         return;
+      }
+
+      if (didSeek) {
+        window.speechSynthesis.cancel();
+        spokenClipRef.current = null;
       }
 
       const timeMs = (frame / fps) * 1000;
@@ -1188,11 +1277,36 @@ function LocalSpeechPreview({
 
       window.speechSynthesis.cancel();
       spokenClipRef.current = activeIndex;
-      const text = captions?.[activeIndex]?.text;
+      
+      const activeCaption = captions?.[activeIndex];
+      const text = activeCaption?.text;
       if (!text) return;
 
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = 1;
+      const segmentStartMs = activeCaption.startMs;
+      const elapsedMsInSegment = Math.max(0, timeMs - segmentStartMs);
+      
+      const words = text.split(/\s+/).filter(Boolean);
+      const segmentDurationMs = activeCaption.endMs - segmentStartMs;
+      const wordDurationMs = segmentDurationMs / Math.max(1, words.length);
+      const passedWordsCount = Math.floor(elapsedMsInSegment / wordDurationMs);
+
+      const remainingWords = words.slice(passedWordsCount);
+      const textToSpeak = remainingWords.join(" ").trim();
+      if (!textToSpeak) return;
+
+      const utter = new SpeechSynthesisUtterance(textToSpeak);
+
+      // Calibrate speech speed to complete exactly within the remaining segment duration
+      const remainingSec = (segmentDurationMs - elapsedMsInSegment) / 1000;
+      if (remainingSec > 0.5) {
+        const targetWpm = (remainingWords.length / remainingSec) * 60;
+        // Normal speed is ~140 WPM. Clamp rate between 0.85 and 1.8.
+        const rate = Math.min(1.8, Math.max(0.85, targetWpm / 140));
+        utter.rate = rate;
+      } else {
+        utter.rate = 1.0;
+      }
+
       window.speechSynthesis.speak(utter);
     };
 

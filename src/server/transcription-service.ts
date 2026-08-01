@@ -27,8 +27,11 @@ export async function getTranscriptionStatus(): Promise<{
   };
 }
 
+import { groupCaptionsIntoSegments } from "@/lib/pipeline/local-breakdown";
+
 /** Wrap plain captions in the structured-transcript shape (whisper.cpp path). */
 function structureFromCaptions(captions: Caption[], engine: TranscriptionEngine = "whisper-cpp"): StructuredTranscript {
+  const segments = groupCaptionsIntoSegments(captions);
   return {
     engine,
     model: null,
@@ -36,7 +39,7 @@ function structureFromCaptions(captions: Caption[], engine: TranscriptionEngine 
     language: null,
     languageProbability: null,
     text: captions.map((c) => c.text).join(" "),
-    segments: [],
+    segments,
     captions,
   };
 }

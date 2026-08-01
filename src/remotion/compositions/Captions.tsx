@@ -4,7 +4,7 @@ import {
   createTikTokStyleCaptions,
   type Caption,
 } from "@remotion/captions";
-import type { TransformProps } from "@/types";
+import type { TransformProps, TextStyle } from "@/types";
 
 export type CaptionTheme = "default" | "neon" | "minimal" | "karaoke";
 
@@ -35,12 +35,14 @@ export const CaptionRenderer: React.FC<{
   combineMs?: number;
   useSampleFallback?: boolean;
   transform?: TransformProps;
+  textStyle?: TextStyle;
 }> = ({
   captions: captionsProp,
   theme = "neon",
   combineMs = 1200,
   useSampleFallback = true,
   transform = DEFAULT_TRANSFORM,
+  textStyle,
 }) => {
   const captions =
     captionsProp && captionsProp.length > 0
@@ -99,6 +101,7 @@ export const CaptionRenderer: React.FC<{
         : "rgba(0,0,0,0.65)";
 
   const { x, y, scale, rotation, opacity, blur } = transform;
+  const fontFam = textStyle?.fontFamily ?? "Inter";
 
   return (
     <AbsoluteFill
@@ -107,6 +110,7 @@ export const CaptionRenderer: React.FC<{
         alignItems: "center",
         paddingBottom: CAPTION_BOTTOM_PAD,
         pointerEvents: "none",
+        fontFamily: fontFam,
       }}
     >
       <div
@@ -125,27 +129,26 @@ export const CaptionRenderer: React.FC<{
           filter: blur > 0 ? `blur(${blur}px)` : undefined,
           transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rotation}deg)`,
           transformOrigin: "center center",
+          fontFamily: fontFam,
         }}
       >
         {activePage.map((word, i) => (
           <span
             key={`${word.text}-${i}`}
             style={{
-              fontSize: 34,
-              fontWeight: 800,
+              fontSize: textStyle?.fontSize ?? 34,
+              fontWeight: textStyle?.fontWeight ?? 800,
               letterSpacing: "-0.015em",
               transform: word.active ? "scale(1.1)" : "scale(1)",
               transition: "transform 0.08s ease-out",
               color: word.active
-                ? theme === "neon"
-                  ? "#fbbf24" // neon yellow
-                  : "#22d3ee" // cyan
+                ? (textStyle?.color ?? (theme === "neon" ? "#fbbf24" : "#22d3ee"))
                 : word.passed
                   ? "rgba(255,255,255,0.85)"
                   : "rgba(255,255,255,0.4)",
               textShadow:
                 theme === "neon" && word.active
-                  ? "0 0 16px rgba(251,191,36,0.5)"
+                  ? `0 0 16px ${textStyle?.color ?? "rgba(251,191,36,0.5)"}`
                   : "0 2px 8px rgba(0,0,0,0.4)",
             }}
           >

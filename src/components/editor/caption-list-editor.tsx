@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Volume2, Wand2, Loader2, AudioLines } from "lucide-react";
+import { Volume2, Wand2, Loader2, AudioLines, Scissors, Merge } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,13 @@ import {
   captionsToScript,
   scriptToTimedCaptions,
   speakCaptionsInBrowser,
+  captionsToTimestampedScript,
+  timestampedScriptToCaptions,
 } from "@/lib/caption-editor";
 import { captionsDurationInFrames } from "@/lib/transcribe-client";
 import { toast } from "sonner";
+import { useEditorStore } from "@/stores/editor-store";
+import { groupCaptionsIntoSegments } from "@/lib/pipeline/local-breakdown";
 
 interface CaptionListEditorProps {
   layer: Layer;
@@ -44,6 +48,7 @@ export function CaptionListEditor({
   onAddVoiceLayer,
 }: CaptionListEditorProps) {
   const [script, setScript] = useState(() =>
+    captionsToTimestampedScript(layer.captions) ||
     captionsToScript(layer.captions) ||
     "Create stunning videos with Framekit"
   );
@@ -53,10 +58,11 @@ export function CaptionListEditor({
 
   useEffect(() => {
     setScript(
-      captionsToScript(layer.captions) ||
+      captionsToTimestampedScript(layer.captions) ||
+        captionsToScript(layer.captions) ||
         "Create stunning videos with Framekit"
     );
-  }, [layer.id]); // eslint-disable-line react-hooks/exhaustive-deps -- only reset when switching layers
+  }, [layer.id, layer.captions]);
 
   useEffect(() => {
     fetch("/api/tts")
@@ -186,6 +192,119 @@ export function CaptionListEditor({
     }
   };
 
+  const projectLayers = useEditorStore((s) => s.project.layers);
+  const canMerge = useMemo(() => {
+    return projectLayers.filter((l) => l.type === "caption").length > 1;
+  }, [projectLayers]);
+
+  const divideIntoTimestampBlocks = () => {
+    if (!layer.captions || !layer.captions.length) {
+      toast.error("Add or record some caption words first.");
+      return;
+    }
+    const segments = groupCaptionsIntoSegments(layer.captions);
+    if (segments.length <= 1) {
+      toast.error("Not enough timing segments to divide. Add punctuation (. ! ?) or spacing gaps.");
+      return;
+    }
+    const baseIndex = projectLayers.findIndex((l) => l.id === layer.id);
+    if (baseIndex === -1) return;
+
+    const newLayers: Layer[] = [];
+    segments.forEach((seg, i) => {
+      const startFrame = Math.round((seg.startMs / 1000) * fps);
+      const endFrame = Math.round((seg.endMs / 1000) * fps);
+      const durationInFrames = Math.max(15, endFrame - startFrame);
+      const relativeCaptions = seg.words.map((w: any) => ({
+        ...w,
+        startMs: w.startMs - seg.startMs,
+        endMs: w.endMs - seg.startMs,
+        timestampMs: w.timestampMs - seg.startMs,
+      }));
+
+      newLayers.push({
+        ...layer,
+        id: `l-${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${i}`,
+        name: `Caption Part ${i + 1}`,
+        startFrame: layer.startFrame + startFrame,
+        durationInFrames,
+        captions: relativeCaptions,
+      });
+    });
+
+    const updatedLayers = [...projectLayers];
+    updatedLayers.splice(baseIndex, 1, ...newLayers);
+
+    useEditorStore.getState().setLayers(updatedLayers);
+    useEditorStore.getState().selectLayers([newLayers[0]!.id]);
+    toast.success(`Divided captions into ${newLayers.length} separate parts.`);
+  };
+
+  const mergeAllCaptionLayers = () => {
+    const captionLayers = projectLayers
+      .filter((l) => l.type === "caption")
+      .sort((a, b) => a.startFrame - b.startFrame);
+
+    if (captionLayers.length <= 1) {
+      toast.error("There is only one caption layer in the project.");
+      return;
+    }
+
+    const combinedCaptions: TimedCaption[] = [];
+    captionLayers.forEach((cl) => {
+      if (!cl.captions) return;
+      const layerOffsetMs = (cl.startFrame / fps) * 1000;
+      cl.captions.forEach((c) => {
+        const baseTimestamp = c.timestampMs ?? Math.round((c.startMs + c.endMs) / 2);
+        combinedCaptions.push({
+          ...c,
+          startMs: Math.round(c.startMs + layerOffsetMs),
+          endMs: Math.round(c.endMs + layerOffsetMs),
+          timestampMs: Math.round(baseTimestamp + layerOffsetMs),
+        });
+      });
+    });
+
+    if (!combinedCaptions.length) {
+      toast.error("No caption words found to merge.");
+      return;
+    }
+
+    const minStartFrame = Math.min(...captionLayers.map((l) => l.startFrame));
+    const maxEndFrame = Math.max(...captionLayers.map((l) => l.startFrame + l.durationInFrames));
+    const durationInFrames = Math.max(30, maxEndFrame - minStartFrame);
+
+    const mergedOffsetMs = (minStartFrame / fps) * 1000;
+    const relativeMergedCaptions = combinedCaptions.map((c) => {
+      const baseTimestamp = c.timestampMs ?? Math.round((c.startMs + c.endMs) / 2);
+      return {
+        ...c,
+        startMs: Math.round(c.startMs - mergedOffsetMs),
+        endMs: Math.round(c.endMs - mergedOffsetMs),
+        timestampMs: Math.round(baseTimestamp - mergedOffsetMs),
+      };
+    });
+
+    const mergedLayer: Layer = {
+      ...captionLayers[0]!,
+      id: `l-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: "Whisper Captions",
+      startFrame: minStartFrame,
+      durationInFrames,
+      captions: relativeMergedCaptions,
+    };
+
+    const firstCaptionIndex = projectLayers.findIndex((l) => l.id === captionLayers[0]!.id);
+    const filteredLayers = projectLayers.filter((l) => !captionLayers.some((cl) => cl.id === l.id));
+
+    const updatedLayers = [...filteredLayers];
+    updatedLayers.splice(firstCaptionIndex, 0, mergedLayer);
+
+    useEditorStore.getState().setLayers(updatedLayers);
+    useEditorStore.getState().selectLayers([mergedLayer.id]);
+    toast.success("Merged all individual caption parts into a single timeline bar.");
+  };
+
   return (
     <div className="space-y-3 rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-3">
       <div>
@@ -202,7 +321,21 @@ export function CaptionListEditor({
         <Label className="text-xs text-white/60">Caption script</Label>
         <Textarea
           value={script}
-          onChange={(e) => setScript(e.target.value)}
+          onChange={(e) => {
+            const newVal = e.target.value;
+            setScript(newVal);
+            const hasTimestamps = newVal.match(/\[\d{1,2}:\d{2}/);
+            const newCaptions = hasTimestamps
+              ? timestampedScriptToCaptions(newVal, msPerWord)
+              : scriptToTimedCaptions(newVal, { msPerWord });
+            if (newCaptions.length) {
+              const durationInFrames = captionsDurationInFrames(newCaptions, fps);
+              onUpdateLayer(layer.id, {
+                captions: newCaptions,
+                durationInFrames,
+              });
+            }
+          }}
           rows={3}
           placeholder={"Hello world\nThis is my caption list"}
           className="resize-y border-white/10 bg-black/30 text-xs text-white"
@@ -221,7 +354,20 @@ export function CaptionListEditor({
           min={180}
           max={600}
           step={10}
-          onValueChange={([v]) => setMsPerWord(v)}
+          onValueChange={([v]) => {
+            setMsPerWord(v);
+            const hasTimestamps = script.match(/\[\d{1,2}:\d{2}/);
+            const newCaptions = hasTimestamps
+              ? timestampedScriptToCaptions(script, v)
+              : scriptToTimedCaptions(script, { msPerWord: v });
+            if (newCaptions.length) {
+              const durationInFrames = captionsDurationInFrames(newCaptions, fps);
+              onUpdateLayer(layer.id, {
+                captions: newCaptions,
+                durationInFrames,
+              });
+            }
+          }}
         />
       </div>
 
@@ -285,6 +431,35 @@ export function CaptionListEditor({
           ? "Using OpenAI TTS when you Add voice."
           : "Uses Windows voice (no API key). Add OPENAI_API_KEY for cloud TTS."}
       </p>
+
+      <div className="space-y-2 border-t border-white/10 pt-2.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+          Timeline Layout Options
+        </p>
+        <div className="grid grid-cols-2 gap-1.5">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 border-emerald-500/25 bg-emerald-500/5 text-[10px] text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+            onClick={divideIntoTimestampBlocks}
+          >
+            <Scissors className="mr-1 h-3 w-3" />
+            Split by Timestamps
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!canMerge}
+            className="h-7 border-sky-500/25 bg-sky-500/5 text-[10px] text-sky-400 hover:bg-sky-500/10 hover:text-sky-300 disabled:opacity-40"
+            onClick={mergeAllCaptionLayers}
+          >
+            <Merge className="mr-1 h-3 w-3" />
+            Merge all parts
+          </Button>
+        </div>
+      </div>
 
       {!!layer.captions?.length && (
         <ul className="max-h-24 space-y-0.5 overflow-y-auto rounded border border-white/10 bg-black/20 p-2 text-[10px] text-white/70">

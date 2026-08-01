@@ -8,11 +8,13 @@ import {
   Volume2,
   Wand2,
   Zap,
+  ChevronDown,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { FileUploader } from "@/components/shared/file-uploader";
 import {
   Select,
   SelectContent,
@@ -144,26 +146,184 @@ export function EditingToolsPanel({
 
   return (
     <div className="space-y-4 px-1 pb-4">
-      <div className="flex flex-wrap gap-1">
-        {["Silence cut", "Denoise", "Stabilize", "Mask", "BG image", "Blend"].map(
-          (t) => (
-            <Badge key={t} variant="outline" className="text-[10px]">
-              {t}
-            </Badge>
-          )
+      {/* 1. Primary Settings Card */}
+      <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-3 shadow-sm">
+        {(sceneMode || isAudio) && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <Mic className="h-3.5 w-3.5" /> Speech & Voice
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Voice effect</Label>
+              <Select
+                value={voice.preset}
+                onValueChange={(preset) => {
+                  const playback = voicePresetToPlayback(preset);
+                  if (sceneMode) {
+                    patchScene({
+                      voiceEffects: {
+                        ...voice,
+                        preset: preset as typeof voice.preset,
+                      },
+                    });
+                  } else {
+                    patch({
+                      voiceEffects: {
+                        ...voice,
+                        preset: preset as typeof voice.preset,
+                      },
+                      playbackRate: playback.playbackRate,
+                      volume: playback.volume,
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs bg-background border-input text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {VOICE_EFFECT_PRESETS.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {(sceneMode || isVideo) && (
+          <div className="space-y-3 pt-3.5 border-t border-border mt-3.5">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <Film className="h-3.5 w-3.5" /> Background & Pace
+            </div>
+
+            {sceneMode && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">
+                  Scene speed · {(sceneEditing?.speed ?? 1).toFixed(2)}×
+                </Label>
+                <Slider
+                  value={[sceneEditing?.speed ?? 1]}
+                  min={0.5}
+                  max={2}
+                  step={0.05}
+                  onValueChange={([speed]) => patchScene({ speed })}
+                />
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Background style</Label>
+              <Select
+                value={bg?.mode ?? "none"}
+                onValueChange={(mode) => {
+                  const next = {
+                    mode: mode as any,
+                    color: bg?.color ?? "#00ff00",
+                    blurAmount: bg?.blurAmount ?? 16,
+                    imageUrl: bg?.imageUrl,
+                    chromaColor: bg?.chromaColor ?? "#00ff00",
+                  };
+                  sceneMode
+                    ? patchScene({ backgroundReplace: next })
+                    : patch({ backgroundReplace: next });
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs bg-background border-input text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {["none", "solid", "blur", "chroma", "image"].map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m === "image" ? "background image" : m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(bg?.mode === "solid" || bg?.mode === "chroma") && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Background color</Label>
+                <Input
+                  type="color"
+                  value={bg.color ?? bg.chromaColor ?? "#00ff00"}
+                  onChange={(e) => {
+                    const next = {
+                      ...bg,
+                      mode: bg.mode,
+                      color: e.target.value,
+                      chromaColor: e.target.value,
+                    };
+                    sceneMode
+                      ? patchScene({ backgroundReplace: next })
+                      : patch({ backgroundReplace: next });
+                  }}
+                  className="h-8 border-input bg-background p-1 text-foreground"
+                />
+              </div>
+            )}
+
+            {bg?.mode === "blur" && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">
+                  Blur amount · {bg.blurAmount ?? 16}px
+                </Label>
+                <Slider
+                  value={[bg.blurAmount ?? 16]}
+                  min={2}
+                  max={40}
+                  step={1}
+                  onValueChange={([blurAmount]) => {
+                    const next = { ...bg, mode: "blur" as const, blurAmount };
+                    sceneMode
+                      ? patchScene({ backgroundReplace: next })
+                      : patch({ backgroundReplace: next });
+                  }}
+                />
+              </div>
+            )}
+
+            {bg?.mode === "image" && (
+              <FileUploader
+                label="Background Image"
+                value={bg.imageUrl ?? ""}
+                onChange={(imageUrl) => {
+                  const next = {
+                    mode: "image" as const,
+                    imageUrl,
+                    color: bg.color,
+                    blurAmount: bg.blurAmount,
+                  };
+                  sceneMode
+                    ? patchScene({ backgroundReplace: next })
+                    : patch({ backgroundReplace: next });
+                }}
+                placeholderUrl="Paste background image URL..."
+              />
+            )}
+          </div>
         )}
       </div>
 
-      {(sceneMode || isAudio) && (
-        <section className="space-y-3 rounded-lg border border-border/60 p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <Mic className="h-3.5 w-3.5" /> Audio
-          </div>
-
+      {/* 2. Advanced VFX & Collapsible Filters */}
+      <details className="group border border-border rounded-xl bg-muted/20 overflow-hidden">
+        <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition select-none">
+          <span className="flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            Advanced VFX & Filters
+          </span>
+          <ChevronDown className="h-4 w-4 transition duration-200 group-open:rotate-180" />
+        </summary>
+        <div className="border-t border-border p-3.5 space-y-4">
+          {/* Audio filters (silence cut, denoise, normalize) */}
           {!sceneMode && isAudio && (
-            <>
+            <div className="space-y-3.5 border-b border-border pb-3.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Audio FX</div>
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Silence cut</Label>
+                <Label className="text-xs text-muted-foreground">Silence cut</Label>
                 <Switch
                   checked={audioTools.silenceCut}
                   onCheckedChange={(silenceCut) =>
@@ -172,7 +332,7 @@ export function EditingToolsPanel({
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">
+                <Label className="text-xs text-muted-foreground">
                   Threshold · {audioTools.silenceThresholdDb} dB
                 </Label>
                 <Slider
@@ -188,13 +348,13 @@ export function EditingToolsPanel({
               <Button
                 size="sm"
                 variant="outline"
-                className="w-full"
+                className="w-full h-8 text-xs border-border bg-background text-foreground hover:bg-muted"
                 onClick={runSilenceCut}
               >
-                <Scissors className="mr-1.5 h-3.5 w-3.5" /> Detect & cut silence
+                <Scissors className="mr-1.5 h-3.5 w-3.5 text-sky-500" /> Detect & cut silence
               </Button>
               <div className="space-y-1">
-                <Label className="text-xs">
+                <Label className="text-xs text-muted-foreground">
                   Denoise · {audioTools.denoise}%
                 </Label>
                 <Slider
@@ -211,7 +371,7 @@ export function EditingToolsPanel({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Normalize volume</Label>
+                <Label className="text-xs text-muted-foreground">Normalize volume</Label>
                 <Switch
                   checked={audioTools.normalize}
                   onCheckedChange={(normalize) =>
@@ -219,416 +379,236 @@ export function EditingToolsPanel({
                   }
                 />
               </div>
-            </>
-          )}
-
-          <div className="space-y-1">
-            <Label className="text-xs">Voice effect</Label>
-            <Select
-              value={voice.preset}
-              onValueChange={(preset) => {
-                const playback = voicePresetToPlayback(preset);
-                if (sceneMode) {
-                  patchScene({
-                    voiceEffects: {
-                      ...voice,
-                      preset: preset as typeof voice.preset,
-                    },
-                  });
-                } else {
-                  patch({
-                    voiceEffects: {
-                      ...voice,
-                      preset: preset as typeof voice.preset,
-                    },
-                    playbackRate: playback.playbackRate,
-                    volume: playback.volume,
-                  });
-                }
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {VOICE_EFFECT_PRESETS.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </section>
-      )}
-
-      {(sceneMode || isVideo) && (
-        <section className="space-y-3 rounded-lg border border-border/60 p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <Film className="h-3.5 w-3.5" /> Video
-          </div>
-
-          {!sceneMode && isVideo && (
-            <>
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">Reverse playback</Label>
-                <Switch
-                  checked={!!layer?.reverse}
-                  onCheckedChange={(reverse) => patch({ reverse })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">
-                  Speed · {(layer?.playbackRate ?? 1).toFixed(2)}×
-                </Label>
-                <Slider
-                  value={[layer?.playbackRate ?? 1]}
-                  min={0.25}
-                  max={4}
-                  step={0.05}
-                  onValueChange={([playbackRate]) => patch({ playbackRate })}
-                />
-              </div>
-            </>
-          )}
-
-          {sceneMode && (
-            <div className="space-y-1">
-              <Label className="text-xs">
-                Scene speed · {(sceneEditing?.speed ?? 1).toFixed(2)}×
-              </Label>
-              <Slider
-                value={[sceneEditing?.speed ?? 1]}
-                min={0.5}
-                max={2}
-                step={0.05}
-                onValueChange={([speed]) => patchScene({ speed })}
-              />
             </div>
           )}
 
-          <div className="space-y-1">
-            <Label className="text-xs">Background change</Label>
-            <Select
-              value={bg?.mode ?? "none"}
-              onValueChange={(mode) => {
-                const next = {
-                  mode: mode as
-                    | "none"
-                    | "solid"
-                    | "blur"
-                    | "image"
-                    | "chroma",
-                  color: bg?.color ?? "#00ff00",
-                  blurAmount: bg?.blurAmount ?? 16,
-                  imageUrl: bg?.imageUrl,
-                  chromaColor: bg?.chromaColor ?? "#00ff00",
-                };
-                sceneMode
-                  ? patchScene({ backgroundReplace: next })
-                  : patch({ backgroundReplace: next });
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {["none", "solid", "blur", "chroma", "image"].map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m === "image" ? "background image" : m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {(bg?.mode === "solid" || bg?.mode === "chroma") && (
-            <div className="space-y-1">
-              <Label className="text-xs">Background color</Label>
-              <Input
-                type="color"
-                value={bg.color ?? bg.chromaColor ?? "#00ff00"}
-                onChange={(e) => {
-                  const next = {
-                    ...bg,
-                    mode: bg.mode,
-                    color: e.target.value,
-                    chromaColor: e.target.value,
-                  };
-                  sceneMode
-                    ? patchScene({ backgroundReplace: next })
-                    : patch({ backgroundReplace: next });
-                }}
-                className="h-8 border-white/10 bg-white/5 p-1"
-              />
-            </div>
-          )}
-
-          {bg?.mode === "blur" && (
-            <div className="space-y-1">
-              <Label className="text-xs">
-                Blur amount · {bg.blurAmount ?? 16}px
-              </Label>
-              <Slider
-                value={[bg.blurAmount ?? 16]}
-                min={2}
-                max={40}
-                step={1}
-                onValueChange={([blurAmount]) => {
-                  const next = { ...bg, mode: "blur" as const, blurAmount };
-                  sceneMode
-                    ? patchScene({ backgroundReplace: next })
-                    : patch({ backgroundReplace: next });
-                }}
-              />
-            </div>
-          )}
-
-          {bg?.mode === "image" && (
-            <div className="space-y-1">
-              <Label className="text-xs">Background image</Label>
-              <Select
-                value={bg.imageUrl ?? "__none__"}
-                onValueChange={(imageUrl) => {
-                  if (imageUrl === "__none__") return;
-                  const next = {
-                    mode: "image" as const,
-                    imageUrl,
-                    color: bg.color,
-                    blurAmount: bg.blurAmount,
-                  };
-                  sceneMode
-                    ? patchScene({ backgroundReplace: next })
-                    : patch({ backgroundReplace: next });
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Pick an image asset" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Pick an image…</SelectItem>
-                  {imageAssets.map((a) => (
-                    <SelectItem key={a.id} value={a.url}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Or paste image URL…"
-                defaultValue={bg.imageUrl ?? ""}
-                onBlur={(e) => {
-                  const imageUrl = e.target.value.trim();
-                  if (!imageUrl) return;
-                  const next = { mode: "image" as const, imageUrl };
-                  sceneMode
-                    ? patchScene({ backgroundReplace: next })
-                    : patch({ backgroundReplace: next });
-                }}
-                className="h-8 text-xs"
-              />
-            </div>
-          )}
-
-          {!sceneMode && (
-            <>
-              <div className="space-y-1">
-                <Label className="text-xs">Mask shape</Label>
-                <Select
-                  value={mask.shape}
-                  onValueChange={(shape) =>
-                    patch({ mask: { ...mask, shape: shape as MaskShape } })
-                  }
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(
-                      [
-                        "none",
-                        "circle",
-                        "rect",
-                        "rounded",
-                        "gradient-v",
-                        "gradient-h",
-                      ] as const
-                    ).map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {mask.shape !== "none" && (
+          {/* Video FX (reverse, playbackRate, mask, stabilize) */}
+          {(sceneMode || isVideo) && (
+            <div className="space-y-3.5 border-b border-border pb-3.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Video FX</div>
+              {!sceneMode && isVideo && (
                 <>
-                  <div className="space-y-1">
-                    <Label className="text-xs">
-                      Mask feather · {mask.feather}
-                    </Label>
-                    <Slider
-                      value={[mask.feather]}
-                      min={0}
-                      max={100}
-                      step={1}
-                      onValueChange={([feather]) =>
-                        patch({ mask: { ...mask, feather } })
-                      }
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Reverse playback</Label>
+                    <Switch
+                      checked={!!layer?.reverse}
+                      onCheckedChange={(reverse) => patch({ reverse })}
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs">Invert mask</Label>
-                    <Switch
-                      checked={!!mask.invert}
-                      onCheckedChange={(invert) =>
-                        patch({ mask: { ...mask, invert } })
-                      }
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Speed · {(layer?.playbackRate ?? 1).toFixed(2)}×
+                    </Label>
+                    <Slider
+                      value={[layer?.playbackRate ?? 1]}
+                      min={0.25}
+                      max={4}
+                      step={0.05}
+                      onValueChange={([playbackRate]) => patch({ playbackRate })}
                     />
                   </div>
                 </>
               )}
 
+              {!sceneMode && (
+                <>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Mask shape</Label>
+                    <Select
+                      value={mask.shape}
+                      onValueChange={(shape) =>
+                        patch({ mask: { ...mask, shape: shape as MaskShape } })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-background border-input text-foreground">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(
+                          [
+                            "none",
+                            "circle",
+                            "rect",
+                            "rounded",
+                            "gradient-v",
+                            "gradient-h",
+                          ] as const
+                        ).map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {mask.shape !== "none" && (
+                    <>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">
+                          Mask feather · {mask.feather}
+                        </Label>
+                        <Slider
+                          value={[mask.feather]}
+                          min={0}
+                          max={100}
+                          step={1}
+                          onValueChange={([feather]) =>
+                            patch({ mask: { ...mask, feather } })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Invert mask</Label>
+                        <Switch
+                          checked={!!mask.invert}
+                          onCheckedChange={(invert) =>
+                            patch({ mask: { ...mask, invert } })
+                          }
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-muted-foreground">Stabilize</Label>
+                    <Switch
+                      checked={!!stabilize.enabled}
+                      onCheckedChange={(enabled) =>
+                        patch({ stabilize: { ...stabilize, enabled } })
+                      }
+                    />
+                  </div>
+                  {stabilize.enabled && (
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        Stabilize strength · {stabilize.strength}
+                      </Label>
+                      <Slider
+                        value={[stabilize.strength]}
+                        min={5}
+                        max={100}
+                        step={1}
+                        onValueChange={([strength]) =>
+                          patch({
+                            stabilize: { ...stabilize, strength, enabled: true },
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Stabilize</Label>
+                <Label className="text-xs text-muted-foreground">Color overlay</Label>
                 <Switch
-                  checked={!!stabilize.enabled}
-                  onCheckedChange={(enabled) =>
-                    patch({ stabilize: { ...stabilize, enabled } })
+                  checked={
+                    layer?.overlay?.enabled ??
+                    sceneEditing?.overlay?.enabled ??
+                    false
                   }
+                  onCheckedChange={(enabled) => {
+                    const overlay = { enabled, opacity: 0.35, color: "#6366f1" };
+                    sceneMode ? patchScene({ overlay }) : patch({ overlay });
+                  }}
                 />
               </div>
-              {stabilize.enabled && (
-                <div className="space-y-1">
-                  <Label className="text-xs">
-                    Stabilize strength · {stabilize.strength}
-                  </Label>
-                  <Slider
-                    value={[stabilize.strength]}
-                    min={5}
-                    max={100}
-                    step={1}
-                    onValueChange={([strength]) =>
-                      patch({
-                        stabilize: { ...stabilize, strength, enabled: true },
-                      })
-                    }
-                  />
-                </div>
-              )}
-            </>
+            </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Color overlay</Label>
-            <Switch
-              checked={
-                layer?.overlay?.enabled ??
-                sceneEditing?.overlay?.enabled ??
-                false
-              }
-              onCheckedChange={(enabled) => {
-                const overlay = { enabled, opacity: 0.35, color: "#6366f1" };
-                sceneMode ? patchScene({ overlay }) : patch({ overlay });
-              }}
-            />
-          </div>
-        </section>
-      )}
-
-      <section className="space-y-3 rounded-lg border border-border/60 p-3">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5" /> Creative
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Blend / transition mode</Label>
-          <Select
-            value={layer?.blendMode ?? sceneEditing?.blendMode ?? "normal"}
-            onValueChange={(blendMode) => {
-              sceneMode
-                ? patchScene({ blendMode: blendMode as BlendMode })
-                : patch({ blendMode: blendMode as BlendMode });
-            }}
-          >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {BLEND_MODES.map((b) => (
-                <SelectItem key={b} value={b}>
-                  {b}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {!sceneMode && layer && (
-          <div className="grid grid-cols-2 gap-1.5">
-            {EFFECT_PRESETS.slice(0, 6).map((fx) => (
-              <Button
-                key={fx.id}
-                size="sm"
-                variant="outline"
-                className="h-auto py-1.5 text-[10px]"
-                onClick={() => applyEffectPreset(fx.id)}
-              >
-                <Wand2 className="mr-1 h-3 w-3" />
-                {fx.name}
-              </Button>
-            ))}
-          </div>
-        )}
-
-        <div className="space-y-2">
-          <Label className="flex items-center gap-1 text-xs">
-            <Zap className="h-3 w-3" /> Enhance
-          </Label>
-          {(
-            [
-              ["sharpen", "Sharpen", 0, 100],
-              ["vibrance", "Vibrance", 50, 200],
-              ["clarity", "Clarity", 0, 100],
-              ["denoise", "Denoise", 0, 100],
-            ] as const
-          ).map(([key, label, min, max]) => (
-            <div key={key} className="space-y-0.5">
-              <Label className="text-[10px] text-muted-foreground">
-                {label} · {enhance[key]}
-              </Label>
-              <Slider
-                value={[enhance[key]]}
-                min={min}
-                max={max}
-                step={1}
-                onValueChange={([v]) => {
-                  const next = { ...enhance, [key]: v };
+          {/* Creative controls (blendMode, enhance, volume) */}
+          <div className="space-y-3.5">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Creative Filters</div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Blend / transition mode</Label>
+              <Select
+                value={layer?.blendMode ?? sceneEditing?.blendMode ?? "normal"}
+                onValueChange={(blendMode) => {
                   sceneMode
-                    ? patchScene({ enhance: next })
-                    : patch({ enhance: next });
+                    ? patchScene({ blendMode: blendMode as BlendMode })
+                    : patch({ blendMode: blendMode as BlendMode });
                 }}
-              />
+              >
+                <SelectTrigger className="h-8 text-xs bg-background border-input text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {BLEND_MODES.map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ))}
-        </div>
 
-        {!sceneMode && layer && (
-          <div className="space-y-1">
-            <Label className="flex items-center gap-1 text-xs">
-              <Volume2 className="h-3 w-3" /> Volume ·{" "}
-              {Math.round((layer.volume ?? 1) * 100)}%
-            </Label>
-            <Slider
-              value={[layer.volume ?? 1]}
-              min={0}
-              max={1}
-              step={0.01}
-              onValueChange={([volume]) => patch({ volume })}
-            />
+            {!sceneMode && layer && (
+              <div className="grid grid-cols-2 gap-1.5">
+                {EFFECT_PRESETS.slice(0, 6).map((fx) => (
+                  <Button
+                    key={fx.id}
+                    size="sm"
+                    variant="outline"
+                    className="h-auto py-1.5 text-[10px] border-border bg-background text-foreground hover:bg-muted"
+                    onClick={() => applyEffectPreset(fx.id)}
+                  >
+                    <Wand2 className="mr-1 h-3 w-3 text-sky-500" />
+                    {fx.name}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Zap className="h-3 w-3 text-amber-500" /> Enhance Sliders
+              </Label>
+              {(
+                [
+                  ["sharpen", "Sharpen", 0, 100],
+                  ["vibrance", "Vibrance", 50, 200],
+                  ["clarity", "Clarity", 0, 100],
+                  ["denoise", "Denoise", 0, 100],
+                ] as const
+              ).map(([key, label, min, max]) => (
+                <div key={key} className="space-y-0.5">
+                  <Label className="text-[10px] text-muted-foreground">
+                    {label} · {enhance[key]}
+                  </Label>
+                  <Slider
+                    value={[enhance[key]]}
+                    min={min}
+                    max={max}
+                    step={1}
+                    onValueChange={([v]) => {
+                      const next = { ...enhance, [key]: v };
+                      sceneMode
+                        ? patchScene({ enhance: next })
+                        : patch({ enhance: next });
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {!sceneMode && layer && (
+              <div className="space-y-1 border-t border-border pt-3.5 mt-3.5">
+                <Label className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Volume2 className="h-3 w-3 text-sky-500" /> Volume ·{" "}
+                  {Math.round((layer.volume ?? 1) * 100)}%
+                </Label>
+                <Slider
+                  value={[layer.volume ?? 1]}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onValueChange={([volume]) => patch({ volume })}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </section>
+        </div>
+      </details>
     </div>
   );
 }

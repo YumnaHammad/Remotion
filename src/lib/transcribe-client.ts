@@ -3,7 +3,7 @@ import type { TimedCaption } from "@/types";
 export type TranscriptionEngine = "whisper-cpp" | "faster-whisper";
 
 export type TranscribeResult =
-  | { ok: true; captions: TimedCaption[]; engine?: TranscriptionEngine; text?: string }
+  | { ok: true; captions: TimedCaption[]; segments?: any[]; engine?: TranscriptionEngine; text?: string }
   | { ok: false; error: string };
 
 const ENGINE_STORAGE_KEY = "framekit-transcription-engine";
@@ -27,6 +27,7 @@ async function parseResponse(res: Response): Promise<TranscribeResult> {
       const data = await res.json() as {
         ok?: boolean;
         captions?: TimedCaption[];
+        segments?: any[];
         engine?: TranscriptionEngine;
         text?: string;
         error?: string;
@@ -37,7 +38,7 @@ async function parseResponse(res: Response): Promise<TranscribeResult> {
           error: data.error ?? `Transcription failed (${res.status})`,
         };
       }
-      return { ok: true, captions: data.captions, engine: data.engine, text: data.text };
+      return { ok: true, captions: data.captions, segments: data.segments, engine: data.engine, text: data.text };
     } catch {
       return { ok: false, error: `Invalid JSON response from server (${res.status})` };
     }
