@@ -1,7 +1,7 @@
 "use client";
 
 import { Player, type PlayerRef } from "@remotion/player";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { MainComposition } from "@/remotion/compositions/MainComposition";
 import { CanvasTransformOverlay } from "@/components/editor/canvas-transform-overlay";
 import { useEditorStore } from "@/stores/editor-store";
@@ -17,6 +17,8 @@ export function PreviewPlayer() {
   const updateLayer = useEditorStore((s) => s.updateLayer);
   const { width, height, fps, durationInFrames } = project.settings;
   const seekingRef = useRef(false);
+
+  const playerInputProps = useMemo(() => ({ project }), [project]);
 
   useEffect(() => {
     const player = playerRef.current;
@@ -58,6 +60,7 @@ export function PreviewPlayer() {
   useEffect(() => {
     const player = playerRef.current;
     if (!player) return;
+    if (isPlaying) return; // Do NOT seek player while it is naturally playing!
     if (player.getCurrentFrame() === currentFrame) return;
     seekingRef.current = true;
     player.seekTo(currentFrame);
@@ -66,7 +69,7 @@ export function PreviewPlayer() {
       seekingRef.current = false;
     });
     return () => cancelAnimationFrame(id);
-  }, [currentFrame]);
+  }, [currentFrame, isPlaying]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -114,7 +117,7 @@ export function PreviewPlayer() {
         <Player
           ref={playerRef}
           component={MainComposition}
-          inputProps={{ project }}
+          inputProps={playerInputProps}
           durationInFrames={durationInFrames}
           compositionWidth={width}
           compositionHeight={height}

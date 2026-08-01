@@ -18,6 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { useEditorStore } from "@/stores/editor-store";
 import { useProjectStore } from "@/stores/project-store";
 import { ExportDialog } from "./export-dialog";
@@ -101,12 +102,12 @@ export function EditorTopBar() {
   });
 
   return (
-    <div className="flex h-12 items-center gap-2 border-b border-[var(--editor-border)] bg-[var(--editor-panel)] px-3">
+    <div className="flex h-12 items-center gap-2 border-b border-[var(--editor-border)] bg-[var(--editor-panel)] px-3 text-foreground">
       <Button
         asChild
         variant="ghost"
         size="icon-sm"
-        className="text-white/70 hover:bg-white/10 hover:text-white"
+        className="text-muted-foreground hover:bg-accent/40 hover:text-foreground"
       >
         <Link href="/projects" aria-label="Back to projects">
           <ArrowLeft className="h-4 w-4" />
@@ -115,13 +116,13 @@ export function EditorTopBar() {
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h1 className="truncate text-sm font-semibold text-white">
+          <h1 className="truncate text-sm font-semibold">
             {project.name}
           </h1>
-          <Badge variant="secondary" className="bg-white/10 text-white/70">
+          <Badge variant="secondary" className="bg-accent text-foreground">
             {project.settings.aspectRatio}
           </Badge>
-          <span className="text-[10px] text-white/40">
+          <span className="text-[10px] text-muted-foreground/60">
             {dirty ? "Saving soon…" : "Saved"}
           </span>
         </div>
@@ -133,7 +134,7 @@ export function EditorTopBar() {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="text-white/70 hover:bg-white/10 disabled:opacity-30"
+              className="text-muted-foreground hover:bg-accent/40 disabled:opacity-30"
               disabled={past === 0}
               onClick={undo}
             >
@@ -147,7 +148,7 @@ export function EditorTopBar() {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="text-white/70 hover:bg-white/10 disabled:opacity-30"
+              className="text-muted-foreground hover:bg-accent/40 disabled:opacity-30"
               disabled={future === 0}
               onClick={redo}
             >
@@ -161,7 +162,7 @@ export function EditorTopBar() {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-30"
+              className="text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
               disabled={selectedLayerIds.length === 0}
               onClick={splitLayer}
             >
@@ -175,7 +176,7 @@ export function EditorTopBar() {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-30"
+              className="text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
               disabled={selectedLayerIds.length === 0}
               onClick={duplicateSelected}
             >
@@ -189,7 +190,7 @@ export function EditorTopBar() {
             <Button
               variant="ghost"
               size="icon-sm"
-              className="text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-30"
+              className="text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
               disabled={selectedLayerIds.length === 0}
               onClick={() => removeLayers(selectedLayerIds)}
             >
@@ -200,13 +201,15 @@ export function EditorTopBar() {
         </Tooltip>
       </div>
 
+      <ThemeToggle />
+
       <Button
         variant="ghost"
         size="sm"
-        className="text-white/70 hover:bg-white/10 hover:text-white"
+        className="text-muted-foreground hover:bg-accent/40 hover:text-foreground"
         onClick={save}
       >
-        <Save className="h-3.5 w-3.5" />
+        <Save className="h-3.5 w-3.5 mr-1" />
         Save
       </Button>
 

@@ -1,81 +1,81 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f5f7;
-  --foreground: #0c0d10;
-  --card: #ffffff;
-  --card-foreground: #0c0d10;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: rgba(255, 255, 255, 0.7);
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #0c0d10;
+  --popover-foreground: #0f172a;
   --primary: #0b84f3;
   --primary-foreground: #ffffff;
-  --secondary: #e8eaf0;
-  --secondary-foreground: #1e2030;
-  --muted: #eceef3;
-  --muted-foreground: #64708b;
-  --accent: #e8ecff;
-  --accent-foreground: #312e81;
-  --destructive: #dc2626;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f0f6ff;
+  --accent-foreground: #1e40af;
+  --destructive: #ef4444;
   --destructive-foreground: #fef2f2;
-  --border: #e2e5ee;
-  --input: #e2e5ee;
-  --ring: #6366f1;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0b84f3;
   --radius: 0.75rem;
-  --sidebar: #fafbfc;
-  --sidebar-foreground: #1e2030;
-  --sidebar-border: #e8ebf2;
-  --glass: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.5);
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #1e293b;
+  --sidebar-border: #e2e8f0;
+  --glass: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(15, 23, 42, 0.06);
   --surface-elevated: #ffffff;
-  --success: #059669;
-  --warning: #d97706;
-  --chart-1: #4f46e5;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --chart-1: #3b82f6;
   --chart-2: #06b6d4;
   --chart-3: #ec4899;
   --chart-4: #f59e0b;
-  --editor-bg: #0b0c10;
-  --editor-panel: #12141a;
-  --editor-border: #1e2230;
-  --timeline-track: #1a1d27;
+  --editor-bg: #f8fafc;
+  --editor-panel: #ffffff;
+  --editor-border: #e2e8f0;
+  --timeline-track: #f1f5f9;
 }
 
 .dark {
-  /* Framekit palette — charcoal panels, signature blue */
-  --background: #0f1115;
-  --foreground: #e4e4e7;
-  --card: #191b1f;
-  --card-foreground: #e4e4e7;
-  --popover: #1c1e24;
-  --popover-foreground: #e4e4e7;
+  /* Obsidian dark mode with fine translucent borders */
+  --background: #090a0f;
+  --foreground: #f4f4f5;
+  --card: #11131a;
+  --card-foreground: #f4f4f5;
+  --popover: #11131a;
+  --popover-foreground: #f4f4f5;
   --primary: #0b84f3;
   --primary-foreground: #ffffff;
-  --secondary: #22252b;
-  --secondary-foreground: #d4d4d8;
-  --muted: #181a1f;
-  --muted-foreground: #9ca3af;
-  --accent: #1a2a3d;
+  --secondary: #1a1c24;
+  --secondary-foreground: #e4e4e7;
+  --muted: #13151f;
+  --muted-foreground: #8e95a2;
+  --accent: #112235;
   --accent-foreground: #93c5fd;
   --destructive: #ef4444;
-  --destructive-foreground: #fef2f2;
-  --border: #2b2f36;
-  --input: #2b2f36;
+  --destructive-foreground: #ffffff;
+  --border: #1c1e26;
+  --input: #1c1e26;
   --ring: #0b84f3;
-  --sidebar: #0b0c0f;
-  --sidebar-foreground: #e4e4e7;
-  --sidebar-border: #1f2228;
-  --glass: rgba(25, 27, 31, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --surface-elevated: #1e2128;
-  --success: #22c55e;
+  --sidebar: #090a0f;
+  --sidebar-foreground: #f4f4f5;
+  --sidebar-border: #1c1e26;
+  --glass: rgba(15, 17, 26, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --surface-elevated: #161822;
+  --success: #10b981;
   --warning: #f59e0b;
   --chart-1: #0b84f3;
   --chart-2: #22d3ee;
   --chart-3: #a78bfa;
   --chart-4: #f59e0b;
-  --editor-bg: #000000;
-  --editor-panel: #191b1f;
-  --editor-border: #2b2f36;
-  --timeline-track: #15171c;
+  --editor-bg: #07080c;
+  --editor-panel: #0d0f14;
+  --editor-border: #1a1c24;
+  --timeline-track: #11131c;
 }
 
 @theme inline {
@@ -229,4 +229,69 @@ body {
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 40%, transparent); }
   50% { box-shadow: 0 0 24px 4px color-mix(in oklab, var(--primary) 25%, transparent); }
+}
+
+/* Light mode overrides for timeline editor surface to convert hardcoded dark/white elements */
+html:not(.dark) .editor-surface {
+  background: var(--editor-bg) !important;
+  color: var(--foreground) !important;
+
+  /* Standard borders */
+  .border-r, .border-l, .border-b, .border-t, .border, [class*="border-white/"] {
+    border-color: var(--border) !important;
+  }
+
+  /* Text elements mapping white text to readable dark text */
+  [class*="text-white"],
+  .text-white,
+  .text-white\/90,
+  .text-white\/80,
+  .text-white\/70,
+  .text-white\/60,
+  .text-white\/50 {
+    color: var(--foreground) !important;
+  }
+
+  /* Muted text elements */
+  .text-white\/45,
+  .text-white\/40,
+  .text-white\/35,
+  .text-white\/30,
+  .text-muted-foreground {
+    color: var(--muted-foreground) !important;
+  }
+
+  /* Backgrounds: convert bg-white/5 or bg-white/10 into subtle slate secondary colors */
+  [class*="bg-white/"],
+  .bg-white\/5,
+  .bg-white\/10,
+  .bg-white\/20,
+  .bg-white\/15,
+  .bg-muted\/30,
+  .bg-white\/\[0\.03\] {
+    background-color: var(--secondary) !important;
+  }
+
+  .bg-black\/20,
+  .bg-black\/40 {
+    background-color: color-mix(in oklab, var(--border) 60%, transparent) !important;
+  }
+
+  /* Editor specific text area */
+  textarea, input {
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
+    border-color: var(--border) !important;
+  }
+
+  /* Selected active tab states */
+  .bg-primary\/20 {
+    background-color: color-mix(in oklab, var(--primary) 15%, transparent) !important;
+    color: var(--primary) !important;
+  }
+
+  /* Timeline specific classes */
+  .bg-\[var\(--timeline-track\)\] {
+    background-color: var(--timeline-track) !important;
+  }
 }

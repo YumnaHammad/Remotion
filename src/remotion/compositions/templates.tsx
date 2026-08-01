@@ -59,7 +59,7 @@ export const YoutubeShort: React.FC<TemplateComponentProps> = (props) => {
 };
 
 export const InstagramReel: React.FC<TemplateComponentProps> = (props) => {
-  const { title, subtitle, brandColor, fontFamily, logoUrl } = mergeTemplateProps(props);
+  const { title, subtitle, brandColor, fontFamily, logoUrl, imageUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const glow = interpolate(frame % 45, [0, 22, 45], [0.4, 1, 0.4]);
 
@@ -73,9 +73,24 @@ export const InstagramReel: React.FC<TemplateComponentProps> = (props) => {
         }}
       />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", padding: 48 }}>
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            style={{
+              width: 320,
+              height: 480,
+              borderRadius: 24,
+              objectFit: "cover",
+              marginBottom: 40,
+              boxShadow: "0 30px 60px rgba(0,0,0,0.6)",
+              border: "3px solid rgba(255,255,255,0.15)",
+            }}
+            alt=""
+          />
+        )}
         <div
           style={{
-            fontSize: 72,
+            fontSize: imageUrl ? 52 : 72,
             fontWeight: 900,
             color: "#f472b6",
             textShadow: `0 0 30px #f472b6`,
@@ -84,7 +99,7 @@ export const InstagramReel: React.FC<TemplateComponentProps> = (props) => {
         >
           {title}
         </div>
-        <div style={{ fontSize: 28, color: "#fff", marginTop: 24, opacity: 0.8 }}>
+        <div style={{ fontSize: imageUrl ? 22 : 28, color: "#fff", marginTop: imageUrl ? 16 : 24, opacity: 0.8, textAlign: "center" }}>
           {subtitle}
         </div>
       </AbsoluteFill>
@@ -93,7 +108,7 @@ export const InstagramReel: React.FC<TemplateComponentProps> = (props) => {
 };
 
 export const ProductAd: React.FC<TemplateComponentProps> = (props) => {
-  const { title, subtitle, brandColor, fontFamily, logoUrl } = mergeTemplateProps(props);
+  const { title, subtitle, brandColor, fontFamily, logoUrl, imageUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -102,16 +117,32 @@ export const ProductAd: React.FC<TemplateComponentProps> = (props) => {
       <BrandLogo logoUrl={logoUrl} />
       <Sequence from={0} durationInFrames={60}>
         <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-          <div
-            style={{
-              width: 280,
-              height: 280,
-              borderRadius: 40,
-              background: `linear-gradient(135deg, ${brandColor}, #22d3ee)`,
-              transform: `rotate(${interpolate(frame, [0, 60], [12, 0])}deg) scale(${spring({ frame, fps })})`,
-              boxShadow: `0 40px 80px ${brandColor}66`,
-            }}
-          />
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              style={{
+                width: 500,
+                height: 320,
+                borderRadius: 24,
+                objectFit: "cover",
+                border: "4px solid rgba(255,255,255,0.1)",
+                transform: `rotate(${interpolate(frame, [0, 60], [12, 0])}deg) scale(${spring({ frame, fps })})`,
+                boxShadow: `0 40px 80px ${brandColor}66`,
+              }}
+              alt=""
+            />
+          ) : (
+            <div
+              style={{
+                width: 280,
+                height: 280,
+                borderRadius: 40,
+                background: `linear-gradient(135deg, ${brandColor}, #22d3ee)`,
+                transform: `rotate(${interpolate(frame, [0, 60], [12, 0])}deg) scale(${spring({ frame, fps })})`,
+                boxShadow: `0 40px 80px ${brandColor}66`,
+              }}
+            />
+          )}
         </AbsoluteFill>
       </Sequence>
       <Sequence from={40}>
@@ -167,7 +198,7 @@ export const PodcastOpener: React.FC<TemplateComponentProps> = (props) => {
 };
 
 export const SaasDemo: React.FC<TemplateComponentProps> = (props) => {
-  const { title, subtitle, brandColor, fontFamily, logoUrl } = mergeTemplateProps(props);
+  const { title, subtitle, brandColor, fontFamily, logoUrl, imageUrl } = mergeTemplateProps(props);
   const frame = useCurrentFrame();
   const y = interpolate(frame, [0, 40], [60, 0], { extrapolateRight: "clamp" });
   const opacity = interpolate(frame, [0, 25], [0, 1], { extrapolateRight: "clamp" });
@@ -178,7 +209,7 @@ export const SaasDemo: React.FC<TemplateComponentProps> = (props) => {
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
-            width: 900,
+            width: 960,
             height: 520,
             borderRadius: 20,
             border: "1px solid rgba(255,255,255,0.1)",
@@ -187,31 +218,50 @@ export const SaasDemo: React.FC<TemplateComponentProps> = (props) => {
             transform: `translateY(${y}px)`,
             opacity,
             padding: 32,
+            display: "flex",
+            flexDirection: "row",
+            gap: 32,
+            alignItems: "center",
           }}
         >
-          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-            {["#ef4444", "#eab308", "#22c55e"].map((c) => (
-              <div key={c} style={{ width: 12, height: 12, borderRadius: "50%", background: c }} />
-            ))}
-          </div>
-          <div style={{ fontSize: 40, fontWeight: 700, color: "#fff" }}>{title}</div>
-          <div style={{ fontSize: 22, color: "#94a3b8", marginTop: 12 }}>{subtitle}</div>
-          <div
-            style={{
-              marginTop: 40,
-              height: 12,
-              borderRadius: 999,
-              background: "rgba(255,255,255,0.08)",
-              overflow: "hidden",
-            }}
-          >
+          {imageUrl && (
+            <img
+              src={imageUrl}
+              style={{
+                width: 380,
+                height: 456,
+                borderRadius: 12,
+                objectFit: "cover",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+              alt=""
+            />
+          )}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+              {["#ef4444", "#eab308", "#22c55e"].map((c) => (
+                <div key={c} style={{ width: 12, height: 12, borderRadius: "50%", background: c }} />
+              ))}
+            </div>
+            <div style={{ fontSize: 36, fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>{title}</div>
+            <div style={{ fontSize: 20, color: "#94a3b8", marginTop: 12, lineHeight: 1.4 }}>{subtitle}</div>
             <div
               style={{
-                width: `${interpolate(frame, [20, 90], [0, 100], { extrapolateRight: "clamp" })}%`,
-                height: "100%",
-                background: brandColor,
+                marginTop: 40,
+                height: 12,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.08)",
+                overflow: "hidden",
               }}
-            />
+            >
+              <div
+                style={{
+                  width: `${interpolate(frame, [20, 90], [0, 100], { extrapolateRight: "clamp" })}%`,
+                  height: "100%",
+                  background: brandColor,
+                }}
+              />
+            </div>
           </div>
         </div>
       </AbsoluteFill>

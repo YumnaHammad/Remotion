@@ -148,6 +148,7 @@ export function ScriptToVideoFeature() {
   const recordIntervalRef = useRef<any>(null);
   const recordStartRef = useRef<number>(0);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  const playerRef = useRef<any>(null);
 
   useEffect(() => {
     const scriptParam = searchParams.get("script");
@@ -338,6 +339,15 @@ export function ScriptToVideoFeature() {
         showCaptions: false,
       });
     }
+
+    if (pipelinePrefs.source === "client") {
+      return buildAutomatedVideoInputProps(nextResolved, {
+        showCaptions: true,
+        voiceoverUrl: "",
+        captions: nextResolved.captions,
+      });
+    }
+
     setVoiceBusy(true);
     try {
       const speakText =
@@ -665,10 +675,10 @@ export function ScriptToVideoFeature() {
 
       {step === 1 && (
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-4 rounded-xl border bg-card p-5">
+          <div className="space-y-4 rounded-xl border border-border/50 bg-card/45 backdrop-blur-md p-5 shadow-sm">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="script">Your script</Label>
+                <Label htmlFor="script" className="text-sm font-semibold">Your script</Label>
                 <div className="flex items-center gap-1.5">
                   <input
                     ref={uploadInputRef}
@@ -752,6 +762,7 @@ export function ScriptToVideoFeature() {
                 value={script}
                 onChange={(e) => setScript(e.target.value)}
                 disabled={transcribingMedia}
+                className="border-border/50 bg-background/50 text-sm"
               />
               {transcribingMedia && (
                 <div className="space-y-2 py-1.5">
@@ -770,7 +781,7 @@ export function ScriptToVideoFeature() {
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label>Aspect ratio</Label>
+              <Label className="text-sm font-semibold">Aspect ratio</Label>
               <Select
                 value={aspectRatio}
                 onValueChange={(v) =>
@@ -789,7 +800,7 @@ export function ScriptToVideoFeature() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/40 p-3">
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-border/50 bg-muted/30 p-3">
               <div className="space-y-0.5">
                 <Label htmlFor="show-captions" className="text-sm font-medium">
                   Captions + speak my script
@@ -805,9 +816,10 @@ export function ScriptToVideoFeature() {
                 onCheckedChange={setShowCaptions}
               />
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 pt-2">
               <Button
                 variant="glow"
+                size="sm"
                 onClick={() => void generateWithVeo()}
                 disabled={loading || veoBusy}
               >
@@ -820,6 +832,7 @@ export function ScriptToVideoFeature() {
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={runBreakdown}
                 disabled={loading || veoBusy}
               >
@@ -832,6 +845,7 @@ export function ScriptToVideoFeature() {
               </Button>
               <Button
                 variant="ghost"
+                size="sm"
                 onClick={() => void generateAll()}
                 disabled={loading || veoBusy}
               >
@@ -840,21 +854,30 @@ export function ScriptToVideoFeature() {
             </div>
           </div>
 
-          <div className="rounded-xl border bg-muted/30 p-5">
-            <h2 className="mb-2 text-sm font-semibold">How it works</h2>
-            <ol className="space-y-3 text-sm text-muted-foreground">
-              <li>
-                <strong className="text-foreground">Generate with Veo</strong> —
-                Google AI creates a real video from your prompt (needs{" "}
-                <code className="text-xs">GOOGLE_API_KEY</code>).
+          <div className="rounded-xl border border-border/50 bg-card/25 backdrop-blur-sm p-5 shadow-sm space-y-4">
+            <h2 className="text-sm font-semibold text-foreground/90">How it works</h2>
+            <ol className="space-y-3.5 text-xs text-muted-foreground leading-relaxed">
+              <li className="flex gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">1</span>
+                <span>
+                  <strong className="text-foreground">Generate with Veo</strong> —
+                  Google AI creates a real video from your prompt (needs{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-[10px]">GOOGLE_API_KEY</code>).
+                </span>
               </li>
-              <li>
-                <strong className="text-foreground">Remotion breakdown</strong> —
-                splits your script into timed scenes with stock pictures.
+              <li className="flex gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">2</span>
+                <span>
+                  <strong className="text-foreground">Remotion breakdown</strong> —
+                  splits your script into timed scenes with stock pictures.
+                </span>
               </li>
-              <li>
-                <strong className="text-foreground">Captions toggle</strong> —
-                optional on-screen words + spoken voice for Remotion previews.
+              <li className="flex gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">3</span>
+                <span>
+                  <strong className="text-foreground">Captions toggle</strong> —
+                  optional on-screen words + spoken voice for Remotion previews.
+                </span>
               </li>
             </ol>
           </div>
@@ -1034,6 +1057,7 @@ export function ScriptToVideoFeature() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="overflow-hidden rounded-xl border bg-black">
             <TemplatePreview
+              playerRef={playerRef}
               compositionId="AutomatedVideo"
               inputProps={previewProps}
               durationInFrames={durationInFrames}
@@ -1042,6 +1066,14 @@ export function ScriptToVideoFeature() {
               fps={30}
               className="w-full"
             />
+            {pipelinePrefs.source === "client" && (
+              <LocalSpeechPreview
+                playerRef={playerRef}
+                enabled={showCaptions}
+                captions={previewProps.captions as any[]}
+                fps={30}
+              />
+            )}
           </div>
 
           <div className="space-y-4">
@@ -1105,4 +1137,87 @@ export function ScriptToVideoFeature() {
       )}
     </div>
   );
+}
+
+function LocalSpeechPreview({
+  playerRef,
+  enabled,
+  captions,
+  fps = 30,
+}: {
+  playerRef: React.RefObject<any>;
+  enabled: boolean;
+  captions?: any[];
+  fps?: number;
+}) {
+  const spokenClipRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined" || !window.speechSynthesis || !playerRef.current) {
+      return;
+    }
+
+    const player = playerRef.current;
+
+    const handleFrameUpdate = () => {
+      const frame = player.getCurrentFrame();
+      const isPlaying = player.isPlaying();
+      
+      if (!isPlaying) {
+        window.speechSynthesis.cancel();
+        spokenClipRef.current = null;
+        return;
+      }
+
+      const timeMs = (frame / fps) * 1000;
+
+      // Find active caption segment
+      const activeIndex = captions?.findIndex((c) => {
+        return timeMs >= c.startMs && timeMs < c.endMs;
+      });
+
+      if (activeIndex === undefined || activeIndex === -1) {
+        if (spokenClipRef.current !== null) {
+          window.speechSynthesis.cancel();
+          spokenClipRef.current = null;
+        }
+        return;
+      }
+
+      if (spokenClipRef.current === activeIndex) return;
+
+      window.speechSynthesis.cancel();
+      spokenClipRef.current = activeIndex;
+      const text = captions?.[activeIndex]?.text;
+      if (!text) return;
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1;
+      window.speechSynthesis.speak(utter);
+    };
+
+    const handlePlay = () => {
+      spokenClipRef.current = null;
+    };
+
+    const handlePause = () => {
+      window.speechSynthesis.cancel();
+      spokenClipRef.current = null;
+    };
+
+    player.addEventListener("frameupdate", handleFrameUpdate);
+    player.addEventListener("play", handlePlay);
+    player.addEventListener("pause", handlePause);
+
+    return () => {
+      player.removeEventListener("frameupdate", handleFrameUpdate);
+      player.removeEventListener("play", handlePlay);
+      player.removeEventListener("pause", handlePause);
+      if (typeof window !== "undefined") {
+        window.speechSynthesis?.cancel();
+      }
+    };
+  }, [enabled, captions, fps, playerRef]);
+
+  return null;
 }

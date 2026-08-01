@@ -21,6 +21,7 @@ import { useSimpleVideoStore } from "@/stores/simple-video-store";
 import { useBrandKit } from "@/hooks/use-brand-kit";
 import { TEMPLATE_CATALOG, getTemplateById } from "@/templates/catalog";
 import { syncPropsFromBrand } from "@/utils/brand-defaults";
+import { scenesWithIds } from "@/lib/scene-presets";
 import type { VideoTemplateProps } from "@/types/video";
 import type { SceneVideoProps } from "@/types/scene-video";
 import { totalSceneDuration } from "@/types/scene-video";
@@ -62,6 +63,8 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
   const [brandColor, setBrandColor] = useState(brand.colors.primary);
   const [fontFamily, setFontFamily] = useState(brand.fontFamily);
   const [musicUrl, setMusicUrl] = useState(brand.musicUrl ?? "");
+  const [imageUrl, setImageUrl] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
   const [scenes, setScenes] = useState<SceneVideoProps["scenes"]>([]);
 
   const isLongForm = project?.compositionId === "LongFormVideo";
@@ -76,6 +79,8 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
       setBrandColor(p.brandColor ?? brand.colors.primary);
       setFontFamily(p.fontFamily ?? brand.fontFamily);
       setMusicUrl(p.musicUrl ?? (p as any).backgroundMusicUrl ?? "");
+      setImageUrl((p as any).imageUrl ?? "");
+      setLogoUrl(p.logoUrl ?? "");
       setScenes(p.scenes ?? []);
       return;
     }
@@ -86,7 +91,25 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
     setBrandColor(p.brandColor ?? brand.colors.primary);
     setFontFamily(p.fontFamily ?? brand.fontFamily);
     setMusicUrl(p.musicUrl ?? (p as any).backgroundMusicUrl ?? "");
+    setImageUrl(p.imageUrl ?? "");
+    setLogoUrl(p.logoUrl ?? "");
   }, [project, brand]);
+
+  const updateProjectProps = (patch: Partial<VideoTemplateProps & { scenes?: any }>) => {
+    if (!project) return;
+    const nextProps = {
+      ...project.props,
+      ...patch,
+    };
+    if (patch.musicUrl !== undefined) {
+      nextProps.musicUrl = patch.musicUrl;
+      (nextProps as any).backgroundMusicUrl = patch.musicUrl;
+    }
+    updateProject(projectId, {
+      props: nextProps,
+      name: patch.title !== undefined ? (patch.title.slice(0, 80) || project.name) : project.name,
+    });
+  };
 
   const inputProps = useMemo((): Record<string, unknown> => {
     const saved = project?.props as VideoTemplateProps | SceneVideoProps | undefined;
@@ -97,17 +120,14 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
       accent,
       brandColor,
       fontFamily,
+      imageUrl,
+      logoUrl,
       ...(musicUrl
         ? {
             musicUrl,
             backgroundMusicUrl: musicUrl,
           }
         : {}),
-      ...(saved && "logoUrl" in saved && saved.logoUrl
-        ? { logoUrl: saved.logoUrl }
-        : brand.logoUrl
-          ? { logoUrl: brand.logoUrl }
-          : {}),
     };
     if (isLongForm) {
       return { ...base, scenes };
@@ -121,7 +141,8 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
     brandColor,
     fontFamily,
     musicUrl,
-    brand.logoUrl,
+    imageUrl,
+    logoUrl,
     isLongForm,
     scenes,
   ]);
@@ -138,7 +159,8 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
         accent,
         brandColor,
         fontFamily,
-        logoUrl: (project?.props as VideoTemplateProps)?.logoUrl,
+        logoUrl,
+        imageUrl,
         ...(musicUrl ? { musicUrl } : {}),
       },
       brand
@@ -149,6 +171,8 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
     setBrandColor(synced.brandColor);
     setFontFamily(synced.fontFamily ?? brand.fontFamily);
     setMusicUrl(synced.musicUrl ?? "");
+    setImageUrl((synced as any).imageUrl ?? "");
+    setLogoUrl(synced.logoUrl ?? "");
     updateProject(projectId, {
       props: synced,
     });
@@ -198,6 +222,7 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
         accent,
         brandColor,
         fontFamily,
+        logoUrl,
         ...(musicUrl ? { musicUrl } : {}),
         scenes: next,
       },
@@ -208,14 +233,29 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
   const changeTemplate = (templateId: string) => {
     const tpl = getTemplateById(templateId);
     if (!tpl) return;
+
+    let nextProps = { ...project.props };
+    let duration = tpl.durationInFrames;
+
+    if (tpl.longForm && tpl.defaultScenes) {
+      if (!(nextProps as any).scenes || (nextProps as any).scenes.length === 0) {
+        const nextScenes = scenesWithIds(tpl.defaultScenes);
+        (nextProps as any).scenes = nextScenes;
+        duration = totalSceneDuration(nextScenes);
+      } else {
+        duration = totalSceneDuration((nextProps as any).scenes);
+      }
+    }
+
     updateProject(projectId, {
       compositionId: tpl.compositionId,
       templateId: tpl.id,
       aspectRatio: tpl.aspectRatio,
-      durationInFrames: tpl.durationInFrames,
+      durationInFrames: duration,
       width: tpl.width,
       height: tpl.height,
       fps: tpl.fps,
+      props: nextProps,
     });
     toast.success(`Switched to ${tpl.name}`);
   };
@@ -288,13 +328,22 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
 
               <div className="space-y-2">
                 <Label>Title</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input
+                  value={title}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    updateProjectProps({ title: e.target.value });
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Subtitle</Label>
                 <Input
                   value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value)}
+                  onChange={(e) => {
+                    setSubtitle(e.target.value);
+                    updateProjectProps({ subtitle: e.target.value });
+                  }}
                 />
               </div>
 
@@ -304,7 +353,10 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
                   <input
                     type="color"
                     value={accent}
-                    onChange={(e) => setAccent(e.target.value)}
+                    onChange={(e) => {
+                      setAccent(e.target.value);
+                      updateProjectProps({ accent: e.target.value });
+                    }}
                     className="h-10 w-full cursor-pointer rounded-lg border"
                   />
                 </div>
@@ -313,7 +365,10 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
                   <input
                     type="color"
                     value={brandColor}
-                    onChange={(e) => setBrandColor(e.target.value)}
+                    onChange={(e) => {
+                      setBrandColor(e.target.value);
+                      updateProjectProps({ brandColor: e.target.value });
+                    }}
                     className="h-10 w-full cursor-pointer rounded-lg border"
                   />
                 </div>
@@ -321,7 +376,13 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
 
               <div className="space-y-2">
                 <Label>Font</Label>
-                <Select value={fontFamily} onValueChange={setFontFamily}>
+                <Select
+                  value={fontFamily}
+                  onValueChange={(val) => {
+                    setFontFamily(val);
+                    updateProjectProps({ fontFamily: val });
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -335,7 +396,39 @@ export function CreateWorkflow({ projectId }: CreateWorkflowProps) {
                 </Select>
               </div>
 
-              <MusicPicker value={musicUrl} onChange={setMusicUrl} />
+              <MusicPicker
+                value={musicUrl}
+                onChange={(val) => {
+                  setMusicUrl(val);
+                  updateProjectProps({ musicUrl: val });
+                }}
+              />
+
+              {!isLongForm && (
+                <div className="space-y-2">
+                  <Label>Image URL (Optional)</Label>
+                  <Input
+                    value={imageUrl}
+                    onChange={(e) => {
+                      setImageUrl(e.target.value);
+                      updateProjectProps({ imageUrl: e.target.value });
+                    }}
+                    placeholder="https://images.unsplash.com/photo-..."
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Logo URL (Optional)</Label>
+                <Input
+                  value={logoUrl}
+                  onChange={(e) => {
+                    setLogoUrl(e.target.value);
+                    updateProjectProps({ logoUrl: e.target.value });
+                  }}
+                  placeholder="https://example.com/logo.png"
+                />
+              </div>
 
               {isLongForm && (
                 <SceneEditorPanel

@@ -37,7 +37,6 @@ export function EditorWorkspace({ projectId }: { projectId: string }) {
   return (
     <div className="editor-surface flex h-screen flex-col overflow-hidden">
       <EditorTopBar />
-      <EditorGuide />
       <CaptionSpeakOnPlay enabled={speakCaptionsOnPlay} />
       <div className="flex min-h-0 flex-1">
         <LeftPanel />

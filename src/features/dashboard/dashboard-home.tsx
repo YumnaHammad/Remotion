@@ -11,6 +11,7 @@ import {
   Palette,
   Play,
   Video,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,27 +25,27 @@ import { formatRelative } from "@/lib/utils";
 
 const QUICK_LINKS = [
   {
-    href: "/templates",
-    label: "Templates",
-    desc: "Pick a style and customize",
+    href: "/showcase",
+    label: "Template Marketplace",
+    desc: "Browse premium ready-made video styles",
     icon: LayoutTemplate,
+  },
+  {
+    href: "/script-to-video",
+    label: "Script to Video",
+    desc: "Generate professional narration and visual assets",
+    icon: Sparkles,
   },
   {
     href: "/website-to-video",
     label: "Website to Video",
-    desc: "Paste a URL → auto-fill video",
+    desc: "Paste a public URL to auto-fill video components",
     icon: Globe,
-  },
-  {
-    href: "/data-to-video",
-    label: "Data to Video",
-    desc: "CSV, Excel, or JSON → slides",
-    icon: FileSpreadsheet,
   },
   {
     href: "/brand",
     label: "Brand Kit",
-    desc: "Logo, colors, fonts",
+    desc: "Save colors, fonts, and assets for instant branding",
     icon: Palette,
   },
 ] as const;
@@ -64,29 +65,28 @@ export function DashboardHome() {
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm sm:rounded-2xl sm:p-6 lg:p-8"
+        className="relative overflow-hidden rounded-xl border border-border/50 bg-card/40 backdrop-blur-md p-4 shadow-sm sm:rounded-2xl sm:p-6 lg:p-8"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklab,var(--primary)_18%,transparent),transparent_55%)]" />
-        <div className="relative flex flex-col gap-5 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="relative flex flex-col gap-5 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <Badge className="mb-3 bg-[#0b84f3] text-white hover:bg-[#0b84f3]">
-              <Video className="mr-1 h-3 w-3" /> {APP_NAME}
+            <Badge className="mb-2 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/10">
+              <Video className="mr-1.5 h-3.5 w-3.5" /> {APP_NAME}
             </Badge>
-            <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
+            <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">
               Templates & automation
             </h1>
-            <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
+            <p className="mt-1 max-w-xl text-xs text-muted-foreground sm:text-sm">
               Turn websites and spreadsheets into videos. Pick a template, edit
               text and colors, preview live, export MP4 — no timeline needed.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <Button asChild variant="glow" size="lg" className="w-full sm:w-auto">
-              <Link href="/templates">
+            <Button asChild variant="glow" size="sm" className="w-full sm:w-auto">
+              <Link href="/showcase">
                 <Clapperboard className="h-4 w-4" /> New video
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
               <Link href="/website-to-video">
                 <Globe className="h-4 w-4" /> From URL
               </Link>
@@ -132,11 +132,11 @@ export function DashboardHome() {
           >
             <Link
               href={item.href}
-              className="block rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md"
+              className="block rounded-xl border border-border/40 bg-card/30 backdrop-blur-sm p-5 shadow-sm transition-all duration-300 hover:border-primary/20 hover:bg-primary/5 hover:shadow-md"
             >
-              <item.icon className="mb-3 h-6 w-6 text-primary" />
-              <p className="font-medium">{item.label}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+              <item.icon className="mb-3 h-5 w-5 text-primary" />
+              <p className="font-medium text-sm">{item.label}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{item.desc}</p>
             </Link>
           </motion.div>
         ))}
@@ -153,7 +153,7 @@ export function DashboardHome() {
           {simpleProjects.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
               No videos yet.{" "}
-              <Link href="/templates" className="text-primary hover:underline">
+              <Link href="/showcase" className="text-primary hover:underline">
                 Create your first
               </Link>
             </div>

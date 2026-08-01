@@ -24,29 +24,27 @@ export const FPS_OPTIONS = [24, 25, 30, 60] as const;
 
 export const NAV_SECTIONS = [
   {
-    label: "Create",
+    label: "Video Studio",
     items: [
-      { href: "/showcase", label: "Showcase", icon: "Sparkles" },
       { href: "/dashboard", label: "Dashboard", icon: "Home" },
-      { href: "/templates", label: "Templates", icon: "LayoutTemplate" },
-      { href: "/website-to-video", label: "Website to Video", icon: "Globe" },
-      { href: "/data-to-video", label: "Data to Video", icon: "FileSpreadsheet" },
+      { href: "/showcase", label: "Template Marketplace", icon: "LayoutTemplate" },
       { href: "/script-to-video", label: "Script to Video", icon: "Sparkles" },
+      { href: "/website-to-video", label: "Website to Video", icon: "Globe" },
     ],
   },
   {
-    label: "Brand",
+    label: "Assets & Brand",
     items: [
       { href: "/brand", label: "Brand Kit", icon: "Palette" },
-      { href: "/assets", label: "Asset Library", icon: "Image" },
+      { href: "/assets", label: "Media Library", icon: "Image" },
       { href: "/audio", label: "Audio Library", icon: "Music" },
-      { href: "/exports", label: "Exports", icon: "Download" },
+      { href: "/exports", label: "Render Exports", icon: "Download" },
     ],
   },
   {
-    label: "Advanced",
+    label: "Workspace",
     items: [
-      { href: "/projects", label: "Projects", icon: "FolderOpen" },
+      { href: "/projects", label: "Timeline Projects", icon: "FolderOpen" },
       { href: "/settings", label: "Settings", icon: "Settings" },
     ],
   },

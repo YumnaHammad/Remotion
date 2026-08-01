@@ -56,7 +56,12 @@ function parseMetadata(html: string, url: string) {
 
 export async function POST(req: Request) {
   try {
-    const { url } = UrlSchema.parse(await req.json());
+    const body = await req.json();
+    let urlInput = typeof body.url === "string" ? body.url.trim() : "";
+    if (urlInput && !/^https?:\/\//i.test(urlInput)) {
+      urlInput = `https://${urlInput}`;
+    }
+    const { url } = UrlSchema.parse({ url: urlInput });
 
     const res = await fetch(url, {
       headers: {

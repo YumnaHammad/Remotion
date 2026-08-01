@@ -34,7 +34,13 @@ export function MusicPicker({ value = "", onChange, compact }: MusicPickerProps)
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const selectedTrack = value ? findTrackByUrl(value) : undefined;
-  const selectValue = selectedTrack?.id ?? "custom";
+  const [isCustom, setIsCustom] = useState(!selectedTrack && value !== "");
+
+  useEffect(() => {
+    setIsCustom(!selectedTrack && value !== "");
+  }, [value, selectedTrack]);
+
+  const selectValue = isCustom ? "custom" : (selectedTrack?.id ?? "none");
 
   useEffect(() => {
     return () => {
@@ -63,10 +69,16 @@ export function MusicPicker({ value = "", onChange, compact }: MusicPickerProps)
   const pickTrack = (trackId: string) => {
     if (trackId === "none") {
       onChange("");
+      setIsCustom(false);
       stopPreview();
       return;
     }
-    if (trackId === "custom") return;
+    if (trackId === "custom") {
+      setIsCustom(true);
+      onChange("");
+      return;
+    }
+    setIsCustom(false);
     const track = AUDIO_LIBRARY.find((t) => t.id === trackId);
     if (!track) return;
     onChange(track.previewUrl);
@@ -112,7 +124,7 @@ export function MusicPicker({ value = "", onChange, compact }: MusicPickerProps)
         )}
       </div>
 
-      {(selectValue === "custom" || (!selectedTrack && value)) && (
+      {(selectValue === "custom" || isCustom) && (
         <div className="space-y-2">
           <Label>Music URL</Label>
           <Input

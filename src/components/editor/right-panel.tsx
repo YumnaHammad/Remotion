@@ -228,33 +228,7 @@ export function RightPanel() {
             selectHint
           ) : (
             <>
-              <div className="mx-3 mb-2 mt-2 flex gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 flex-1 border-white/10 bg-white/5 text-[10px] text-white hover:bg-white/10"
-                  onClick={() => {
-                    sendLayerToBack(layer.id);
-                    toast.success(`${layer.name} sent to back`);
-                  }}
-                >
-                  <ArrowDownToLine className="mr-1 h-3 w-3" />
-                  To back
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 flex-1 border-white/10 bg-white/5 text-[10px] text-white hover:bg-white/10"
-                  onClick={() => {
-                    bringLayerToFront(layer.id);
-                    toast.success(`${layer.name} brought to front`);
-                  }}
-                >
-                  <ArrowUpToLine className="mr-1 h-3 w-3" />
-                  To front
-                </Button>
-              </div>
-              <p className="mx-3 mb-2 text-[10px] text-white/35">
+              <p className="mx-3 mb-2 mt-2 text-[10px] text-white/35">
                 Editing: <span className="text-white/70">{layer.name}</span>
               </p>
 

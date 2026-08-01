@@ -82,10 +82,59 @@ export function WebsiteToVideoFeature() {
   };
 
   const createVideo = () => {
+    // Generate custom scenes from website metadata if available
+    let customScenes = undefined;
+    if (metadata) {
+      const fps = selectedTemplate.fps || 30;
+      customScenes = [
+        {
+          id: `s-intro-${Date.now()}`,
+          type: "intro",
+          title: metadata.title.slice(0, 45),
+          subtitle: metadata.siteName || "Web Presentation",
+          durationInFrames: 4 * fps,
+          animation: "slide",
+        },
+        {
+          id: `s-content-${Date.now()}`,
+          type: "content",
+          title: "Overview",
+          subtitle: metadata.description.slice(0, 160) || "Explore details on our website",
+          durationInFrames: 6 * fps,
+          animation: "fade",
+          imageUrl: metadata.image || undefined,
+        },
+        ...(metadata.image
+          ? [
+              {
+                id: `s-gallery-${Date.now()}`,
+                type: "gallery",
+                title: "Visual Preview",
+                subtitle: "Page snapshot",
+                durationInFrames: 5 * fps,
+                animation: "zoom",
+                images: [metadata.image],
+              },
+            ]
+          : []),
+        {
+          id: `s-outro-${Date.now()}`,
+          type: "outro",
+          title: "Learn More",
+          subtitle: metadata.url.replace(/^https?:\/\/(www\.)?/, ""),
+          durationInFrames: 4 * fps,
+          animation: "slide",
+        },
+      ];
+    }
+
     const project = createProjectFromTemplate(
       selectedTemplate,
       brand,
-      metadata ? propsFromWebsite(metadata, brand) : {},
+      {
+        ...(metadata ? propsFromWebsite(metadata, brand) : {}),
+        ...(customScenes ? { scenes: customScenes } : {}),
+      },
       {
         name: metadata?.title.slice(0, 60) ?? "Website Video",
         sourceType: "website",
@@ -93,7 +142,7 @@ export function WebsiteToVideoFeature() {
     );
     if (metadata) project.sourceUrl = metadata.url;
     addProject(project);
-    toast.success("Video project created");
+    toast.success("Video project created from website");
     router.push(`/create/${project.id}`);
   };
 
@@ -111,7 +160,7 @@ export function WebsiteToVideoFeature() {
           </p>
         </div>
 
-        <div className="space-y-3 rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="space-y-3 rounded-xl border border-border/50 bg-card/45 backdrop-blur-md p-5 shadow-sm">
           <Label htmlFor="url">Website URL</Label>
           <div className="flex gap-2">
             <Input
@@ -132,7 +181,7 @@ export function WebsiteToVideoFeature() {
         </div>
 
         {metadata && (
-          <div className="space-y-2 rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="space-y-2 rounded-xl border border-border/50 bg-card/45 backdrop-blur-md p-5 shadow-sm">
             <p className="text-sm font-medium">{metadata.title}</p>
             <p className="text-xs text-muted-foreground line-clamp-3">
               {metadata.description}
@@ -156,10 +205,10 @@ export function WebsiteToVideoFeature() {
                 key={t.id}
                 type="button"
                 onClick={() => setSelectedTemplateId(t.id)}
-                className={`rounded-lg border p-3 text-left text-sm transition ${
+                className={`rounded-lg border p-3 text-left text-sm transition-all duration-200 ${
                   selectedTemplateId === t.id
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/30"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border/60 hover:border-primary/30"
                 }`}
               >
                 <p className="font-medium">{t.name}</p>
@@ -174,7 +223,7 @@ export function WebsiteToVideoFeature() {
             Continue <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           <Button asChild variant="outline">
-            <Link href="/templates">Browse all templates</Link>
+            <Link href="/showcase">Browse all templates</Link>
           </Button>
         </div>
       </div>

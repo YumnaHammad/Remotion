@@ -56,17 +56,20 @@ async function parseResponse(res: Response): Promise<TranscribeResult> {
   }
 }
 
-/** Call transcription API with optional engine selection. */
 export async function transcribeFromSourceUrl(
   sourceUrl: string,
   engine?: TranscriptionEngine
 ): Promise<TranscribeResult> {
+  let absoluteUrl = sourceUrl;
+  if (typeof window !== "undefined" && sourceUrl.startsWith("/")) {
+    absoluteUrl = window.location.origin + sourceUrl;
+  }
   try {
     const res = await fetch("/api/transcribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        sourceUrl,
+        sourceUrl: absoluteUrl,
         engine: engine ?? loadTranscriptionEngine(),
       }),
     });

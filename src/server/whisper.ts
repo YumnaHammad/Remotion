@@ -24,6 +24,7 @@ export function getWhisperDir(): string {
 }
 
 import os from "node:os";
+import { GoogleGenAI } from "@google/genai";
 
 export function getWhisperTmpDir(): string {
   const onServerless = process.env.VERCEL === "1" || process.platform !== "win32";
@@ -191,90 +192,221 @@ export async function downloadSourceToTemp(sourceUrl: string): Promise<string> {
 }
 
 async function downloadYoutubeAudioViaCobalt(sourceUrl: string, dest: string): Promise<void> {
-  const res = await fetch("https://api.cobalt.tools/api/json", {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      url: sourceUrl,
-      isAudioOnly: true,
-      aFormat: "mp3"
-    })
+  const COBALT_MIRRORS = [
+    "https://api.cobalt.tools",
+    "https://cobalt.sh123.top",
+    "https://cobalt.api.ryzetech.live",
+  ];
+
+  let lastError: Error | null = null;
+
+  for (const mirror of COBALT_MIRRORS) {
+    try {
+      console.log(`[whisper] Trying Cobalt download via mirror: ${mirror}`);
+      const endpoint = `${mirror}/api/json`;
+      
+      // Try newer v10 schema
+      let res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          url: sourceUrl,
+          downloadMode: "audio",
+          audioFormat: "mp3"
+        })
+      });
+
+      // If 400 Bad Request, fall back to older v7/v8 schema
+      if (res.status === 400) {
+        console.warn(`[whisper] Cobalt v10 failed on ${mirror} (400), trying v7/v8 older schema...`);
+        res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            url: sourceUrl,
+            isAudioOnly: true,
+            aFormat: "mp3"
+          })
+        });
+      }
+
+      if (!res.ok) {
+        throw new Error(`Status ${res.status}`);
+      }
+
+      const data = (await res.json()) as { status: string; url?: string; text?: string };
+      if (data.status === "error") {
+        throw new Error(data.text ?? "Cobalt reports error status");
+      }
+      if (!data.url) {
+        throw new Error("No download URL in response");
+      }
+
+      // Download the resolved audio file
+      const audioRes = await fetch(data.url);
+      if (!audioRes.ok) {
+        throw new Error(`Failed to download audio bytes: status ${audioRes.status}`);
+      }
+
+      const buf = Buffer.from(await audioRes.arrayBuffer());
+      await fs.writeFile(dest, buf);
+      console.log(`[whisper] Cobalt download succeeded via: ${mirror}`);
+      return; // Succeeded!
+    } catch (err: any) {
+      console.warn(`[whisper] Cobalt mirror ${mirror} failed: ${err.message}`);
+      lastError = err;
+    }
+  }
+
+  throw new Error(`All Cobalt API mirrors failed. Last error: ${lastError?.message ?? "unknown"}`);
+}
+
+async function geminiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
+  const apiKey = process.env.GOOGLE_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error("GOOGLE_API_KEY is not configured.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const fileBuffer = await fs.readFile(inputPath);
+  const base64Data = fileBuffer.toString("base64");
+
+  const ext = path.extname(inputPath).toLowerCase();
+  let mimeType = "audio/mp3";
+  if (ext === ".wav") mimeType = "audio/wav";
+  else if (ext === ".m4a") mimeType = "audio/m4a";
+  else if (ext === ".ogg") mimeType = "audio/ogg";
+  else if (ext === ".webm") mimeType = "audio/webm";
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType,
+            },
+          },
+          {
+            text: "Transcribe the audio exactly. Output the words with their millisecond timestamps in a compact pipe-delimited format. Each line must be exactly: word|startMs|endMs. Example:\nhello|100|400\nworld|400|800\nOutput ONLY the lines of text. Do not wrap in markdown blocks, do not write anything else.",
+          },
+        ],
+      },
+    ],
   });
-  if (!res.ok) {
-    throw new Error(`Cobalt API failed with status ${res.status}`);
+
+  const text = response.text?.trim();
+  if (!text) {
+    throw new Error("Gemini returned an empty transcription response.");
   }
-  const data = (await res.json()) as { status: string; url?: string; text?: string };
-  if (data.status === "error") {
-    throw new Error(data.text ?? "Cobalt download failed");
+
+  const captions: Caption[] = [];
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const cleanLine = line.trim();
+    if (!cleanLine || cleanLine.startsWith("```")) continue;
+
+    const parts = cleanLine.split("|");
+    if (parts.length >= 3) {
+      const word = parts[0]!.trim();
+      const startMs = parseInt(parts[1]!.trim(), 10);
+      const endMs = parseInt(parts[2]!.trim(), 10);
+
+      if (word && !isNaN(startMs) && !isNaN(endMs)) {
+        captions.push({
+          text: word,
+          startMs,
+          endMs,
+          timestampMs: Math.round((startMs + endMs) / 2),
+          confidence: 1,
+        });
+      }
+    }
   }
-  if (!data.url) {
-    throw new Error("No download URL returned from Cobalt");
+
+  if (captions.length === 0) {
+    throw new Error("Gemini transcript did not return any word-level timings in the expected format.");
   }
-  const audioRes = await fetch(data.url);
-  if (!audioRes.ok) {
-    throw new Error(`Failed to download audio from Cobalt URL: ${data.url}`);
-  }
-  const buf = Buffer.from(await audioRes.arrayBuffer());
-  await fs.writeFile(dest, buf);
+
+  return captions;
 }
 
 export async function openaiWhisperTranscribe(inputPath: string): Promise<Caption[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OpenAI API key (OPENAI_API_KEY) is not set in environment variables.");
+  const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
+  const hasGoogle = Boolean(process.env.GOOGLE_API_KEY);
+
+  if (!hasOpenAI && !hasGoogle) {
+    throw new Error("Neither OPENAI_API_KEY nor GOOGLE_API_KEY is set in environment variables.");
   }
 
-  const fileBuffer = await fs.readFile(inputPath);
-  const filename = path.basename(inputPath);
-  const ext = path.extname(filename).toLowerCase();
-  const supported = [".flac", ".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".ogg", ".wav", ".webm"];
-  const finalFilename = supported.includes(ext) ? filename : "audio.wav";
+  if (hasOpenAI) {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      const fileBuffer = await fs.readFile(inputPath);
+      const filename = path.basename(inputPath);
+      const ext = path.extname(filename).toLowerCase();
+      const supported = [".flac", ".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".ogg", ".wav", ".webm"];
+      const finalFilename = supported.includes(ext) ? filename : "audio.wav";
 
-  const formData = new FormData();
-  const fileBlob = new Blob([fileBuffer], { type: "audio/mpeg" });
-  formData.append("file", fileBlob, finalFilename);
-  formData.append("model", "whisper-1");
-  formData.append("response_format", "verbose_json");
-  formData.append("timestamp_granularities[]", "word");
+      const formData = new FormData();
+      const fileBlob = new Blob([fileBuffer], { type: "audio/mpeg" });
+      formData.append("file", fileBlob, finalFilename);
+      formData.append("model", "whisper-1");
+      formData.append("response_format", "verbose_json");
+      formData.append("timestamp_granularities[]", "word");
 
-  const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: formData,
-  });
+      const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: formData,
+      });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`OpenAI Whisper API error (${res.status}): ${errText}`);
+      if (res.ok) {
+        const data = (await res.json()) as {
+          text: string;
+          words?: { word: string; start: number; end: number }[];
+        };
+
+        if (data.words && data.words.length > 0) {
+          return data.words.map((w) => ({
+            text: w.word,
+            startMs: Math.round(w.start * 1000),
+            endMs: Math.round(w.end * 1000),
+            timestampMs: Math.round(((w.start + w.end) / 2) * 1000),
+            confidence: 1,
+          }));
+        }
+        return [
+          {
+            text: data.text,
+            startMs: 0,
+            endMs: 15000,
+            timestampMs: 7500,
+            confidence: 1,
+          },
+        ];
+      }
+      const errText = await res.text();
+      console.warn(`[whisper] OpenAI cloud transcription failed (${res.status}): ${errText}, trying Gemini fallback...`);
+    } catch (err) {
+      console.warn("[whisper] OpenAI cloud transcription threw error, trying Gemini fallback...", err);
+    }
   }
 
-  const data = (await res.json()) as {
-    text: string;
-    words?: { word: string; start: number; end: number }[];
-  };
-
-  if (!data.words || data.words.length === 0) {
-    return [
-      {
-        text: data.text,
-        startMs: 0,
-        endMs: 15000,
-        timestampMs: 7500,
-        confidence: 1,
-      },
-    ];
+  if (hasGoogle) {
+    return await geminiWhisperTranscribe(inputPath);
   }
 
-  return data.words.map((w) => ({
-    text: w.word,
-    startMs: Math.round(w.start * 1000),
-    endMs: Math.round(w.end * 1000),
-    timestampMs: Math.round(((w.start + w.end) / 2) * 1000),
-    confidence: 1,
-  }));
+  throw new Error("Both OpenAI and Gemini cloud transcription fallbacks failed.");
 }
