@@ -221,7 +221,7 @@ export function RightPanel() {
   };
 
   return (
-    <div className="flex h-full min-h-0 w-72 flex-col border-l border-[var(--editor-border)] bg-[var(--editor-panel)]">
+    <div className="relative z-10 flex h-full shrink-0 min-h-0 w-72 flex-col border-l border-[var(--editor-border)] bg-[var(--editor-panel)]">
       <LayersPanel />
 
       <Tabs

@@ -11,7 +11,8 @@ export function defaultTracks(): Track[] {
   return [
     { id: "t-v1", name: "Video 1", kind: "video", locked: false, muted: false, height: 48, volume: 1 },
     { id: "t-tx1", name: "Text 1", kind: "text", locked: false, muted: false, height: 40, volume: 1 },
-    { id: "t-a1", name: "Audio 1", kind: "audio", locked: false, muted: false, height: 36, volume: 1 },
+    { id: "t-a1", name: "Voice-over", kind: "audio", locked: false, muted: false, height: 36, volume: 1 },
+    { id: "t-a2", name: "Background Music", kind: "audio", locked: false, muted: false, height: 36, volume: 1 },
   ];
 }
 
@@ -37,7 +38,7 @@ export function createBlankProject(opts: BlankProjectOptions = {}): Project {
   const preset = ASPECT_PRESETS[aspectRatio];
   const fps = opts.fps ?? 30;
   const durationInFrames = opts.durationInFrames ?? 150;
-  const background = opts.background ?? "#0b0c0f";
+  const background = opts.background ?? "#0f1015";
   const now = new Date().toISOString();
   const name = opts.name ?? "Untitled Project";
 
@@ -55,22 +56,39 @@ export function createBlankProject(opts: BlankProjectOptions = {}): Project {
           animation: "none",
           animationDuration: 0,
           filters: { ...DEFAULT_FILTERS },
-          fill: "#0b84f3",
+          fill: "#0f1015",
         },
         makeTextLayer({
           name: "Title",
-          text: name === "Untitled Project" ? "Hello" : name,
+          text: name === "Untitled Project" ? "START CREATING" : name.toUpperCase(),
           startFrame: 0,
-          durationInFrames: Math.min(90, durationInFrames),
-          animation: "none",
+          durationInFrames,
+          transform: { x: 0, y: -40, scale: 1, rotation: 0, opacity: 1, blur: 0 },
           textStyle: {
             fontFamily: "Inter",
-            fontSize: 72,
+            fontSize: 64,
             fontWeight: 800,
-            color: "#ffffff",
+            color: "#22d3ee",
             align: "center",
             lineHeight: 1.1,
             letterSpacing: -1.5,
+            neon: true,
+          },
+        }),
+        makeTextLayer({
+          name: "Subtitle",
+          text: "Double-click to customize this text or drag assets to the timeline",
+          startFrame: 0,
+          durationInFrames,
+          transform: { x: 0, y: 50, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+          textStyle: {
+            fontFamily: "Inter",
+            fontSize: 22,
+            fontWeight: 500,
+            color: "#94a3b8",
+            align: "center",
+            lineHeight: 1.2,
+            letterSpacing: 0,
           },
         }),
       ];

@@ -1,5 +1,5 @@
-import { TemplateGalleryFeature } from "@/features/templates/template-gallery";
+import { redirect } from "next/navigation";
 
 export default function TemplatesPage() {
-  return <TemplateGalleryFeature />;
+  redirect("/dashboard");
 }

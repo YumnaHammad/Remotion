@@ -255,11 +255,6 @@ export function CanvasTransformOverlay({
         );
       })}
 
-      {selectedLayer && (
-        <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/70 px-2 py-1 text-[10px] text-white/80">
-          Drag to move · round handle to spin · arrow keys to nudge
-        </div>
-      )}
     </div>
   );
 }

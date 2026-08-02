@@ -5,10 +5,7 @@ import { motion } from "framer-motion";
 import {
   Clapperboard,
   Download,
-  FileSpreadsheet,
   Globe,
-  LayoutTemplate,
-  Palette,
   Play,
   Video,
   Sparkles,
@@ -19,17 +16,10 @@ import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/components/shared/primitives";
 import { useProjectStore } from "@/stores/project-store";
 import { useSimpleVideoStore } from "@/stores/simple-video-store";
-import { TEMPLATE_CATALOG } from "@/templates/catalog";
 import { APP_NAME } from "@/lib/constants";
 import { formatRelative } from "@/lib/utils";
 
 const QUICK_LINKS = [
-  {
-    href: "/showcase",
-    label: "Template Marketplace",
-    desc: "Browse premium ready-made video styles",
-    icon: LayoutTemplate,
-  },
   {
     href: "/script-to-video",
     label: "Script to Video",
@@ -43,10 +33,10 @@ const QUICK_LINKS = [
     icon: Globe,
   },
   {
-    href: "/brand",
-    label: "Brand Kit",
-    desc: "Save colors, fonts, and assets for instant branding",
-    icon: Palette,
+    href: "/projects",
+    label: "Timeline Studio",
+    desc: "Launch the full multi-track video timeline editor",
+    icon: Clapperboard,
   },
 ] as const;
 
@@ -82,7 +72,7 @@ export function DashboardHome() {
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button asChild variant="glow" size="sm" className="w-full sm:w-auto">
-              <Link href="/showcase">
+              <Link href="/script-to-video">
                 <Clapperboard className="h-4 w-4" /> New video
               </Link>
             </Button>
@@ -95,7 +85,7 @@ export function DashboardHome() {
         </div>
       </motion.section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2">
         <StatCard
           label="Your videos"
           value={String(simpleProjects.length)}
@@ -107,18 +97,6 @@ export function DashboardHome() {
           value={String(renders.length)}
           hint={`${activeRenders.length} in progress`}
           icon={Download}
-        />
-        <StatCard
-          label="Templates"
-          value={String(TEMPLATE_CATALOG.length)}
-          hint="Social, product, podcast & more"
-          icon={LayoutTemplate}
-        />
-        <StatCard
-          label="Brand kit"
-          value="1"
-          hint="Applied to all videos"
-          icon={Palette}
         />
       </section>
 
@@ -153,7 +131,7 @@ export function DashboardHome() {
           {simpleProjects.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
               No videos yet.{" "}
-              <Link href="/showcase" className="text-primary hover:underline">
+              <Link href="/script-to-video" className="text-primary hover:underline">
                 Create your first
               </Link>
             </div>

@@ -38,7 +38,6 @@ const fadeUp = {
 const NAV_LINKS = [
   { href: "#features", label: "Features" },
   { href: "#how-it-works", label: "How it works" },
-  { href: "#templates", label: "Templates" },
   { href: "#pricing", label: "Pricing" },
 ] as const;
 
@@ -59,27 +58,27 @@ const FEATURES = [
     accent: "from-violet-500/20 to-transparent",
   },
   {
-    icon: Palette,
-    title: "Brand Kit",
+    icon: Sparkles,
+    title: "Script to Video",
     description:
-      "Logo, colors, fonts, and music saved once — every video starts on-brand automatically.",
-    href: "/brand",
+      "Generate professional voiceovers, subtitles, and scenes directly from text prompts.",
+    href: "/script-to-video",
     accent: "from-pink-500/20 to-transparent",
   },
   {
-    icon: LayoutTemplate,
-    title: "One-click templates",
+    icon: Globe,
+    title: "Website to Video",
     description:
-      "25+ long-form layouts and dozens of short clips — pick, customize, export.",
-    href: "/templates",
+      "Convert blogs, portfolios, or product pages into videos by pasting the URL.",
+    href: "/website-to-video",
     accent: "from-[#0b84f3]/20 to-transparent",
   },
   {
     icon: Layers,
-    title: "Multi-scene videos",
+    title: "Timeline Studio",
     description:
-      "Build 10–50 scene videos with intro, stats, gallery, quotes, and outro — no timeline.",
-    href: "/templates",
+      "A Premiere-grade multi-track video timeline editor in React. Move, trim, split, and compose clips.",
+    href: "/projects",
     accent: "from-cyan-500/20 to-transparent",
   },
   {
@@ -91,11 +90,11 @@ const FEATURES = [
     accent: "from-amber-500/20 to-transparent",
   },
   {
-    icon: Play,
-    title: "Long-form video support",
+    icon: Download,
+    title: "Render Center",
     description:
-      "Professional videos from 30 seconds to 5 minutes — reports, pitches, and presentations.",
-    href: "/showcase",
+      "High-speed MP4, WebM, and GIF exports with complete frame-accurate quality settings.",
+    href: "/exports",
     accent: "from-emerald-500/20 to-transparent",
   },
 ] as const;
@@ -581,126 +580,6 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Template showcase */}
-        <section id="templates" className="scroll-mt-20 px-4 py-12 sm:py-20 lg:px-6 lg:py-28">
-          <div className="mx-auto max-w-6xl">
-            <motion.div {...fadeUp} className="flex flex-col gap-4">
-              <div>
-                <Badge variant="outline" className="mb-3 border-border/60 sm:mb-4">
-                  <LayoutTemplate className="mr-1 h-3 w-3" /> Template gallery
-                </Badge>
-                <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
-                  Templates for every use case
-                </h2>
-                <p className="mt-2 text-sm text-muted-foreground sm:mt-3 sm:text-base">
-                  Business reports, social media, marketing, corporate presentations,
-                  and data-driven analytics — 30 seconds to 5 minutes.
-                </p>
-              </div>
-              <Button asChild variant="outline" className="w-full sm:w-auto sm:self-start border-border">
-                <Link href="/showcase">
-                  Browse marketplace <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </motion.div>
-
-            <div className="mt-8 flex flex-wrap gap-2">
-              {LONG_FORM_CATEGORIES.map((cat) => (
-                <Badge key={cat} variant="outline" className="border-white/10">
-                  {cat}
-                </Badge>
-              ))}
-            </div>
-
-            <div className="mt-8 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:mt-10 lg:grid-cols-3">
-              {(SHOWCASE.length > 0 ? SHOWCASE : TEMPLATE_CATALOG.slice(0, 6)).map(
-                (t, i) => (
-                  <motion.div
-                    key={t.id}
-                    {...fadeUp}
-                    transition={{ ...fadeUp.transition, delay: i * 0.05 }}
-                  >
-                    <Link
-                      href="/templates"
-                      className="group block overflow-hidden rounded-xl border border-white/8 bg-card transition hover:border-[#0b84f3]/30 active:border-[#0b84f3]/30"
-                    >
-                      <div
-                        className={cn(
-                          "relative aspect-video bg-gradient-to-br",
-                          t.thumbnail.startsWith("gradient")
-                            ? "from-indigo-900/80 to-purple-900/60"
-                            : "from-[#0b1020] to-[#1a1030]"
-                        )}
-                      >
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,#0b84f344,transparent_60%)]" />
-                        <div className="absolute left-2 top-2 flex flex-wrap gap-1 sm:left-3 sm:top-3 sm:gap-1.5">
-                          {t.popular && (
-                            <Badge variant="secondary" className="text-[9px] sm:text-[10px]">
-                              Popular
-                            </Badge>
-                          )}
-                          {t.premium && (
-                            <Badge className="bg-amber-500/90 text-[9px] text-black hover:bg-amber-500/90 sm:text-[10px]">
-                              Pro
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center opacity-100 sm:opacity-0 sm:transition sm:group-hover:opacity-100">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0b84f3] shadow-lg sm:h-10 sm:w-10">
-                            <Play className="h-3.5 w-3.5 fill-white text-white sm:h-4 sm:w-4" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-3 sm:p-4">
-                        <p className="text-sm font-medium sm:text-base">{t.name}</p>
-                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                          {t.description}
-                        </p>
-                        <p className="mt-1.5 text-[10px] text-muted-foreground sm:mt-2 sm:text-[11px]">
-                          {t.category} · {t.aspectRatio}
-                        </p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                )
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Showcase examples */}
-        <section id="showcase" className="border-t border-white/5 bg-black/25 px-4 py-12 sm:py-16 lg:px-6">
-          <div className="mx-auto max-w-6xl">
-            <motion.div {...fadeUp} className="mb-8 text-center">
-              <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-                See what you can create
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Business reports, analytics videos, product ads, and company presentations.
-              </p>
-            </motion.div>
-            <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 md:grid-cols-4">
-              {[
-                { title: "Business reports", href: "/templates", body: "Monthly KPIs & executive summaries" },
-                { title: "Analytics videos", href: "/data-to-video", body: "CSV, Excel, JSON to animated charts" },
-                { title: "Product ads", href: "/website-to-video", body: "Launch videos from any URL" },
-                { title: "Company presentations", href: "/showcase", body: "Multi-scene decks up to 5 minutes" },
-              ].map((item) => (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className="rounded-2xl border border-white/8 bg-card/40 p-5 transition hover:border-[#0b84f3]/30 sm:p-6"
-                >
-                  <h3 className="text-sm font-medium sm:text-base">{item.title}</h3>
-                  <p className="mt-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
-                    {item.body}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Pricing */}
         <section id="pricing" className="scroll-mt-20 px-4 py-12 sm:py-20 lg:px-6 lg:py-28">
           <div className="mx-auto max-w-6xl">
@@ -724,10 +603,10 @@ export function LandingPage() {
                   <li>5 exports per month</li>
                   <li>Watermark on exports</li>
                   <li>720p export quality</li>
-                  <li>Limited template library</li>
+                  <li>Access to editor & automation</li>
                 </ul>
                 <Button asChild variant="outline" className="mt-8 w-full rounded-xl">
-                  <Link href="/templates">Get started free</Link>
+                  <Link href="/dashboard">Get started free</Link>
                 </Button>
               </motion.div>
 
@@ -746,12 +625,12 @@ export function LandingPage() {
                 <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
                   <li>Unlimited exports</li>
                   <li>Full HD and 4K export</li>
-                  <li>All premium templates</li>
-                  <li>Brand kit & asset library</li>
+                  <li>Multi-track Timeline Studio</li>
+                  <li>Asset library & voiceovers</li>
                   <li>Priority rendering</li>
                 </ul>
                 <Button asChild variant="glow" className="mt-8 w-full rounded-xl">
-                  <Link href="/templates">Upgrade to Pro</Link>
+                  <Link href="/dashboard">Upgrade to Pro</Link>
                 </Button>
               </motion.div>
             </div>
@@ -776,10 +655,10 @@ export function LandingPage() {
                   href: "/data-to-video",
                 },
                 {
-                  icon: Palette,
-                  title: "Brand owners",
-                  body: "Lock colors, logo, and typography — every export stays on-brand.",
-                  href: "/brand",
+                  icon: Layers,
+                  title: "Video creators",
+                  body: "Animate texts, add voiceovers, trim scenes, and compose in Timeline Studio.",
+                  href: "/projects",
                 },
               ].map((item) => (
                 <Link
@@ -819,7 +698,7 @@ export function LandingPage() {
                 size="lg"
                 className="h-11 w-full rounded-xl sm:w-auto"
               >
-                <Link href="/showcase">
+                <Link href="/script-to-video">
                   <Clapperboard className="h-4 w-4" /> Create free video
                 </Link>
               </Button>
@@ -848,11 +727,8 @@ export function LandingPage() {
             </div>
           </div>
           <nav className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-            <Link href="/showcase" className="hover:text-foreground">
-              Templates
-            </Link>
-            <Link href="/brand" className="hover:text-foreground">
-              Brand kit
+            <Link href="/dashboard" className="hover:text-foreground">
+              Dashboard
             </Link>
             <Link href="/exports" className="hover:text-foreground">
               Exports

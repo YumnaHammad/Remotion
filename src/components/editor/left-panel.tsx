@@ -17,6 +17,8 @@ import {
   Upload,
   Video,
   Waves,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EDITOR_TABS } from "@/lib/constants";
@@ -38,6 +40,7 @@ import {
   type Layer,
   type ShapeKind,
   type TimedCaption,
+  type MediaAsset,
 } from "@/types";
 import {
   BROLL_LIBRARY,
@@ -74,7 +77,6 @@ const TAB_ICONS = {
   patterns: Waves,
   effects: Sparkles,
   collage: LayoutGrid,
-  brand: Sparkles,
 } as const;
 
 function makeLayer(
@@ -133,8 +135,19 @@ export function LeftPanel() {
   const uploadedAssets = useAssetStore((s) => s.assets);
   const addAsset = useAssetStore((s) => s.addAsset);
   const uploadFiles = useAssetStore((s) => s.uploadFiles);
+  const removeAsset = useAssetStore((s) => s.removeAsset);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const transcribeInputRef = useRef<HTMLInputElement>(null);
+  
+  const clipsFileInputRef = useRef<HTMLInputElement>(null);
+  const audioFileInputRef = useRef<HTMLInputElement>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiAspectRatio, setAiAspectRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
+  const [generatingAiVisual, setGeneratingAiVisual] = useState(false);
+  const [aiGenerationStatus, setAiGenerationStatus] = useState("");
+  const [uploadingClip, setUploadingClip] = useState(false);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
+
   const [transcribing, setTranscribing] = useState(false);
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -144,6 +157,254 @@ export function LeftPanel() {
   const setVoiceMode = (mode: VoiceMode) => {
     voiceModeRef.current = mode;
     setVoiceModeState(mode);
+  };
+
+  const onClipUpload = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setUploadingClip(true);
+    const toastId = toast.loading("Uploading clip to server...");
+    try {
+      const file = files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/assets/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = (await res.json()) as { url: string; name?: string };
+      const isVideo = file.type.startsWith("video/");
+      const assetUrl = data.url;
+      const duration = isVideo
+        ? await mediaDurationInFrames(assetUrl, "video")
+        : 90;
+
+      const layer = makeLayer({
+        type: isVideo ? "video" : "image",
+        name: file.name,
+        trackId: "t-v1",
+        startFrame: currentFrame,
+        durationInFrames: duration,
+        src: assetUrl,
+        objectFit: "cover",
+        ...(isVideo ? { useOffthread: true, volume: 1 } : {}),
+        animation: "none",
+      });
+      add(layer);
+      addAsset({
+        id: `ast-${Date.now()}`,
+        name: file.name,
+        url: assetUrl,
+        type: isVideo ? "video" : "image",
+        size: file.size,
+        tags: [],
+        folder: "Uploads",
+        createdAt: new Date().toISOString(),
+      });
+      toast.success("Clip uploaded and added to timeline", { id: toastId });
+    } catch (err) {
+      toast.error("Error uploading clip", { id: toastId });
+    } finally {
+      setUploadingClip(false);
+    }
+  };
+
+  const onAudioUpload = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setUploadingAudio(true);
+    const toastId = toast.loading("Uploading audio to server...");
+    try {
+      const file = files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/assets/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = (await res.json()) as { url: string; name?: string };
+      const assetUrl = data.url;
+      const duration = await mediaDurationInFrames(assetUrl, "audio");
+
+      const layer = makeLayer({
+        type: "audio",
+        name: file.name,
+        trackId: "t-a2", // split track background music default
+        startFrame: currentFrame,
+        durationInFrames: duration,
+        src: assetUrl,
+        volume: 0.8,
+        playbackRate: 1,
+        loop: true,
+        animation: "none",
+      });
+      add(layer);
+      addAsset({
+        id: `ast-${Date.now()}`,
+        name: file.name,
+        url: assetUrl,
+        type: "audio",
+        size: file.size,
+        tags: [],
+        folder: "Uploads",
+        createdAt: new Date().toISOString(),
+      });
+      toast.success("Audio uploaded and added to timeline", { id: toastId });
+    } catch (err) {
+      toast.error("Error uploading audio", { id: toastId });
+    } finally {
+      setUploadingAudio(false);
+    }
+  };
+
+  const generateAiImage = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error("Please enter a prompt for AI visual generation");
+      return;
+    }
+    setGeneratingAiVisual(true);
+    setAiGenerationStatus("Generating image from AI...");
+    const toastId = toast.loading("AI is painting your image...");
+    try {
+      const res = await fetch("/api/ai/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: aiPrompt, aspectRatio: aiAspectRatio }),
+      });
+      if (!res.ok) {
+        const errorData = (await res.json()) as { error?: string };
+        throw new Error(errorData.error || "Generation failed");
+      }
+      const data = (await res.json()) as { url: string };
+
+      const layer = makeLayer({
+        type: "image",
+        name: `AI Image: ${aiPrompt.slice(0, 15)}...`,
+        trackId: "t-v1",
+        startFrame: currentFrame,
+        durationInFrames: 90,
+        src: data.url,
+        objectFit: "cover",
+        animation: "fade",
+      });
+      add(layer);
+      addAsset({
+        id: `ast-${Date.now()}`,
+        name: `AI Image: ${aiPrompt.slice(0, 20)}`,
+        url: data.url,
+        type: "image",
+        size: 0,
+        tags: ["ai"],
+        folder: "Uploads",
+        createdAt: new Date().toISOString(),
+      });
+      toast.success("AI image generated and added to timeline", { id: toastId });
+      setAiPrompt("");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to generate image";
+      toast.error(msg, { id: toastId });
+    } finally {
+      setGeneratingAiVisual(false);
+      setAiGenerationStatus("");
+    }
+  };
+
+  const generateAiVideo = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error("Please enter a prompt for AI visual generation");
+      return;
+    }
+    setGeneratingAiVisual(true);
+    setAiGenerationStatus("Creating Google Veo video generation job...");
+    const toastId = toast.loading("AI is initiating video creation...");
+    try {
+      const res = await fetch("/api/video/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: aiPrompt, aspectRatio: aiAspectRatio }),
+      });
+      if (!res.ok) {
+        const errorData = (await res.json()) as { error?: string };
+        throw new Error(errorData.error || "Failed to start generation");
+      }
+      const data = (await res.json()) as { jobId: string };
+      const jobId = data.jobId;
+
+      setAiGenerationStatus("Generating video (Google Veo takes 1-2 mins)...");
+      let attempts = 0;
+      const maxAttempts = 90;
+
+      const poll = setInterval(async () => {
+        attempts++;
+        if (attempts > maxAttempts) {
+          clearInterval(poll);
+          toast.error("Generation timed out on server", { id: toastId });
+          setGeneratingAiVisual(false);
+          setAiGenerationStatus("");
+          return;
+        }
+        try {
+          const statusRes = await fetch(`/api/video/${jobId}`);
+          if (!statusRes.ok) return;
+          const statusData = (await statusRes.json()) as {
+            ok: boolean;
+            job: {
+              status: "pending" | "running" | "completed" | "failed";
+              message?: string;
+              videoUrl?: string;
+            };
+          };
+
+          if (statusData.job.status === "completed" && statusData.job.videoUrl) {
+            clearInterval(poll);
+            const videoUrl = statusData.job.videoUrl;
+            const duration = await mediaDurationInFrames(videoUrl, "video");
+
+            const layer = makeLayer({
+              type: "video",
+              name: `AI Video: ${aiPrompt.slice(0, 15)}...`,
+              trackId: "t-v1",
+              startFrame: currentFrame,
+              durationInFrames: duration,
+              src: videoUrl,
+              objectFit: "cover",
+              useOffthread: true,
+              volume: 1,
+              animation: "none",
+            });
+            add(layer);
+            addAsset({
+              id: `ast-${Date.now()}`,
+              name: `AI Video: ${aiPrompt.slice(0, 20)}`,
+              url: videoUrl,
+              type: "video",
+              size: 0,
+              tags: ["ai"],
+              folder: "Uploads",
+              createdAt: new Date().toISOString(),
+            });
+            toast.success("AI video generated and added to timeline", { id: toastId });
+            setAiPrompt("");
+            setGeneratingAiVisual(false);
+            setAiGenerationStatus("");
+          } else if (statusData.job.status === "failed") {
+            clearInterval(poll);
+            toast.error("AI video generation failed on server", { id: toastId });
+            setGeneratingAiVisual(false);
+            setAiGenerationStatus("");
+          } else if (statusData.job.message) {
+            setAiGenerationStatus(statusData.job.message);
+          }
+        } catch (err) {
+          // Ignore transient network errors
+        }
+      }, 3000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to generate video";
+      toast.error(msg, { id: toastId });
+      setGeneratingAiVisual(false);
+      setAiGenerationStatus("");
+    }
   };
 
   const add = (layer: Layer) => {
@@ -290,7 +551,39 @@ export function LeftPanel() {
     mode: VoiceMode = "voice-captions"
   ) => {
     const kind = file.type.startsWith("audio") ? "audio" : "video";
-    const asset = assetFromFile(file);
+    
+    let finalUrl = "";
+    const formData = new FormData();
+    formData.append("file", file);
+    const uploadToastId = toast.loading(`Uploading "${file.name}" to server...`);
+    try {
+      const res = await fetch("/api/assets/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.ok && data.url) {
+        finalUrl = data.url;
+        toast.success(`Uploaded "${file.name}" successfully`, { id: uploadToastId });
+      } else {
+        finalUrl = URL.createObjectURL(file);
+        toast.warning("Server upload failed, falling back to local playback (exports may fail)", { id: uploadToastId });
+      }
+    } catch (err) {
+      finalUrl = URL.createObjectURL(file);
+      toast.warning("Server upload failed, falling back to local playback (exports may fail)", { id: uploadToastId });
+    }
+
+    const asset: MediaAsset = {
+      id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: file.name,
+      type: kind === "audio" ? "audio" : file.type === "image/gif" ? "gif" : "video",
+      url: finalUrl,
+      size: file.size,
+      createdAt: new Date().toISOString(),
+      folder: "Uploads",
+      tags: [],
+    };
     addAsset(asset);
 
     // MediaRecorder blobs report Infinity duration in Chromium, so mic
@@ -434,8 +727,8 @@ export function LeftPanel() {
   const activeTab = EDITOR_TABS.find((t) => t.id === leftTab);
 
   return (
-    <div className="flex h-full border-r border-[var(--editor-border)] bg-[var(--editor-panel)]">
-      <div className="flex w-14 flex-col items-center gap-1 border-r border-[var(--editor-border)] py-2">
+    <div className="relative z-10 flex h-full w-[312px] shrink-0 border-r border-[var(--editor-border)] bg-[var(--editor-panel)]">
+      <div className="flex w-14 shrink-0 flex-col items-center gap-1 border-r border-[var(--editor-border)] py-2">
         {EDITOR_TABS.map((tab) => {
           const Icon = TAB_ICONS[tab.id as keyof typeof TAB_ICONS];
           return (
@@ -464,12 +757,12 @@ export function LeftPanel() {
         })}
       </div>
 
-      <div className="flex w-64 flex-col">
+      <div className="flex w-64 shrink-0 flex-col">
         <div className="border-b border-[var(--editor-border)] px-3 py-2.5">
-          <p className="text-sm font-semibold text-white/90">
+          <p className="text-sm font-semibold text-foreground">
             {activeTab?.label}
           </p>
-          <p className="mt-0.5 text-[11px] leading-snug text-white/45">
+          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
             {activeTab?.hint}
           </p>
         </div>
@@ -477,8 +770,8 @@ export function LeftPanel() {
           <div className="space-y-2 p-3">
             {leftTab === "text" && (
               <>
-                <p className="px-0.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-white/35">
-                  Add text
+                <p className="pb-1 text-[11px] text-muted-foreground">
+                  Tap a style to put words on your video
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {["Title", "Subtitle", "Caption", "Neon Headline"].map(
@@ -713,191 +1006,459 @@ export function LeftPanel() {
                 >
                   <Upload className="mr-2 h-4 w-4 text-primary" /> Upload from your computer
                 </Button>
-                {assets.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex w-full flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2"
-                >
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 text-left transition hover:opacity-90"
-                  onClick={async () => {
-                    const duration = (m.type === "audio" || m.type === "video")
-                      ? await mediaDurationInFrames(m.url, m.type)
-                      : 90;
-                    add(
-                      makeLayer({
-                        type:
-                          m.type === "gif"
-                            ? "gif"
-                            : m.type === "audio"
-                              ? "audio"
-                              : m.type === "video"
-                                ? "video"
-                                : "image",
-                        name: m.name,
-                        trackId:
-                          m.type === "audio"
-                            ? "t-a1"
-                            : "t-v1",
-                        startFrame: currentFrame,
-                        durationInFrames: duration,
-                        src: m.url,
-                        objectFit: "cover",
-                        volume: 1,
-                        playbackRate: 1,
-                        animation: "none",
-                      })
-                    );
-                  }}
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/10">
-                    {m.type === "audio" ? (
-                      <Mic className="h-4 w-4 text-amber-400" />
-                    ) : m.type === "video" ? (
-                      <Video className="h-4 w-4 text-sky-400" />
-                    ) : m.type === "gif" ? (
-                      <Sticker className="h-4 w-4 text-pink-400" />
-                    ) : (
-                      <Images className="h-4 w-4 text-emerald-400" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-xs text-white">{m.name}</p>
-                    <p className="text-[10px] text-white/40">{m.type}</p>
-                  </div>
-                </button>
-                {(m.type === "image" || m.type === "gif" || m.type === "video") && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-6 w-full border-white/10 bg-black/20 text-[10px] text-white/70 hover:bg-white/10 hover:text-white"
-                    onClick={() => {
-                      const id = `l-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
-                      const layer = makeLayer({
-                        type: m.type === "gif" ? "gif" : m.type === "video" ? "video" : "image",
-                        name: `${m.name} (BG)`,
-                        trackId: "t-v1",
-                        startFrame: 0,
-                        durationInFrames: project.settings.durationInFrames,
-                        src: m.url,
-                        objectFit: "cover",
-                        animation: "none",
-                      });
-                      // Force id so we can send to back immediately
-                      add({ ...layer, id });
-                      // send to back on next tick after add
-                      setTimeout(() => {
-                        useEditorStore.getState().sendLayerToBack(id);
-                        useEditorStore.getState().selectLayers([id]);
-                      }, 0);
-                      toast.success("Added as background (back layer)");
-                    }}
-                  >
-                    Use as full-screen background
-                  </Button>
-                )}
-                </div>
-                ))}
+                {assets.map((m) => {
+                  const isUploaded = uploadedAssets.some((ua) => ua.id === m.id);
+                  return (
+                    <div
+                      key={m.id}
+                      className="relative flex w-full flex-col gap-1 rounded-lg border border-white/10 bg-white/5 p-2"
+                    >
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-2 text-left transition hover:opacity-90 pr-8"
+                        onClick={async () => {
+                          const duration =
+                            m.type === "audio" || m.type === "video"
+                              ? await mediaDurationInFrames(m.url, m.type)
+                              : 90;
+                          add(
+                            makeLayer({
+                              type:
+                                m.type === "gif"
+                                  ? "gif"
+                                  : m.type === "audio"
+                                    ? "audio"
+                                    : m.type === "video"
+                                      ? "video"
+                                      : "image",
+                              name: m.name,
+                              trackId: m.type === "audio" ? "t-a2" : "t-v1",
+                              startFrame: currentFrame,
+                              durationInFrames: duration,
+                              src: m.url,
+                              objectFit: "cover",
+                              volume: 1,
+                              playbackRate: 1,
+                              animation: "none",
+                            })
+                          );
+                        }}
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/10">
+                          {m.type === "audio" ? (
+                            <Mic className="h-4 w-4 text-amber-400" />
+                          ) : m.type === "video" ? (
+                            <Video className="h-4 w-4 text-sky-400" />
+                          ) : m.type === "gif" ? (
+                            <Sticker className="h-4 w-4 text-pink-400" />
+                          ) : (
+                            <Images className="h-4 w-4 text-emerald-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs text-white">{m.name}</p>
+                          <p className="text-[10px] text-white/40">{m.type}</p>
+                        </div>
+                      </button>
+
+                      {isUploaded && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeAsset(m.id);
+                            const layersToDelete = project.layers.filter(
+                              (l) => l.src === m.url
+                            );
+                            if (layersToDelete.length > 0) {
+                              removeLayers(layersToDelete.map((l) => l.id));
+                            }
+                            toast.success("Deleted asset and timeline layers");
+                          }}
+                          className="h-7 w-7 text-white/40 hover:text-red-400 hover:bg-white/5 absolute right-2 top-2"
+                          title="Delete from project and timeline"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+
+                      {(m.type === "image" ||
+                        m.type === "gif" ||
+                        m.type === "video") && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-full border-white/10 bg-black/20 text-[10px] text-white/70 hover:bg-white/10 hover:text-white"
+                          onClick={() => {
+                            const id = `l-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+                            const layer = makeLayer({
+                              type:
+                                m.type === "gif"
+                                  ? "gif"
+                                  : m.type === "video"
+                                    ? "video"
+                                    : "image",
+                              name: `${m.name} (BG)`,
+                              trackId: "t-v1",
+                              startFrame: 0,
+                              durationInFrames: project.settings.durationInFrames,
+                              src: m.url,
+                              objectFit: "cover",
+                              animation: "none",
+                            });
+                            // Force id so we can send to back immediately
+                            add({ ...layer, id });
+                            // send to back on next tick after add
+                            setTimeout(() => {
+                              useEditorStore.getState().sendLayerToBack(id);
+                              useEditorStore.getState().selectLayers([id]);
+                            }, 0);
+                            toast.success("Added as background (back layer)");
+                          }}
+                        >
+                          Use as full-screen background
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
               </>
             )}
 
             {leftTab === "video" && (
-              <>
-                <Button
-                  variant="outline"
-                  className="h-auto w-full justify-start border-white/10 bg-white/5 py-3 text-white hover:bg-white/10"
-                  onClick={() =>
-                    add(
-                      makeLayer({
-                        type: "video",
-                        name: "Video Clip",
-                        trackId: "t-v1",
-                        startFrame: currentFrame,
-                        durationInFrames: 120,
-                        src: SAMPLE_VIDEO,
-                        objectFit: "cover",
-                        useOffthread: true,
-                        volume: 1,
-                        playbackRate: 1,
-                        animation: "none",
-                      })
-                    )
-                  }
-                >
-                  <Video className="mr-2 h-4 w-4 text-sky-400" /> OffthreadVideo
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-auto w-full justify-start border-white/10 bg-white/5 py-3 text-white hover:bg-white/10"
-                  onClick={() =>
-                    add(
-                      makeLayer({
-                        type: "image",
-                        name: "Image",
-                        trackId: "t-v1",
-                        startFrame: currentFrame,
-                        durationInFrames: 90,
-                        src: SAMPLE_IMAGE,
-                        objectFit: "cover",
-                        animation: "scale",
-                      })
-                    )
-                  }
-                >
-                  <Images className="mr-2 h-4 w-4 text-emerald-400" /> Image
-                </Button>
-              </>
+              <div className="space-y-4">
+                {/* Manual upload input and button */}
+                <div>
+                  <input
+                    ref={clipsFileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      void onClipUpload(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={uploadingClip || generatingAiVisual}
+                    className="w-full justify-start border-dashed border-white/15 bg-white/5 text-white hover:bg-white/10"
+                    onClick={() => clipsFileInputRef.current?.click()}
+                  >
+                    {uploadingClip ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4 text-primary" />
+                    )}
+                    Upload video or image
+                  </Button>
+                </div>
+
+                {/* AI Visuals generator panel */}
+                <div className="space-y-3.5 rounded-lg border border-white/10 bg-white/5 p-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+                      AI Visual Generator
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <textarea
+                      placeholder="Describe what you want to create (e.g. A cute kitten playing with yarn)"
+                      value={aiPrompt}
+                      disabled={generatingAiVisual}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      rows={3}
+                      className="w-full rounded-md border border-white/10 bg-black/25 px-2.5 py-2 text-xs text-white placeholder-white/30 focus:border-primary/50 focus:outline-none resize-none"
+                    />
+
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-white/40">Aspect ratio:</span>
+                      <div className="flex gap-1">
+                        {(["16:9", "9:16", "1:1"] as const).map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            disabled={generatingAiVisual}
+                            onClick={() => setAiAspectRatio(r)}
+                            className={cn(
+                              "rounded px-2 py-1 text-[10px] font-medium transition",
+                              aiAspectRatio === r
+                                ? "bg-primary/20 text-primary border border-primary/30"
+                                : "bg-white/5 text-white/50 hover:bg-white/10 border border-transparent"
+                            )}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        disabled={generatingAiVisual || !aiPrompt.trim()}
+                        onClick={generateAiImage}
+                        className="bg-primary/20 border border-primary/30 text-white hover:bg-primary/30 h-8 text-[11px]"
+                      >
+                        {generatingAiVisual && aiGenerationStatus.includes("image") ? (
+                          <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Images className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+                        )}
+                        Draw Image
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={generatingAiVisual || !aiPrompt.trim()}
+                        onClick={generateAiVideo}
+                        className="bg-primary/20 border border-primary/30 text-white hover:bg-primary/30 h-8 text-[11px]"
+                      >
+                        {generatingAiVisual && aiGenerationStatus.includes("video") ? (
+                          <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Video className="mr-1.5 h-3.5 w-3.5 text-sky-400" />
+                        )}
+                        Make Video
+                      </Button>
+                    </div>
+
+                    {generatingAiVisual && (
+                      <div className="rounded bg-primary/5 p-2 border border-primary/10 mt-1 flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin text-primary shrink-0" />
+                        <span className="text-[10px] leading-tight text-white/80 animate-pulse">
+                          {aiGenerationStatus}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sample items */}
+                <div className="space-y-1.5 pt-2 border-t border-white/5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-white/35">
+                    Sample Stock Clips
+                  </span>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="h-auto w-full justify-start border-white/10 bg-white/5 py-2.5 text-white hover:bg-white/10"
+                      onClick={() =>
+                        add(
+                          makeLayer({
+                            type: "video",
+                            name: "City Timelapse",
+                            trackId: "t-v1",
+                            startFrame: currentFrame,
+                            durationInFrames: 120,
+                            src: SAMPLE_VIDEO,
+                            objectFit: "cover",
+                            useOffthread: true,
+                            volume: 1,
+                            playbackRate: 1,
+                            animation: "none",
+                          })
+                        )
+                      }
+                    >
+                      <Video className="mr-2 h-4 w-4 text-sky-400 shrink-0" />
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-xs">City Timelapse</p>
+                        <p className="text-[10px] text-white/40">Sample Stock Video</p>
+                      </div>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-auto w-full justify-start border-white/10 bg-white/5 py-2.5 text-white hover:bg-white/10"
+                      onClick={() =>
+                        add(
+                          makeLayer({
+                            type: "image",
+                            name: "Sunset Stock",
+                            trackId: "t-v1",
+                            startFrame: currentFrame,
+                            durationInFrames: 90,
+                            src: SAMPLE_IMAGE,
+                            objectFit: "cover",
+                            animation: "scale",
+                          })
+                        )
+                      }
+                    >
+                      <Images className="mr-2 h-4 w-4 text-emerald-400 shrink-0" />
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-xs">Sunset Stock</p>
+                        <p className="text-[10px] text-white/40">Sample Stock Image</p>
+                      </div>
+                    </Button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {leftTab === "audio" && (
-              <>
-                <Button
-                  variant="outline"
-                  className="h-auto w-full justify-start border-white/10 bg-white/5 py-3 text-white hover:bg-white/10"
-                  onClick={() =>
-                    add(
-                      makeLayer({
-                        type: "audio",
-                        name: "Background Music",
-                        trackId: "t-a1",
-                        startFrame: currentFrame,
-                        durationInFrames: 150,
-                        src: SAMPLE_AUDIO,
-                        volume: 0.8,
-                        playbackRate: 1,
-                        loop: true,
-                        animation: "none",
-                      })
-                    )
-                  }
-                >
-                  <Music className="mr-2 h-4 w-4 text-amber-400" /> Background
-                  Music
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-auto w-full justify-start border-white/10 bg-white/5 py-3 text-white hover:bg-white/10"
-                  onClick={() =>
-                    add(
-                      makeLayer({
-                        type: "audio",
-                        name: "Voice-over",
-                        trackId: "t-a1",
-                        startFrame: currentFrame,
-                        durationInFrames: 120,
-                        src: SAMPLE_AUDIO,
-                        volume: 1,
-                        playbackRate: 1,
-                        animation: "none",
-                      })
-                    )
-                  }
-                >
-                  <Mic className="mr-2 h-4 w-4 text-rose-400" /> Voice-over
-                </Button>
+              <div className="space-y-4">
+                {/* Manual audio upload input and button */}
+                <div>
+                  <input
+                    ref={audioFileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      void onAudioUpload(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={uploadingAudio}
+                    className="w-full justify-start border-dashed border-border/80 bg-muted/40 text-foreground hover:bg-muted/70"
+                    onClick={() => audioFileInputRef.current?.click()}
+                  >
+                    {uploadingAudio ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4 text-primary" />
+                    )}
+                    Upload background music or audio
+                  </Button>
+                </div>
+
+                {/* Uploaded Audio Assets list */}
+                {uploadedAssets.filter((a) => a.type === "audio").length > 0 && (
+                  <div className="space-y-1.5 pt-2 border-t border-border/60">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Your Audio Library
+                    </span>
+                    <div className="space-y-2">
+                      {uploadedAssets
+                        .filter((a) => a.type === "audio")
+                        .map((m) => (
+                          <div
+                            key={m.id}
+                            className="relative flex w-full flex-col gap-1 rounded-lg border border-border/60 bg-muted/40 p-2"
+                          >
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2 text-left transition hover:opacity-90 pr-8"
+                              onClick={async () => {
+                                const duration = await mediaDurationInFrames(
+                                  m.url,
+                                  "audio"
+                                );
+                                add(
+                                  makeLayer({
+                                    type: "audio",
+                                    name: m.name,
+                                    trackId: "t-a2", // Default to background track
+                                    startFrame: currentFrame,
+                                    durationInFrames: duration,
+                                    src: m.url,
+                                    volume: 0.8,
+                                    playbackRate: 1,
+                                    loop: true,
+                                    animation: "none",
+                                  })
+                                );
+                              }}
+                            >
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted/60">
+                                <Music className="h-4 w-4 text-amber-400" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-xs text-foreground">{m.name}</p>
+                                <p className="text-[10px] text-muted-foreground">Uploaded Audio</p>
+                              </div>
+                            </button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeAsset(m.id);
+                                const layersToDelete = project.layers.filter(
+                                  (l) => l.src === m.url
+                                );
+                                if (layersToDelete.length > 0) {
+                                  removeLayers(layersToDelete.map((l) => l.id));
+                                }
+                                toast.success("Deleted audio asset and layers");
+                              }}
+                              className="h-7 w-7 text-muted-foreground hover:text-red-400 hover:bg-muted/70 absolute right-2 top-2"
+                              title="Delete from project and timeline"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5 pt-2 border-t border-border/60">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Sample Audio Tracks
+                  </span>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="h-auto w-full justify-start border-border/60 bg-muted/40 py-2.5 text-foreground hover:bg-muted/70"
+                      onClick={() =>
+                        add(
+                          makeLayer({
+                            type: "audio",
+                            name: "Background Music",
+                            trackId: "t-a2", // Set background music track
+                            startFrame: currentFrame,
+                            durationInFrames: 150,
+                            src: SAMPLE_AUDIO,
+                            volume: 0.8,
+                            playbackRate: 1,
+                            loop: true,
+                            animation: "none",
+                          })
+                        )
+                      }
+                    >
+                      <Music className="mr-2 h-4 w-4 text-amber-400 shrink-0" />
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-xs">Background Music</p>
+                        <p className="text-[10px] text-muted-foreground">Sample Stock Lofi</p>
+                      </div>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-auto w-full justify-start border-border/60 bg-muted/40 py-2.5 text-foreground hover:bg-muted/70"
+                      onClick={() =>
+                        add(
+                          makeLayer({
+                            type: "audio",
+                            name: "Voice-over",
+                            trackId: "t-a1", // Set voice-over track
+                            startFrame: currentFrame,
+                            durationInFrames: 120,
+                            src: SAMPLE_AUDIO,
+                            volume: 1,
+                            playbackRate: 1,
+                            animation: "none",
+                          })
+                        )
+                      }
+                    >
+                      <Mic className="mr-2 h-4 w-4 text-rose-400 shrink-0" />
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-xs">Voice-over</p>
+                        <p className="text-[10px] text-muted-foreground">Sample Stock Narration</p>
+                      </div>
+                    </Button>
+                  </div>
+                </div>
+
                 <AudioMixer />
-              </>
+              </div>
             )}
 
             {leftTab === "stickers" && (
@@ -935,7 +1496,7 @@ export function LeftPanel() {
               <div className="space-y-2">
                 {BROLL_LIBRARY.map((clip) => {
                   const layer = makeLayer({
-                    type: "video",
+                    type: clip.kind,
                     name: clip.name,
                     trackId: "t-v1",
                     startFrame: currentFrame,
@@ -944,8 +1505,7 @@ export function LeftPanel() {
                     brollTag: clip.tags[0],
                     isBroll: true,
                     objectFit: "cover",
-                    useOffthread: true,
-                    volume: 0,
+                    ...(clip.kind === "video" ? { useOffthread: true, volume: 0 } : {}),
                     animation: "fade",
                   });
                   return (
@@ -956,12 +1516,16 @@ export function LeftPanel() {
                       {...layerDragProps(layer)}
                       onClick={() => add(layer)}
                     >
-                    <Film className="mr-2 h-4 w-4 shrink-0 text-sky-400" />
-                    <div className="min-w-0 text-left">
-                      <p className="truncate text-xs">{clip.name}</p>
-                      <p className="text-[10px] text-white/40">{clip.tags.join(" · ")}</p>
-                    </div>
-                  </Button>
+                      {clip.kind === "video" ? (
+                        <Film className="mr-2 h-4 w-4 shrink-0 text-sky-400" />
+                      ) : (
+                        <Images className="mr-2 h-4 w-4 shrink-0 text-emerald-400" />
+                      )}
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-xs">{clip.name}</p>
+                        <p className="text-[10px] text-white/40">{clip.tags.join(" · ")}</p>
+                      </div>
+                    </Button>
                   );
                 })}
               </div>
@@ -1080,35 +1644,7 @@ export function LeftPanel() {
               </div>
             )}
 
-            {leftTab === "brand" && (
-              <div className="space-y-3">
-                <p className="text-xs text-white/50">Brand colors</p>
-                <div className="flex flex-wrap gap-2">
-                  {["#6366f1", "#22d3ee", "#f472b6", "#0f172a", "#f8fafc"].map(
-                    (c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        className="h-8 w-8 rounded-lg ring-1 ring-white/20"
-                        style={{ background: c }}
-                        onClick={() =>
-                          add(
-                            makeLayer({
-                              type: "solid",
-                              name: "Brand Color",
-                              trackId: "t-v1",
-                              startFrame: currentFrame,
-                              fill: c,
-                              durationInFrames: 90,
-                            })
-                          )
-                        }
-                      />
-                    )
-                  )}
-                </div>
-              </div>
-            )}
+
           </div>
         </ScrollArea>
       </div>

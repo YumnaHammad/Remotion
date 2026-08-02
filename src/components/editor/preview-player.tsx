@@ -103,15 +103,15 @@ export function PreviewPlayer() {
   }, [project.layers, selectedLayerIds, updateLayer]);
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(ellipse_at_center,#151822_0%,#050608_70%)] p-4">
+    <div className="flex h-full w-full items-center justify-center bg-[#1e1f22] p-6">
       <div
-        className="relative overflow-hidden rounded-lg shadow-2xl shadow-black/60 ring-1 ring-white/10"
+        className="relative overflow-hidden rounded-sm shadow-2xl shadow-black/80 border-[3px] border-indigo-500/80 transition-all duration-300 hover:border-indigo-400 focus-within:border-indigo-400"
         style={{
           aspectRatio: `${width} / ${height}`,
           maxHeight: "100%",
           maxWidth: "100%",
-          width: height > width ? "auto" : "100%",
-          height: height > width ? "100%" : "auto",
+          width: "auto",
+          height: "auto",
         }}
       >
         <Player

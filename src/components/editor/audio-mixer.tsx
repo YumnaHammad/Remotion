@@ -15,22 +15,22 @@ export function AudioMixer() {
   const audioTracks = tracks.filter((t) => t.kind === "audio");
 
   return (
-    <div className="space-y-3 rounded-lg border border-white/10 bg-white/5 p-3">
+    <div className="space-y-3 rounded-lg border border-border/60 bg-muted/40 p-3">
       <div className="flex items-center gap-2">
         <Headphones className="h-3.5 w-3.5 text-amber-400" />
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Audio mixer
         </p>
       </div>
 
       {audioTracks.length === 0 && (
-        <p className="text-[11px] text-white/40">No audio tracks yet.</p>
+        <p className="text-[11px] text-muted-foreground/60">No audio tracks yet.</p>
       )}
 
       {audioTracks.map((track) => (
         <div key={track.id} className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="truncate text-xs text-white/70">{track.name}</span>
+            <span className="truncate text-xs text-foreground/80">{track.name}</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -40,7 +40,7 @@ export function AudioMixer() {
                   "flex h-5 w-5 items-center justify-center rounded text-[9px] font-bold transition",
                   track.solo
                     ? "bg-amber-400 text-black"
-                    : "bg-white/10 text-white/50 hover:text-white"
+                    : "bg-muted/60 text-muted-foreground hover:text-foreground"
                 )}
               >
                 S
@@ -53,7 +53,7 @@ export function AudioMixer() {
                   "flex h-5 w-5 items-center justify-center rounded transition",
                   track.muted
                     ? "bg-red-500/80 text-white"
-                    : "bg-white/10 text-white/50 hover:text-white"
+                    : "bg-muted/60 text-muted-foreground hover:text-foreground"
                 )}
               >
                 {track.muted ? (
@@ -74,8 +74,8 @@ export function AudioMixer() {
         </div>
       ))}
 
-      <div className="space-y-1.5 border-t border-white/10 pt-3">
-        <Label className="text-white/60">
+      <div className="space-y-1.5 border-t border-border/60 pt-3">
+        <Label className="text-muted-foreground">
           Master · {Math.round(masterVolume * 100)}%
         </Label>
         <Slider

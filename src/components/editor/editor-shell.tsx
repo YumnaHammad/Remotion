@@ -99,18 +99,19 @@ export function EditorTopBar() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, [togglePlay, selectedLayerIds, removeLayers, redo, undo, duplicateSelected, splitLayer, nudgeSelected, setFrame, currentFrame]);
 
   return (
     <div className="flex h-12 items-center gap-2 border-b border-[var(--editor-border)] bg-[var(--editor-panel)] px-3 text-foreground">
       <Button
         asChild
-        variant="ghost"
-        size="icon-sm"
-        className="text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+        variant="outline"
+        size="sm"
+        className="h-8 gap-1.5 px-3 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground border-[var(--editor-border)] bg-background/5"
       >
-        <Link href="/projects" aria-label="Back to projects">
-          <ArrowLeft className="h-4 w-4" />
+        <Link href="/projects" aria-label="Exit Editor">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Exit Editor</span>
         </Link>
       </Button>
 

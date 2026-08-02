@@ -27,7 +27,6 @@ export const NAV_SECTIONS = [
     label: "Video Studio",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: "Home" },
-      { href: "/showcase", label: "Template Marketplace", icon: "LayoutTemplate" },
       { href: "/script-to-video", label: "Script to Video", icon: "Sparkles" },
       { href: "/website-to-video", label: "Website to Video", icon: "Globe" },
     ],
@@ -35,7 +34,6 @@ export const NAV_SECTIONS = [
   {
     label: "Assets & Brand",
     items: [
-      { href: "/brand", label: "Brand Kit", icon: "Palette" },
       { href: "/assets", label: "Media Library", icon: "Image" },
       { href: "/audio", label: "Audio Library", icon: "Music" },
       { href: "/exports", label: "Render Exports", icon: "Download" },
@@ -44,7 +42,7 @@ export const NAV_SECTIONS = [
   {
     label: "Workspace",
     items: [
-      { href: "/projects", label: "Timeline Projects", icon: "FolderOpen" },
+      { href: "/projects", label: "Editor", icon: "FolderOpen" },
       { href: "/settings", label: "Settings", icon: "Settings" },
     ],
   },
@@ -126,12 +124,6 @@ export const EDITOR_TABS = [
     label: "Collage",
     hint: "Put several photos side by side",
     icon: "LayoutGrid",
-  },
-  {
-    id: "brand",
-    label: "Brand",
-    hint: "Your colors and logo",
-    icon: "Sparkles",
   },
 ] as const;
 

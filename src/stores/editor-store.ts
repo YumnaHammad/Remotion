@@ -265,13 +265,240 @@ export const useEditorStore = create<EditorState>((set, get) => {
             transitionDuration: 15,
             background: "#0a0a0f",
           };
-          const headline = makeTextLayer({
-            name: "Headline",
-            text: template.name,
-            startFrame: 10,
-            durationInFrames: Math.min(90, template.durationInFrames - 10),
-            animation: "bounce",
+          
+          const DEFAULT_FILTERS = {
+            brightness: 100,
+            contrast: 100,
+            saturate: 100,
+            hueRotate: 0,
+            grayscale: 0,
+            sepia: 0,
+            blur: 0,
+          };
+
+          // 1. Add background solid layer
+          let bgColor = "#0f1015";
+          if (template.id === "tpl-2") bgColor = "#121020"; // Instagram Reel Promo dark indigo
+          if (template.id === "tpl-4") bgColor = "#042f2e"; // Podcast Wave dark teal
+          if (template.id === "tpl-5") bgColor = "#1a1815"; // Product Ad dark luxury gold
+          if (template.id === "tpl-6") bgColor = "#0f172a"; // Startup slate blue
+          if (template.id === "tpl-7") bgColor = "#0c0a09"; // News dark stone
+
+          const layers: Layer[] = [];
+          layers.push({
+            id: `l-${Date.now()}-bg`,
+            name: "Background",
+            type: "solid",
+            trackId: "t-v1",
+            startFrame: 0,
+            durationInFrames: template.durationInFrames,
+            transform: { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+            animation: "none",
+            animationDuration: 0,
+            filters: { ...DEFAULT_FILTERS },
+            fill: bgColor,
           });
+
+          // Helper text layer builder
+          const makeText = (partial: Partial<Layer> & Pick<Layer, "name" | "text">): Layer => {
+            return makeTextLayer({
+              trackId: "t-tx1",
+              startFrame: 0,
+              durationInFrames: template.durationInFrames,
+              transform: { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              animation: "none",
+              animationDuration: 15,
+              filters: { ...DEFAULT_FILTERS },
+              ...partial,
+            });
+          };
+
+          // 2. Add custom template title/subtitles
+          if (template.id === "tpl-1" || template.id === "tpl-3") {
+            // Shorts / TikTok hooks
+            layers.push(makeText({
+              name: "Headline",
+              text: "KINETIC HOOK",
+              startFrame: 10,
+              durationInFrames: template.durationInFrames - 10,
+              transform: { x: 0, y: -50, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 54,
+                fontWeight: 800,
+                color: "#f472b6",
+                align: "center",
+                lineHeight: 1.1,
+                letterSpacing: -1.5,
+                neon: true,
+              },
+              animation: "bounce",
+            }));
+            layers.push(makeText({
+              name: "Subheading",
+              text: "Grab Attention in 3 Seconds",
+              startFrame: 25,
+              durationInFrames: template.durationInFrames - 25,
+              transform: { x: 0, y: 40, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 22,
+                fontWeight: 600,
+                color: "#ffffff",
+                align: "center",
+                lineHeight: 1.2,
+                letterSpacing: 0,
+              },
+              animation: "fade",
+            }));
+          } else if (template.id === "tpl-2") {
+            // Instagram Reel Promo
+            layers.push(makeText({
+              name: "Headline",
+              text: "EXCLUSIVE PROMO",
+              startFrame: 12,
+              durationInFrames: template.durationInFrames - 12,
+              transform: { x: 0, y: -60, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 48,
+                fontWeight: 800,
+                color: "#ffffff",
+                align: "center",
+                lineHeight: 1.1,
+                letterSpacing: -1,
+                gradient: "linear-gradient(135deg,#f472b6,#38bdf8)",
+              },
+              animation: "scale",
+            }));
+            layers.push(makeText({
+              name: "Subheading",
+              text: "50% OFF TODAY ONLY",
+              startFrame: 28,
+              durationInFrames: template.durationInFrames - 28,
+              transform: { x: 0, y: 30, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 24,
+                fontWeight: 700,
+                color: "#e11d48",
+                align: "center",
+                lineHeight: 1.2,
+                letterSpacing: 0.5,
+                neon: true,
+              },
+              animation: "fade",
+            }));
+          } else if (template.id === "tpl-4") {
+            // Podcast Wave
+            layers.push(makeText({
+              name: "Headline",
+              text: "PODCAST HOST",
+              startFrame: 15,
+              durationInFrames: template.durationInFrames - 15,
+              transform: { x: 0, y: -40, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 48,
+                fontWeight: 800,
+                color: "#2dd4bf",
+                align: "center",
+                lineHeight: 1.1,
+                letterSpacing: -1,
+              },
+              animation: "slide",
+            }));
+            layers.push(makeText({
+              name: "Episode #",
+              text: "EPISODE 42",
+              startFrame: 25,
+              durationInFrames: template.durationInFrames - 25,
+              transform: { x: 0, y: 30, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 24,
+                fontWeight: 600,
+                color: "#ffffff",
+                align: "center",
+                lineHeight: 1.2,
+                letterSpacing: 0,
+              },
+              animation: "fade",
+            }));
+          } else if (template.id === "tpl-5") {
+            // Product Ad
+            layers.push(makeText({
+              name: "Headline",
+              text: "LUXURY EDITION",
+              startFrame: 15,
+              durationInFrames: template.durationInFrames - 15,
+              transform: { x: 0, y: -30, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 54,
+                fontWeight: 800,
+                color: "#fbbf24",
+                align: "center",
+                lineHeight: 1.1,
+                letterSpacing: 2,
+              },
+              animation: "scale",
+            }));
+            layers.push(makeText({
+              name: "Tagline",
+              text: "Experience True Craftsmanship",
+              startFrame: 35,
+              durationInFrames: template.durationInFrames - 35,
+              transform: { x: 0, y: 40, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 20,
+                fontWeight: 500,
+                color: "#cbd5e1",
+                align: "center",
+                lineHeight: 1.2,
+                letterSpacing: 1,
+              },
+              animation: "fade",
+            }));
+          } else {
+            // Fallback template builder
+            layers.push(makeText({
+              name: "Headline",
+              text: template.name.toUpperCase(),
+              startFrame: 10,
+              durationInFrames: template.durationInFrames - 10,
+              transform: { x: 0, y: -35, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 44,
+                fontWeight: 800,
+                color: "#38bdf8",
+                align: "center",
+                lineHeight: 1.1,
+                letterSpacing: -1,
+              },
+              animation: "scale",
+            }));
+            layers.push(makeText({
+              name: "Subheading",
+              text: "Professional Video Template Layout",
+              startFrame: 25,
+              durationInFrames: template.durationInFrames - 25,
+              transform: { x: 0, y: 35, scale: 1, rotation: 0, opacity: 1, blur: 0 },
+              textStyle: {
+                fontFamily: "Inter",
+                fontSize: 20,
+                fontWeight: 500,
+                color: "#94a3b8",
+                align: "center",
+                lineHeight: 1.2,
+                letterSpacing: 0,
+              },
+              animation: "fade",
+            }));
+          }
+
           return {
             ...p,
             settings: {
@@ -282,7 +509,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
               durationInFrames: template.durationInFrames,
             },
             scenes: [scene],
-            layers: [...p.layers, headline],
+            layers,
           };
         },
         { selectedLayerIds: [] }

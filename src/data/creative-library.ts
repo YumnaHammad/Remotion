@@ -13,6 +13,7 @@ export interface BrollClip {
   id: string;
   name: string;
   url: string;
+  kind: "image" | "video";
   thumbnail?: string;
   durationSec: number;
   tags: string[];
@@ -63,6 +64,7 @@ export const BROLL_LIBRARY: BrollClip[] = LOCAL_STOCK_LIBRARY.map((c) => ({
   id: c.id,
   name: c.name,
   url: c.url,
+  kind: c.kind,
   thumbnail: c.url,
   durationSec: c.durationSec,
   tags: c.tags,

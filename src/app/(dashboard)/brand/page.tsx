@@ -1,5 +1,5 @@
-import { BrandKitFeature } from "@/features/brand-kit/brand-kit-page";
+import { redirect } from "next/navigation";
 
 export default function BrandPage() {
-  return <BrandKitFeature />;
+  redirect("/dashboard");
 }
