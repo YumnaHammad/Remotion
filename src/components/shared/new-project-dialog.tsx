@@ -52,7 +52,7 @@ function Chip({
         "rounded-lg border px-3 py-2 text-sm font-medium transition",
         active
           ? "border-primary bg-primary/10 text-primary"
-          : "border-white/10 text-white/60 hover:border-white/20"
+          : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground dark:border-white/10 dark:text-white/60 dark:hover:border-white/20"
       )}
     >
       {children}
