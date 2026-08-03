@@ -109,78 +109,85 @@ def main() -> int:
         download_root=os.environ.get("FASTER_WHISPER_CACHE_DIR") or None,
     )
 
-    segments_iter, info = model.transcribe(
-        waveform,
-        beam_size=args.beam_size,
-        word_timestamps=True,
-        language=args.language,
-        vad_filter=True,
-        # Feeding the previous window back in makes whisper loop the same
-        # phrase on music/noisy audio; disabling it stops repeated words.
-        condition_on_previous_text=False,
-        no_repeat_ngram_size=3,
-    )
-
-    segments = []
-    captions = []
-    text_parts = []
-
-    for segment in segments_iter:
-        seg_text = (segment.text or "").strip()
-        if not seg_text:
-            continue
-        text_parts.append(seg_text)
-
-        words = []
-        for word in segment.words or []:
-            word_text = (word.word or "").strip()
-            if not word_text:
-                continue
-            start_ms = int(round(word.start * 1000))
-            end_ms = max(int(round(word.end * 1000)), start_ms + 1)
-            confidence = getattr(word, "probability", None)
-            words.append(
-                {
-                    "text": word_text,
-                    "startMs": start_ms,
-                    "endMs": end_ms,
-                    "confidence": confidence,
-                }
-            )
-            captions.append(
-                {
-                    "text": word_text,
-                    "startMs": start_ms,
-                    "endMs": end_ms,
-                    "timestampMs": int(round((start_ms + end_ms) / 2)),
-                    "confidence": confidence,
-                }
-            )
-
-        seg_start_ms = int(round(segment.start * 1000))
-        seg_end_ms = max(int(round(segment.end * 1000)), seg_start_ms + 1)
-        segments.append(
-            {
-                "id": segment.id,
-                "startMs": seg_start_ms,
-                "endMs": seg_end_ms,
-                "text": seg_text,
-                "words": words,
-                "avgLogprob": segment.avg_logprob,
-                "noSpeechProb": segment.no_speech_prob,
-            }
+    def run_transcribe(vad: bool):
+        segments_iter, info = model.transcribe(
+            waveform,
+            beam_size=args.beam_size,
+            word_timestamps=True,
+            language=args.language,
+            vad_filter=vad,
+            condition_on_previous_text=False,
+            no_repeat_ngram_size=3,
         )
 
-        if not words:
-            captions.append(
+        segs = []
+        caps = []
+        t_parts = []
+
+        for segment in segments_iter:
+            seg_text = (segment.text or "").strip()
+            if not seg_text:
+                continue
+            t_parts.append(seg_text)
+
+            words = []
+            for word in segment.words or []:
+                word_text = (word.word or "").strip()
+                if not word_text:
+                    continue
+                start_ms = int(round(word.start * 1000))
+                end_ms = max(int(round(word.end * 1000)), start_ms + 1)
+                confidence = getattr(word, "probability", None)
+                words.append(
+                    {
+                        "text": word_text,
+                        "startMs": start_ms,
+                        "endMs": end_ms,
+                        "confidence": confidence,
+                    }
+                )
+                caps.append(
+                    {
+                        "text": word_text,
+                        "startMs": start_ms,
+                        "endMs": end_ms,
+                        "timestampMs": int(round((start_ms + end_ms) / 2)),
+                        "confidence": confidence,
+                    }
+                )
+
+            seg_start_ms = int(round(segment.start * 1000))
+            seg_end_ms = max(int(round(segment.end * 1000)), seg_start_ms + 1)
+            segs.append(
                 {
-                    "text": seg_text,
+                    "id": segment.id,
                     "startMs": seg_start_ms,
                     "endMs": seg_end_ms,
-                    "timestampMs": int(round((seg_start_ms + seg_end_ms) / 2)),
-                    "confidence": None,
+                    "text": seg_text,
+                    "words": words,
+                    "avgLogprob": segment.avg_logprob,
+                    "noSpeechProb": segment.no_speech_prob,
                 }
             )
+
+            if not words:
+                caps.append(
+                    {
+                        "text": seg_text,
+                        "startMs": seg_start_ms,
+                        "endMs": seg_end_ms,
+                        "timestampMs": int(round((seg_start_ms + seg_end_ms) / 2)),
+                        "confidence": None,
+                    }
+                )
+        return segs, caps, t_parts, info
+
+    segments, captions, text_parts, info = run_transcribe(vad=True)
+
+    # Fallback: if the audio is long (> 20 seconds) but VAD filter returned
+    # almost no content (typical for background music/songs), re-run with VAD disabled.
+    if media_duration_ms > 20000 and len(" ".join(text_parts)) < 80:
+        segments, captions, text_parts, info = run_transcribe(vad=False)
 
     result = {
         "ok": True,

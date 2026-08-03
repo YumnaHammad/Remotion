@@ -32,9 +32,13 @@ function SceneVideo({
   }
   const asImage = isStockImageUrl(src);
 
-  const fadeIn = interpolate(frame, [0, 15], [0, 1], {
-    extrapolateRight: "clamp",
-  });
+  const transition = scene.transition as any;
+  const fadeIn =
+    transition === "fade" || transition === "fade-in" || transition === "crossfade"
+      ? interpolate(frame, [0, 15], [0, 1], {
+          extrapolateRight: "clamp",
+        })
+      : 1;
   const fadeOut =
     scene.transition === "fade-out"
       ? interpolate(
