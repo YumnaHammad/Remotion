@@ -138,7 +138,7 @@ export function LeftPanel() {
   const removeAsset = useAssetStore((s) => s.removeAsset);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const transcribeInputRef = useRef<HTMLInputElement>(null);
-  
+
   const clipsFileInputRef = useRef<HTMLInputElement>(null);
   const audioFileInputRef = useRef<HTMLInputElement>(null);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -493,11 +493,11 @@ export function LeftPanel() {
 
       const result = isLocal
         ? await transcribeFromFile(
-            new File(
-              [await (await fetch(srcUrl)).blob()],
-              media.layer?.name ?? "clip"
-            )
+          new File(
+            [await (await fetch(srcUrl)).blob()],
+            media.layer?.name ?? "clip"
           )
+        )
         : await transcribeFromSourceUrl(srcUrl);
       if (!result.ok) {
         toast.error(result.error, { id: toastId });
@@ -551,7 +551,7 @@ export function LeftPanel() {
     mode: VoiceMode = "voice-captions"
   ) => {
     const kind = file.type.startsWith("audio") ? "audio" : "video";
-    
+
     let finalUrl = "";
     const formData = new FormData();
     formData.append("file", file);
@@ -848,7 +848,7 @@ export function LeftPanel() {
                   className={cn(
                     "h-auto w-full justify-start border-white/10 bg-white/5 py-3 text-white hover:bg-white/10",
                     recording &&
-                      "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
+                    "border-red-500/50 bg-red-500/10 hover:bg-red-500/20"
                   )}
                   onClick={() => void toggleRecording()}
                 >
@@ -1086,40 +1086,40 @@ export function LeftPanel() {
                       {(m.type === "image" ||
                         m.type === "gif" ||
                         m.type === "video") && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 w-full border-white/10 bg-black/20 text-[10px] text-white/70 hover:bg-white/10 hover:text-white"
-                          onClick={() => {
-                            const id = `l-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
-                            const layer = makeLayer({
-                              type:
-                                m.type === "gif"
-                                  ? "gif"
-                                  : m.type === "video"
-                                    ? "video"
-                                    : "image",
-                              name: `${m.name} (BG)`,
-                              trackId: "t-v1",
-                              startFrame: 0,
-                              durationInFrames: project.settings.durationInFrames,
-                              src: m.url,
-                              objectFit: "cover",
-                              animation: "none",
-                            });
-                            // Force id so we can send to back immediately
-                            add({ ...layer, id });
-                            // send to back on next tick after add
-                            setTimeout(() => {
-                              useEditorStore.getState().sendLayerToBack(id);
-                              useEditorStore.getState().selectLayers([id]);
-                            }, 0);
-                            toast.success("Added as background (back layer)");
-                          }}
-                        >
-                          Use as full-screen background
-                        </Button>
-                      )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 w-full border-white/10 bg-black/20 text-[10px] text-white/70 hover:bg-white/10 hover:text-white"
+                            onClick={() => {
+                              const id = `l-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+                              const layer = makeLayer({
+                                type:
+                                  m.type === "gif"
+                                    ? "gif"
+                                    : m.type === "video"
+                                      ? "video"
+                                      : "image",
+                                name: `${m.name} (BG)`,
+                                trackId: "t-v1",
+                                startFrame: 0,
+                                durationInFrames: project.settings.durationInFrames,
+                                src: m.url,
+                                objectFit: "cover",
+                                animation: "none",
+                              });
+                              // Force id so we can send to back immediately
+                              add({ ...layer, id });
+                              // send to back on next tick after add
+                              setTimeout(() => {
+                                useEditorStore.getState().sendLayerToBack(id);
+                                useEditorStore.getState().selectLayers([id]);
+                              }, 0);
+                              toast.success("Added as background (back layer)");
+                            }}
+                          >
+                            Use as full-screen background
+                          </Button>
+                        )}
                     </div>
                   );
                 })}
@@ -1483,10 +1483,10 @@ export function LeftPanel() {
                       {...layerDragProps(layer)}
                       onClick={() => add(layer)}
                     >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={st.url} alt={st.name} className="aspect-square w-full object-cover" />
-                    <p className="truncate px-1 py-1 text-[10px] text-white/60">{st.name}</p>
-                  </button>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={st.url} alt={st.name} className="aspect-square w-full object-cover" />
+                      <p className="truncate px-1 py-1 text-[10px] text-white/60">{st.name}</p>
+                    </button>
                   );
                 })}
               </div>

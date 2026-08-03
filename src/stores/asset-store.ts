@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { MediaAsset } from "@/types";
 import { genId } from "@/lib/project-factory";
 
@@ -13,12 +14,14 @@ interface AssetState {
  * Uploaded assets synced with public/generated-assets/uploads/ on the server.
  * This ensures they persist across page reloads and render successfully during video exports.
  */
-export const useAssetStore = create<AssetState>((set) => ({
-  assets: [],
-  addAsset: (asset) => set((s) => ({ assets: [asset, ...s.assets] })),
-  removeAsset: (id) =>
-    set((s) => ({ assets: s.assets.filter((a) => a.id !== id) })),
-  uploadFiles: async (files) => {
+export const useAssetStore = create<AssetState>()(
+  persist(
+    (set) => ({
+      assets: [],
+      addAsset: (asset) => set((s) => ({ assets: [asset, ...s.assets] })),
+      removeAsset: (id) =>
+        set((s) => ({ assets: s.assets.filter((a) => a.id !== id) })),
+      uploadFiles: async (files) => {
     if (!files || !files.length) return 0;
     let successCount = 0;
     for (const file of Array.from(files)) {
@@ -90,8 +93,13 @@ export const useAssetStore = create<AssetState>((set) => ({
       }
     }
     return successCount;
-  },
-}));
+      },
+    }),
+    {
+      name: "framekit-assets",
+    }
+  )
+);
 
 /** Build a MediaAsset (with a blob URL fallback) from an uploaded File. */
 export function assetFromFile(file: File): MediaAsset {

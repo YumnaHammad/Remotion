@@ -158,6 +158,24 @@ export type MainCompositionProps = {
  * using the same startFrame/duration as the editor timeline (WYSIWYG).
  * Scene backgrounds run in parallel underneath.
  */
+const LAYER_PRIORITY: Record<string, number> = {
+  solid: 10,
+  noise: 20,
+  pattern: 30,
+  collage: 40,
+  video: 50,
+  image: 60,
+  gif: 70,
+  lottie: 70,
+  sticker: 80,
+  text: 90,
+  caption: 100,
+};
+
+function getLayerPriority(type: string): number {
+  return LAYER_PRIORITY[type] ?? 0;
+}
+
 export const MainComposition: React.FC<MainCompositionProps> = ({
   project,
 }) => {
@@ -179,7 +197,9 @@ export const MainComposition: React.FC<MainCompositionProps> = ({
         ];
 
   // Paint lower tracks first so higher tracks (later in array) stack on top.
-  const layers = [...project.layers];
+  const layers = [...project.layers].sort(
+    (a, b) => getLayerPriority(a.type) - getLayerPriority(b.type)
+  );
 
   return (
     <AbsoluteFill style={{ width, height, backgroundColor: "#000000" }}>

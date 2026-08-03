@@ -21,7 +21,7 @@ import { toast } from "sonner";
 export default function ProjectsPage() {
   const { projects, deleteProject, duplicateProject } = useProjectStore();
   const [query, setQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const filtered = useMemo(
     () =>

@@ -2,7 +2,6 @@ import type { Layer } from "@/types";
 
 const SPATIAL_TYPES = new Set([
   "text",
-  "caption",
   "image",
   "video",
   "gif",
