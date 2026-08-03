@@ -16,6 +16,12 @@ import {
   Upload,
   Mic,
   Link2,
+  Trash2,
+  Sliders,
+  X,
+  Music,
+  Plus,
+  ChevronRight,
 } from "lucide-react";
 import { blobToWavFile, pickRecorderMimeType } from "@/lib/record-audio";
 import { transcribeFromFile, transcribeFromSourceUrl } from "@/lib/transcribe-client";
@@ -38,6 +44,7 @@ import { useBrandKit } from "@/hooks/use-brand-kit";
 import { useSimpleVideoStore } from "@/stores/simple-video-store";
 import { createProjectFromEditRecipe } from "@/utils/video-project-factory";
 import { localBreakdown, groupCaptionsIntoSegments } from "@/lib/pipeline/local-breakdown";
+import { isStockImageUrl } from "@/lib/pipeline/local-stock";
 import {
   buildAutomatedVideoInputProps,
   fetchCaptionVoiceover,
@@ -167,6 +174,11 @@ export function ScriptToVideoFeature() {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [mediaUrl, setMediaUrl] = useState("");
   const [aiImproving, setAiImproving] = useState(false);
+  
+  // Manual Editor states
+  const [showManualEditor, setShowManualEditor] = useState(false);
+  const [uploadingMusic, setUploadingMusic] = useState(false);
+  const [uploadingSceneVisuals, setUploadingSceneVisuals] = useState<Record<string, boolean>>({});
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordIntervalRef = useRef<any>(null);
@@ -484,6 +496,132 @@ export function ScriptToVideoFeature() {
     }
   };
 
+  const alignSceneTimings = (scenes: any[]): any[] => {
+    let currentFrame = 0;
+    return scenes.map((scene) => {
+      const startFrame = currentFrame;
+      currentFrame += scene.durationInFrames;
+      return {
+        ...scene,
+        startFrame,
+      };
+    });
+  };
+
+  const handleMusicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !resolved) return;
+    setUploadingMusic(true);
+    const toastId = toast.loading(`Uploading audio file "${file.name}"...`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/assets/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = (await res.json()) as { url: string };
+      
+      const nextResolved = {
+        ...resolved,
+        backgroundMusicUrl: data.url,
+      };
+      
+      await applyResolved(recipe!, nextResolved, undefined, undefined, showCaptions);
+      toast.success("Background music updated successfully!", { id: toastId });
+    } catch (err) {
+      toast.error("Audio upload failed", { id: toastId });
+    } finally {
+      setUploadingMusic(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleSceneVisualUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !resolved) return;
+    
+    setUploadingSceneVisuals((prev) => ({ ...prev, [index]: true }));
+    const toastId = toast.loading(`Uploading visual asset "${file.name}"...`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/assets/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = (await res.json()) as { url: string };
+      
+      const updatedScenes = resolved.scenes.map((scene, idx) => {
+        if (idx === index) {
+          return {
+            ...scene,
+            stockVideoUrl: data.url,
+          };
+        }
+        return scene;
+      });
+      
+      const nextResolved = {
+        ...resolved,
+        scenes: updatedScenes,
+      };
+      
+      await applyResolved(recipe!, nextResolved, undefined, undefined, showCaptions);
+      toast.success(`Scene ${index + 1} visual updated!`, { id: toastId });
+    } catch (err) {
+      toast.error("Visual upload failed", { id: toastId });
+    } finally {
+      setUploadingSceneVisuals((prev) => ({ ...prev, [index]: false }));
+      e.target.value = "";
+    }
+  };
+
+  const handleSceneSubtitleChange = (index: number, text: string) => {
+    if (!resolved) return;
+    const updatedScenes = resolved.scenes.map((scene, idx) => {
+      if (idx === index) {
+        return {
+          ...scene,
+          subtitleText: text,
+        };
+      }
+      return scene;
+    });
+    
+    const nextResolved = {
+      ...resolved,
+      scenes: updatedScenes,
+    };
+    
+    void applyResolved(recipe!, nextResolved, undefined, undefined, showCaptions);
+  };
+
+  const handleSceneDurationChange = (index: number, durationSec: number) => {
+    if (!resolved) return;
+    const newDurationFrames = Math.max(15, Math.round(durationSec * 30));
+    
+    const updatedScenes = resolved.scenes.map((scene, idx) => {
+      if (idx === index) {
+        return {
+          ...scene,
+          durationInFrames: newDurationFrames,
+        };
+      }
+      return scene;
+    });
+    
+    const alignedScenes = alignSceneTimings(updatedScenes);
+    const nextResolved = {
+      ...resolved,
+      scenes: alignedScenes,
+    };
+    
+    void applyResolved(recipe!, nextResolved, undefined, undefined, showCaptions);
+  };
+
   const resolveAndPreview = async () => {
     if (!recipe) return;
     setLoading(true);
@@ -769,6 +907,19 @@ export function ScriptToVideoFeature() {
                     <Link2 className="h-3.5 w-3.5" />
                     Paste URL
                   </Button>
+                  {script && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={transcribingMedia || loading}
+                      onClick={() => setScript("")}
+                      className="h-8 gap-1.5 text-[11px] font-medium text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Clear script
+                    </Button>
+                  )}
                 </div>
               </div>
               {showUrlInput && (
@@ -1157,63 +1308,273 @@ export function ScriptToVideoFeature() {
             )}
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold">{resolved.title}</h2>
-              <p className="text-sm text-muted-foreground">
-                {resolved.scenes.length} scenes · {Math.round(durationInFrames / 30)}s
-              </p>
-            </div>
+          {showManualEditor ? (
+            <div className="space-y-4 border border-border/65 bg-card/35 p-5 rounded-xl shadow-sm backdrop-blur-sm">
+              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                <div className="flex items-center gap-2">
+                  <Sliders className="h-4 w-4 text-primary animate-pulse" />
+                  <h3 className="font-semibold text-foreground text-sm">Manual Video Editor</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowManualEditor(false)}
+                  className="h-7 w-7 p-0 rounded-full hover:bg-muted"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
 
-            <div className="flex items-start justify-between gap-3 rounded-lg border bg-card p-3">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-medium">
-                  Captions + speak my script
-                </Label>
-                <p className="text-[11px] text-muted-foreground">
-                  {showCaptions
-                    ? "Words on screen and a spoken voice of your script."
-                    : "Hidden — picture and music only."}
+              {/* Music Section */}
+              <div className="space-y-2 rounded-lg border bg-background/35 p-3.5 shadow-[inset_0_1px_3px_rgba(0,0,0,0.2)]">
+                <div className="flex items-center gap-2 text-xs font-semibold text-foreground/80">
+                  <Music className="h-3.5 w-3.5 text-primary/80" />
+                  Background Music / Sound Track
+                </div>
+                {resolved.backgroundMusicUrl ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs bg-muted/40 p-2 rounded border border-border/30">
+                      <span className="truncate max-w-[200px] text-muted-foreground font-mono text-[10px]">
+                        {resolved.backgroundMusicUrl.split("/").pop()}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          const nextResolved = { ...resolved };
+                          delete nextResolved.backgroundMusicUrl;
+                          await applyResolved(recipe!, nextResolved, undefined, undefined, showCaptions);
+                        }}
+                        className="h-6 px-2 text-[10px] text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <audio
+                      src={resolved.backgroundMusicUrl}
+                      controls
+                      className="h-8 w-full scale-95 origin-left"
+                    />
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-muted-foreground">
+                    No custom background track active.
+                  </div>
+                )}
+
+                <div className="pt-1">
+                  <Label className="relative cursor-pointer flex items-center justify-center gap-1.5 rounded-md border border-dashed border-border/60 hover:border-primary/50 hover:bg-accent/40 py-2.5 transition-all text-xs font-semibold">
+                    {uploadingMusic ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                        Uploading track...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-3.5 w-3.5 text-primary" />
+                        Upload Custom Music/Sound (.mp3, .wav)
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      disabled={uploadingMusic}
+                      onChange={handleMusicUpload}
+                      className="hidden"
+                      id="bg-music-input"
+                    />
+                  </Label>
+                </div>
+              </div>
+
+              {/* Scenes Edit List */}
+              <div className="space-y-3">
+                <div className="text-xs font-semibold text-foreground/80 flex items-center justify-between">
+                  <span>Scenes List ({resolved.scenes.length})</span>
+                  <span className="text-[10px] font-normal text-muted-foreground">Auto-saved to preview</span>
+                </div>
+                
+                <div className="max-h-[380px] overflow-y-auto space-y-3.5 pr-1.5 scrollbar-thin">
+                  {resolved.scenes.map((scene, index) => {
+                    const durSec = scene.durationInFrames / 30;
+                    const startSec = scene.startFrame / 30;
+                    const isImg = isStockImageUrl(scene.stockVideoUrl);
+                    
+                    return (
+                      <div
+                        key={scene.id}
+                        className="rounded-lg border bg-background/25 p-3.5 space-y-3 hover:border-border/80 transition-colors"
+                      >
+                        <div className="flex items-center justify-between text-xs font-semibold text-foreground/75">
+                          <span className="flex items-center gap-1">
+                            Scene {index + 1}
+                          </span>
+                          <span className="text-muted-foreground font-mono text-[10px]">
+                            {startSec.toFixed(1)}s - {(startSec + durSec).toFixed(1)}s
+                          </span>
+                        </div>
+
+                        {/* Text input */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Subtitle Text</Label>
+                          <Textarea
+                            rows={2}
+                            value={scene.subtitleText}
+                            onChange={(e) => handleSceneSubtitleChange(index, e.target.value)}
+                            className="text-xs bg-background/50 border-border/40 focus:border-primary/50"
+                          />
+                        </div>
+
+                        {/* Visual asset preview and uploader */}
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] text-muted-foreground">Scene Visual</Label>
+                          <div className="flex gap-2.5 items-start">
+                            <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded bg-black border border-border/50">
+                              {scene.stockVideoUrl ? (
+                                isImg ? (
+                                  <img
+                                    src={scene.stockVideoUrl}
+                                    className="h-full w-full object-cover"
+                                    alt=""
+                                  />
+                                ) : (
+                                  <video
+                                    src={scene.stockVideoUrl}
+                                    className="h-full w-full object-cover animate-pulse-slow"
+                                  />
+                                )
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center text-[10px] text-muted-foreground bg-muted">
+                                  No Visual
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex-1 space-y-1">
+                              <Label className="relative cursor-pointer flex h-7 items-center justify-center gap-1 rounded bg-secondary/80 hover:bg-secondary border text-[10px] font-semibold text-foreground/80 px-2 transition-colors">
+                                {uploadingSceneVisuals[index] ? (
+                                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                                ) : (
+                                  <Upload className="h-3 w-3" />
+                                )}
+                                Change Visual (Upload)
+                                <input
+                                  type="file"
+                                  accept="image/*,video/*"
+                                  disabled={uploadingSceneVisuals[index]}
+                                  onChange={(e) => void handleSceneVisualUpload(index, e)}
+                                  className="hidden"
+                                />
+                              </Label>
+                              <p className="text-[9px] text-muted-foreground leading-normal">
+                                Upload image/video for this scene.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Duration editor */}
+                        <div className="flex items-center justify-between gap-3 bg-muted/20 p-2 rounded border border-border/30">
+                          <span className="text-[10px] font-semibold text-foreground/60">Duration (seconds)</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0.5}
+                              max={20}
+                              step={0.5}
+                              value={durSec}
+                              onChange={(e) => handleSceneDurationChange(index, parseFloat(e.target.value) || 2)}
+                              className="w-16 h-7 rounded border border-border/50 text-center font-mono text-xs bg-background"
+                            />
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              ({scene.durationInFrames}f)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="pt-2 border-t border-border/40 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowManualEditor(false)}
+                  className="text-xs font-semibold"
+                >
+                  Done Editing
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">{resolved.title}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {resolved.scenes.length} scenes · {Math.round(durationInFrames / 30)}s
                 </p>
               </div>
-              <Switch
-                checked={showCaptions}
-                disabled={loading || voiceBusy}
-                onCheckedChange={(on) => void toggleCaptions(on)}
-              />
-            </div>
-            {(loading || voiceBusy) && showCaptions && (
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Making spoken voice for your captions…
-              </p>
-            )}
 
-            <div className="flex flex-wrap gap-2">
-              <ExportVideoButton
-                projectId={projectId}
-                projectName={resolved.title}
-                compositionId="AutomatedVideo"
-                inputProps={previewProps}
-                aspectRatio={resolved.aspectRatio}
-                trigger={
-                  <Button variant="glow">
-                    <Download className="h-4 w-4" />
-                    Export MP4
-                  </Button>
-                }
-              />
-              <Button variant="outline" asChild>
-                <Link href="/exports">
-                  View exports
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button variant="ghost" onClick={() => setStep(1)}>
-                New script
-              </Button>
+              <div className="flex items-start justify-between gap-3 rounded-lg border bg-card p-3">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">
+                    Captions + speak my script
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    {showCaptions
+                      ? "Words on screen and a spoken voice of your script."
+                      : "Hidden — picture and music only."}
+                  </p>
+                </div>
+                <Switch
+                  checked={showCaptions}
+                  disabled={loading || voiceBusy}
+                  onCheckedChange={(on) => void toggleCaptions(on)}
+                />
+              </div>
+              {(loading || voiceBusy) && showCaptions && (
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Making spoken voice for your captions…
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <ExportVideoButton
+                  projectId={projectId}
+                  projectName={resolved.title}
+                  compositionId="AutomatedVideo"
+                  inputProps={previewProps}
+                  aspectRatio={resolved.aspectRatio}
+                  trigger={
+                    <Button variant="glow">
+                      <Download className="h-4 w-4" />
+                      Export MP4
+                    </Button>
+                  }
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => setShowManualEditor(true)}
+                  className="gap-1.5"
+                >
+                  <Sliders className="h-4 w-4 text-primary" />
+                  Edit Video (Manual)
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/exports">
+                    View exports
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="ghost" onClick={() => setStep(recipe ? 2 : 1)}>
+                  ← Back
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
