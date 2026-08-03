@@ -7,8 +7,13 @@ import { useProjectStore } from "@/stores/project-store";
 import { EditorTopBar } from "@/components/editor/editor-shell";
 import { LeftPanel } from "@/components/editor/left-panel";
 import { RightPanel } from "@/components/editor/right-panel";
-import { PreviewPlayer } from "@/components/editor/preview-player";
 import { TransportBar } from "@/components/editor/transport-bar";
+import dynamic from "next/dynamic";
+
+const PreviewPlayer = dynamic(
+  () => import("@/components/editor/preview-player").then((m) => m.PreviewPlayer),
+  { ssr: false }
+);
 import { Timeline } from "@/components/editor/timeline";
 import { CaptionSpeakOnPlay } from "@/components/editor/caption-speak-on-play";
 import { EditorGuide } from "@/components/editor/editor-guide";

@@ -98,10 +98,11 @@ function LayerRenderer({
 }
 
 function makeGainResolver(project: Project) {
+  if (!project) return () => 1;
   const master = project.masterVolume ?? 1;
-  const soloed = project.tracks.filter((t) => t.solo).map((t) => t.id);
+  const soloed = (project.tracks ?? []).filter((t) => t.solo).map((t) => t.id);
   return (layer: Layer) => {
-    const track = project.tracks.find((t) => t.id === layer.trackId);
+    const track = (project.tracks ?? []).find((t) => t.id === layer.trackId);
     if (!track) return master;
     if (track.muted) return 0;
     if (soloed.length && !soloed.includes(track.id)) return 0;
@@ -130,6 +131,7 @@ function SceneBackground({ scene, isLast }: { scene: Scene; isLast: boolean }) {
         <Sequence
           from={Math.max(0, scene.durationInFrames - scene.transitionDuration)}
           durationInFrames={scene.transitionDuration}
+          name={`Transition · ${scene.transition}`}
         >
           <TransitionOverlay
             type={scene.transition}
@@ -179,6 +181,7 @@ function getLayerPriority(type: string): number {
 export const MainComposition: React.FC<MainCompositionProps> = ({
   project,
 }) => {
+  if (!project) return null;
   const { width, height } = useVideoConfig();
   const gainFor = makeGainResolver(project);
   const scenes =

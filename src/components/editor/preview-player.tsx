@@ -16,8 +16,6 @@ export function PreviewPlayer() {
   const selectedLayerIds = useEditorStore((s) => s.selectedLayerIds);
   const updateLayer = useEditorStore((s) => s.updateLayer);
   const { width, height, fps, durationInFrames } = project.settings;
-  const seekingRef = useRef(false);
-
   const playerInputProps = useMemo(() => ({ project }), [project]);
 
   useEffect(() => {
@@ -25,7 +23,9 @@ export function PreviewPlayer() {
     if (!player) return;
 
     const onFrame = (e: { detail: { frame: number } }) => {
-      if (!seekingRef.current) setFrame(e.detail.frame);
+      if (player.isPlaying()) {
+        setFrame(Math.round(e.detail.frame));
+      }
     };
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
@@ -62,13 +62,7 @@ export function PreviewPlayer() {
     if (!player) return;
     if (isPlaying) return; // Do NOT seek player while it is naturally playing!
     if (player.getCurrentFrame() === currentFrame) return;
-    seekingRef.current = true;
     player.seekTo(currentFrame);
-    // Keep seeking flag until after Remotion emits frameupdate for this seek
-    const id = requestAnimationFrame(() => {
-      seekingRef.current = false;
-    });
-    return () => cancelAnimationFrame(id);
   }, [currentFrame, isPlaying]);
 
   useEffect(() => {
@@ -108,10 +102,9 @@ export function PreviewPlayer() {
         className="relative overflow-hidden rounded-sm shadow-2xl shadow-black/80 border-[3px] border-indigo-500/80 transition-all duration-300 hover:border-indigo-400 focus-within:border-indigo-400"
         style={{
           aspectRatio: `${width} / ${height}`,
-          maxHeight: "100%",
+          width: "100%",
           maxWidth: "100%",
-          width: "auto",
-          height: "auto",
+          maxHeight: "100%",
         }}
       >
         <Player
