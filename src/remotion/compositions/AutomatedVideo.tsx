@@ -27,6 +27,9 @@ function SceneVideo({
   const frame = useCurrentFrame();
   const src =
     rewriteBrokenMediaUrl(scene.stockVideoUrl) ?? scene.stockVideoUrl;
+  if (!src) {
+    return <AbsoluteFill style={{ backgroundColor: "#0b0c10" }} />;
+  }
   const asImage = isStockImageUrl(src);
 
   const fadeIn = interpolate(frame, [0, 15], [0, 1], {
