@@ -34,7 +34,10 @@ const webpackOverride: WebpackOverrideFn = (config) => {
 
 export async function getServeUrl(): Promise<string> {
   if (cachedServeUrl) return cachedServeUrl;
-  const { bundle } = await import("@remotion/bundler");
+  const bundlerModule = await import("@remotion/bundler");
+  const bundle = bundlerModule.bundle ?? (bundlerModule as any).default?.bundle;
+  if (!bundle) throw new Error("Could not load @remotion/bundler library");
+
   cachedServeUrl = await bundle({
     entryPoint: path.resolve(process.cwd(), "src/remotion/index-export.ts"),
     webpackOverride,
@@ -55,7 +58,12 @@ export function canRenderInThisEnvironment(): boolean {
 
 /** Local MP4/WebM/GIF render — no optional @remotion/lambda dependency. */
 export async function renderLocally(req: RenderRequest): Promise<string> {
-  const { selectComposition, renderMedia } = await import("@remotion/renderer");
+  const rendererModule = await import("@remotion/renderer");
+  const selectComposition = rendererModule.selectComposition ?? (rendererModule as any).default?.selectComposition;
+  const renderMedia = rendererModule.renderMedia ?? (rendererModule as any).default?.renderMedia;
+  if (!selectComposition || !renderMedia) {
+    throw new Error("Could not load @remotion/renderer libraries");
+  }
   const serveUrl = await getServeUrl();
 
   const composition = await selectComposition({
