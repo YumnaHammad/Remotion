@@ -25,6 +25,7 @@ export interface EditRecipe {
   fps: 30;
   voiceoverText: string;
   backgroundMusicKeyword?: string;
+  backgroundMusicUrl?: string;
   scenes: EditRecipeScene[];
 }
 

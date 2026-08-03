@@ -32,7 +32,7 @@ export function resolveEditRecipeLocal(
     aspectRatio: synced.aspectRatio,
     fps: 30,
     voiceoverUrl: "",
-    backgroundMusicUrl: resolveMusicUrl(synced.backgroundMusicKeyword),
+    backgroundMusicUrl: recipe.backgroundMusicUrl ?? resolveMusicUrl(synced.backgroundMusicKeyword),
     captions: buildCaptionsFromScenes(resolvedScenes, synced.fps),
     accent: options.accent ?? "#0b84f3",
     brandColor: options.brandColor ?? "#1e3a5f",

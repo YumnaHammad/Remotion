@@ -174,6 +174,7 @@ export function ScriptToVideoFeature() {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [mediaUrl, setMediaUrl] = useState("");
   const [aiImproving, setAiImproving] = useState(false);
+  const [downloadedAudioUrl, setDownloadedAudioUrl] = useState<string | null>(null);
   
   // Manual Editor states
   const [showManualEditor, setShowManualEditor] = useState(false);
@@ -264,6 +265,9 @@ export function ScriptToVideoFeature() {
             toast.warning("No speech detected. Speak closer to the microphone.", { id: toastId });
             return;
           }
+          if (result.ok && (result as any).audioUrl) {
+            setDownloadedAudioUrl((result as any).audioUrl);
+          }
           setScript((prev) => (prev ? prev + "\n" + formatted : formatted));
           toast.success("Recording transcribed successfully!", { id: toastId });
         } catch (err) {
@@ -314,8 +318,11 @@ export function ScriptToVideoFeature() {
         toast.warning("No speech detected in this media file.", { id: toastId });
         return;
       }
-      setScript((prev) => (prev ? prev + "\n" + formatted : formatted));
-      toast.success("Media transcribed successfully!", { id: toastId });
+          if (result.ok && (result as any).audioUrl) {
+            setDownloadedAudioUrl((result as any).audioUrl);
+          }
+          setScript((prev) => (prev ? prev + "\n" + formatted : formatted));
+          toast.success("Media transcribed successfully!", { id: toastId });
     } catch (err) {
       toast.error("Transcription failed", { id: toastId });
     } finally {
@@ -345,10 +352,13 @@ export function ScriptToVideoFeature() {
         toast.warning("No speech detected in this media URL.", { id: toastId });
         return;
       }
-      setScript((prev) => (prev ? prev + "\n" + formatted : formatted));
-      toast.success("Media transcribed successfully!", { id: toastId });
-      setShowUrlInput(false);
-      setMediaUrl("");
+          if (result.ok && (result as any).audioUrl) {
+            setDownloadedAudioUrl((result as any).audioUrl);
+          }
+          setScript((prev) => (prev ? prev + "\n" + formatted : formatted));
+          toast.success("Media transcribed successfully!", { id: toastId });
+          setShowUrlInput(false);
+          setMediaUrl("");
     } catch (err) {
       toast.error("Transcription failed", { id: toastId });
     } finally {
@@ -459,6 +469,9 @@ export function ScriptToVideoFeature() {
     try {
       if (pipelinePrefs.source === "client") {
         const nextRecipe = localBreakdown(script.trim(), aspectRatio);
+        if (downloadedAudioUrl) {
+          nextRecipe.backgroundMusicUrl = downloadedAudioUrl;
+        }
         setRecipe(nextRecipe);
         setBreakdownMode("local");
         setStep(2);
@@ -485,7 +498,11 @@ export function ScriptToVideoFeature() {
         toast.error(data.error ?? "Could not break down script");
         return;
       }
-      setRecipe(data.recipe);
+      const nextRecipe = data.recipe;
+      if (downloadedAudioUrl) {
+        nextRecipe.backgroundMusicUrl = downloadedAudioUrl;
+      }
+      setRecipe(nextRecipe);
       setBreakdownMode(data.mode ?? "unknown");
       setStep(2);
       toast.success("Edit recipe ready");
@@ -1286,7 +1303,7 @@ export function ScriptToVideoFeature() {
       )}
 
       {step === 3 && resolved && projectId && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2 items-start">
           <div className="overflow-hidden rounded-xl border bg-black">
             <TemplatePreview
               playerRef={playerRef}

@@ -92,6 +92,18 @@ export async function POST(req: Request) {
     const result = await transcribeMediaStructured(mediaPath, engine, {
       language,
     });
+
+    let audioUrl: string | undefined = undefined;
+    if (tempFile) {
+      const publicDir = path.join(process.cwd(), "public", "generated-assets");
+      await fs.mkdir(publicDir, { recursive: true });
+      const ext = path.extname(tempFile) || ".mp3";
+      const filename = `transcription-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+      const publicPath = path.join(publicDir, filename);
+      await fs.copyFile(tempFile, publicPath);
+      audioUrl = `/generated-assets/${filename}`;
+    }
+
     return NextResponse.json({
       ok: true,
       engine: result.engine,
@@ -102,6 +114,7 @@ export async function POST(req: Request) {
       text: result.text,
       segments: result.segments,
       captions: result.captions,
+      audioUrl,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Transcription failed";
