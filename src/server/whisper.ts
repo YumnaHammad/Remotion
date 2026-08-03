@@ -143,14 +143,12 @@ export async function downloadSourceToTemp(sourceUrl: string): Promise<string> {
   if (isYoutubeUrl(sourceUrl)) {
     const dest = path.join(
       tmpDir,
-      `download-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.mp3`
+      `download-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.m4a`
     );
     const python = process.env.PYTHON_PATH ?? "python";
     const args = [
       "-m", "yt_dlp",
-      "-f", "ba",
-      "-x",
-      "--audio-format", "mp3",
+      "-f", "ba[ext=m4a]/ba",
       "--no-playlist",
       "-o", dest,
       sourceUrl
