@@ -33,6 +33,8 @@ export function resolveEditRecipeLocal(
     fps: 30,
     voiceoverUrl: "",
     backgroundMusicUrl: recipe.backgroundMusicUrl ?? resolveMusicUrl(synced.backgroundMusicKeyword),
+    animationStyleProfile: recipe.animationStyleProfile,
+    animationSpeedProfile: recipe.animationSpeedProfile,
     captions: buildCaptionsFromScenes(resolvedScenes, synced.fps),
     accent: options.accent ?? "#0b84f3",
     brandColor: options.brandColor ?? "#1e3a5f",
@@ -53,6 +55,8 @@ export function buildAutomatedVideoInputProps(
     aspectRatio: resolved.aspectRatio,
     fontFamily: resolved.fontFamily,
     backgroundMusicUrl: resolved.backgroundMusicUrl,
+    animationStyleProfile: resolved.animationStyleProfile,
+    animationSpeedProfile: resolved.animationSpeedProfile,
     scenes: resolved.scenes,
     showCaptions,
     ...(showCaptions

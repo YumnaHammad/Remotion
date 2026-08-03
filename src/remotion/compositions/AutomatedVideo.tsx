@@ -14,15 +14,22 @@ import type { AutomatedVideoSchemaProps } from "./automated-video-schema";
 import type { ResolvedEditRecipeScene } from "@/types/edit-recipe";
 import { rewriteBrokenMediaUrl } from "@/lib/sample-media";
 import { isStockImageUrl } from "@/lib/pipeline/local-stock";
+import { getAnimationParams } from "../animation-engine";
 
 const DEFAULT_FONT = "Inter, system-ui, sans-serif";
 
 function SceneVideo({
   scene,
   accent,
+  styleProfile,
+  speedProfile,
+  sceneIndex,
 }: {
   scene: ResolvedEditRecipeScene;
   accent: string;
+  styleProfile: "minimal" | "dynamic" | "luxury" | "modern" | "energetic";
+  speedProfile: "slow" | "medium" | "fast";
+  sceneIndex: number;
 }) {
   const frame = useCurrentFrame();
   const src =
@@ -32,53 +39,20 @@ function SceneVideo({
   }
   const asImage = isStockImageUrl(src);
 
-  const transition = scene.transition as any;
-  const fadeIn =
-    transition === "fade" || transition === "fade-in" || transition === "crossfade"
-      ? interpolate(frame, [0, 15], [0, 1], {
-          extrapolateRight: "clamp",
-        })
-      : 1;
-  const fadeOut =
-    scene.transition === "fade-out"
-      ? interpolate(
-          frame,
-          [scene.durationInFrames - 15, scene.durationInFrames],
-          [1, 0],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-        )
-      : 1;
-
-  const zoom =
-    scene.animationStyle === "zoom" || asImage
-      ? interpolate(frame, [0, scene.durationInFrames], [1.12, 1], {
-          extrapolateRight: "clamp",
-        })
-      : 1;
-
-  const neonGlow =
-    scene.animationStyle === "neon-glow"
-      ? `drop-shadow(0 0 24px ${accent})`
-      : undefined;
-
-  const mediaStyle: React.CSSProperties = {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  };
+  const { mediaStyle, transitionOpacity } = getAnimationParams(
+    { styleProfile, speedProfile },
+    frame,
+    scene.durationInFrames,
+    sceneIndex
+  );
 
   return (
-    <AbsoluteFill style={{ opacity: fadeIn * fadeOut }}>
-      <AbsoluteFill
-        style={{
-          transform: `scale(${zoom})`,
-          filter: neonGlow,
-        }}
-      >
+    <AbsoluteFill style={{ opacity: transitionOpacity }}>
+      <AbsoluteFill style={mediaStyle}>
         {asImage ? (
-          <Img src={src} style={mediaStyle} />
+          <Img src={src} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
-          <Video src={src} style={mediaStyle} />
+          <Video src={src} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         )}
       </AbsoluteFill>
       <AbsoluteFill
@@ -114,7 +88,23 @@ export const AutomatedVideo: React.FC<Partial<AutomatedVideoSchemaProps>> = (
       rewriteBrokenMediaUrl(raw.backgroundMusicUrl) ?? raw.backgroundMusicUrl,
     captions: raw.captions,
     scenes: raw.scenes ?? [],
+    animationStyleProfile: raw.animationStyleProfile ?? "dynamic",
+    animationSpeedProfile: raw.animationSpeedProfile ?? "medium",
   };
+
+  const frame = useCurrentFrame();
+  
+  // Find active scene index for captions style overrides
+  const activeSceneIndex = props.scenes.findIndex(
+    (s) => frame >= s.startFrame && frame < s.startFrame + s.durationInFrames
+  );
+  const activeScene = props.scenes[activeSceneIndex] || props.scenes[0];
+  const { captionTheme, captionStyle } = getAnimationParams(
+    { styleProfile: props.animationStyleProfile, speedProfile: props.animationSpeedProfile },
+    activeScene ? frame - activeScene.startFrame : frame,
+    activeScene ? activeScene.durationInFrames : 300,
+    activeSceneIndex >= 0 ? activeSceneIndex : 0
+  );
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
@@ -124,13 +114,19 @@ export const AutomatedVideo: React.FC<Partial<AutomatedVideoSchemaProps>> = (
         <Audio src={props.voiceoverUrl} volume={1} />
       ) : null}
 
-      {props.scenes.map((scene) => (
+      {props.scenes.map((scene, index) => (
         <Sequence
           key={scene.id}
           from={scene.startFrame}
           durationInFrames={scene.durationInFrames}
         >
-          <SceneVideo scene={scene} accent={props.accent} />
+          <SceneVideo
+            scene={scene}
+            accent={props.accent}
+            styleProfile={props.animationStyleProfile}
+            speedProfile={props.animationSpeedProfile}
+            sceneIndex={index}
+          />
           {scene.soundEffectUrl && (
             <Audio src={scene.soundEffectUrl} volume={0.7} />
           )}
@@ -145,7 +141,11 @@ export const AutomatedVideo: React.FC<Partial<AutomatedVideoSchemaProps>> = (
               confidence: c.confidence ?? null,
             })) ?? null) as Caption[] | null
           }
-          theme="neon"
+          theme={captionTheme}
+          textStyle={{
+            ...captionStyle,
+            fontFamily: (props.fontFamily && props.animationStyleProfile === "dynamic" ? props.fontFamily : captionStyle.fontFamily) || DEFAULT_FONT
+          } as any}
           combineMs={1400}
           useSampleFallback={false}
         />

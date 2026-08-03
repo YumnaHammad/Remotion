@@ -180,6 +180,8 @@ export function createProjectFromEditRecipe(
     fontFamily: resolved.fontFamily ?? brand.fontFamily,
     voiceoverUrl: resolved.voiceoverUrl,
     backgroundMusicUrl: resolved.backgroundMusicUrl,
+    animationStyleProfile: resolved.animationStyleProfile,
+    animationSpeedProfile: resolved.animationSpeedProfile,
     captions: resolved.captions,
     scenes: resolved.scenes,
   };

@@ -23,6 +23,8 @@ export const automatedVideoSchema = z.object({
       })
     )
     .optional(),
+  animationStyleProfile: z.enum(["minimal", "dynamic", "luxury", "modern", "energetic"]).optional(),
+  animationSpeedProfile: z.enum(["slow", "medium", "fast"]).optional(),
   scenes: z.array(resolvedEditRecipeSceneSchema).min(1).max(30),
 });
 
@@ -37,6 +39,8 @@ export const DEFAULT_AUTOMATED_VIDEO_PROPS: AutomatedVideoSchemaProps = {
   voiceoverUrl: "https://remotion.media/dialogue.wav",
   backgroundMusicUrl: "https://remotion.media/audio.mp3",
   showCaptions: true,
+  animationStyleProfile: "dynamic",
+  animationSpeedProfile: "medium",
   captions: [
     {
       text: "Your story begins here.",

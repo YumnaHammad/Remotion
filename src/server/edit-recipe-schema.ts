@@ -20,6 +20,9 @@ export const editRecipeSchema = z.object({
   fps: z.literal(30).default(30),
   voiceoverText: z.string(),
   backgroundMusicKeyword: z.string().optional(),
+  backgroundMusicUrl: z.string().optional(),
+  animationStyleProfile: z.enum(["minimal", "dynamic", "luxury", "modern", "energetic"]).optional(),
+  animationSpeedProfile: z.enum(["slow", "medium", "fast"]).optional(),
   scenes: z.array(editRecipeSceneSchema).min(1).max(30),
 });
 
@@ -34,6 +37,8 @@ export const resolvedEditRecipeSchema = z.object({
   fps: z.literal(30).default(30),
   voiceoverUrl: mediaUrl,
   backgroundMusicUrl: mediaUrl.optional(),
+  animationStyleProfile: z.enum(["minimal", "dynamic", "luxury", "modern", "energetic"]).optional(),
+  animationSpeedProfile: z.enum(["slow", "medium", "fast"]).optional(),
   captions: z
     .array(
       z.object({

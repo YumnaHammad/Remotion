@@ -639,6 +639,20 @@ export function ScriptToVideoFeature() {
     void applyResolved(recipe!, nextResolved, undefined, undefined, showCaptions);
   };
 
+  const handleAnimationStyleProfileChange = (style: any) => {
+    if (!recipe || !resolved) return;
+    const nextRecipe = { ...recipe, animationStyleProfile: style };
+    const nextResolved = { ...resolved, animationStyleProfile: style };
+    void applyResolved(nextRecipe, nextResolved, undefined, undefined, showCaptions);
+  };
+
+  const handleAnimationSpeedProfileChange = (speed: any) => {
+    if (!recipe || !resolved) return;
+    const nextRecipe = { ...recipe, animationSpeedProfile: speed };
+    const nextResolved = { ...resolved, animationSpeedProfile: speed };
+    void applyResolved(nextRecipe, nextResolved, undefined, undefined, showCaptions);
+  };
+
   const resolveAndPreview = async () => {
     if (!recipe) return;
     setLoading(true);
@@ -1551,6 +1565,82 @@ export function ScriptToVideoFeature() {
                   onCheckedChange={(on) => void toggleCaptions(on)}
                 />
               </div>
+
+              {/* Dynamic Animation Engine Configuration */}
+              <div className="space-y-4 rounded-lg border border-border bg-card/65 p-4 shadow-sm backdrop-blur-sm">
+                <div className="flex items-center gap-2 text-xs font-semibold text-foreground/80">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Motion & Animation (Dynamic Engine)
+                </div>
+
+                {/* Animation Style Profiles */}
+                <div className="space-y-2">
+                  <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+                    Style Profile
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: "minimal", name: "Minimal", desc: "No camera movement, clean cuts" },
+                      { id: "dynamic", name: "Dynamic", desc: "Active spring zoom & side pans" },
+                      { id: "luxury", name: "Luxury", desc: "Cinematic Ken Burns & slow crossfade" },
+                      { id: "modern", name: "Modern", desc: "Snappy linear scale & slides" },
+                      { id: "energetic", name: "Energetic", desc: "Spring bounce scale & neon pulses" },
+                    ].map((style) => {
+                      const active = (resolved.animationStyleProfile || "dynamic") === style.id;
+                      return (
+                        <button
+                          key={style.id}
+                          type="button"
+                          onClick={() => handleAnimationStyleProfileChange(style.id as any)}
+                          className={cn(
+                            "flex flex-col items-start text-left p-2.5 rounded-md border text-xs transition-all",
+                            active
+                              ? "border-primary bg-primary/10 text-primary shadow-[0_0_8px_rgba(11,132,243,0.15)] font-semibold"
+                              : "border-border/40 hover:border-border/80 bg-background/25 hover:bg-background/50 text-foreground"
+                          )}
+                        >
+                          <span className="font-semibold">{style.name}</span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">
+                            {style.desc}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Speed Profiles */}
+                <div className="space-y-2 pt-2 border-t border-border/20">
+                  <Label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+                    Speed Profile
+                  </Label>
+                  <div className="flex rounded-md border border-border/40 bg-background/25 p-1 gap-1">
+                    {[
+                      { id: "slow", name: "Slow" },
+                      { id: "medium", name: "Medium" },
+                      { id: "fast", name: "Fast" },
+                    ].map((speed) => {
+                      const active = (resolved.animationSpeedProfile || "medium") === speed.id;
+                      return (
+                        <button
+                          key={speed.id}
+                          type="button"
+                          onClick={() => handleAnimationSpeedProfileChange(speed.id as any)}
+                          className={cn(
+                            "flex-1 text-center py-1 rounded text-xs font-medium transition-all",
+                            active
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "hover:bg-background/50 text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {speed.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
               {(loading || voiceBusy) && showCaptions && (
                 <p className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

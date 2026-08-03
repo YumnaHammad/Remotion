@@ -119,6 +119,8 @@ export async function resolveEditRecipeAssets(
     fps: 30,
     voiceoverUrl: voiceover.url,
     backgroundMusicUrl,
+    animationStyleProfile: recipe.animationStyleProfile,
+    animationSpeedProfile: recipe.animationSpeedProfile,
     captions: finalCaptions,
     accent: options.accent ?? "#0b84f3",
     brandColor: options.brandColor ?? "#1e3a5f",

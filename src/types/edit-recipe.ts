@@ -1,4 +1,5 @@
 import type { Caption } from "@remotion/captions";
+import type { AnimationStyleProfile, AnimationSpeedProfile } from "@/remotion/animation-engine";
 
 export type EditRecipeAspectRatio = "16:9" | "9:16" | "1:1";
 
@@ -26,6 +27,8 @@ export interface EditRecipe {
   voiceoverText: string;
   backgroundMusicKeyword?: string;
   backgroundMusicUrl?: string;
+  animationStyleProfile?: AnimationStyleProfile;
+  animationSpeedProfile?: AnimationSpeedProfile;
   scenes: EditRecipeScene[];
 }
 
@@ -42,6 +45,8 @@ export interface ResolvedEditRecipe {
   fps: 30;
   voiceoverUrl: string;
   backgroundMusicUrl?: string;
+  animationStyleProfile?: AnimationStyleProfile;
+  animationSpeedProfile?: AnimationSpeedProfile;
   captions?: Caption[];
   accent: string;
   brandColor: string;
@@ -58,6 +63,8 @@ export interface AutomatedVideoProps {
   fontFamily?: string;
   voiceoverUrl?: string;
   backgroundMusicUrl?: string;
+  animationStyleProfile?: AnimationStyleProfile;
+  animationSpeedProfile?: AnimationSpeedProfile;
   captions?: Caption[];
   scenes: ResolvedEditRecipeScene[];
 }
